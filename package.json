@@ -1,0 +1,46 @@
+{
+  "name": "steam-watch",
+  "version": "1.0.0",
+  "description": "A Discord bot for keeping track of Steam apps",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npm run lint && tsc",
+    "start": "node .",
+    "lint": "eslint --fix --ignore-path .gitignore src",
+    "dev": "nodemon -e ts --exec ts-node src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dukeofsussex/SteamWatch.git"
+  },
+  "author": "Christopher Satchell",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/dukeofsussex/SteamWatch/issues"
+  },
+  "homepage": "https://github.com/dukeofsussex/SteamWatch#readme",
+  "dependencies": {
+    "bufferutil": "^4.0.1",
+    "discord.js": "^11.5.1",
+    "discord.js-commando": "^0.10.0",
+    "dotenv": "^8.2.0",
+    "erlpack": "^0.1.3",
+    "knex": "^0.20.6",
+    "mysql": "^2.17.1",
+    "node-fetch": "^2.6.0",
+    "utf-8-validate": "^5.0.2",
+    "winston": "^3.2.1",
+    "zlib-sync": "^0.1.6"
+  },
+  "devDependencies": {
+    "@types/node": "^13.1.2",
+    "@typescript-eslint/eslint-plugin": "^2.14.0",
+    "@typescript-eslint/parser": "^2.14.0",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.19.1",
+    "nodemon": "^2.0.2",
+    "ts-node": "^8.5.4",
+    "typescript": "^3.7.4"
+  }
+}
