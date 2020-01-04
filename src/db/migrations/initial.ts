@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-unused-vars
-import Knex from 'knex';
+import Knex = require('knex');
 
 exports.up = (knex: Knex) => knex.schema.createTable('app', (table) => {
   table.integer('id').unsigned().primary().notNullable();

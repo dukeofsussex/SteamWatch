@@ -1,21 +1,17 @@
 import { CommandoClient } from 'discord.js-commando';
 import { join } from 'path';
-import DB from './db/db';
+import db from './db';
 import logger from './logger';
 import MariaDBProvider from './providers/mariadb';
 
+// eslint-disable-next-line no-unused-vars
+import Knex = require('knex');
+
 export default class Client {
-    /**
-     * Commando client
-     * @type {CommandoClient}
-     */
     private client: CommandoClient;
 
-    /**
-     * Database context
-     * @type {DB}
-     */
-    private db: DB;
+    // Database context
+    private db: Knex;
 
     constructor() {
       this.client = new CommandoClient({
@@ -24,11 +20,13 @@ export default class Client {
         // TODO Add invite
       });
 
-      this.db = new DB();
+      this.db = db;
     }
 
     async startAsync() {
-      await this.db.migrateAsync();
+      await this.db.migrate.latest();
+
+      logger.info('Database ready');
 
       this.client.setProvider(new MariaDBProvider());
 
@@ -48,7 +46,10 @@ export default class Client {
       this.client.once('ready', async () => {
         logger.info(`Logged in as '${this.client.user.tag}'`);
 
-        const count = await this.db.getAppCountAsync();
+        const count = await this.db('app')
+          .count('* AS count')
+          .then((result) => result[0].count);
+
         this.client.user.setActivity(`${count} apps`, { type: 'WATCHING' });
       });
 

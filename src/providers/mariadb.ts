@@ -11,10 +11,11 @@ import {
   GuildExtension,
   SettingProvider,
 } from 'discord.js-commando';
-import knex from '../db/knex';
+import db from '../db';
 import logger from '../logger';
 
 import Knex = require('knex');
+
 
 /**
  * Uses a MariaDB/MySQL database to store guild settings.
@@ -27,7 +28,7 @@ export default class MariaDBProvider extends SettingProvider {
   private client: CommandoClient;
 
   // Query builder that will be used for storing/retrieving settings.
-  private knex: Knex;
+  private db: Knex;
 
   // Settings cached in memory, mapped by guild ID (or 'global').
   private settings: Map<string, object>;
@@ -38,7 +39,7 @@ export default class MariaDBProvider extends SettingProvider {
   constructor() {
     super();
 
-    this.knex = knex;
+    this.db = db;
 
     Object.defineProperty(this, 'client', { value: null, writable: true });
 
@@ -50,7 +51,7 @@ export default class MariaDBProvider extends SettingProvider {
     this.client = client;
 
     // Load all settings
-    const rows = await this.knex.select(knex.raw('CAST(guild_id AS CHAR) AS guild_id'), 'settings')
+    const rows = await this.db.select(db.raw('CAST(guild_id AS CHAR) AS guild_id'), 'settings')
       .from('commando');
 
     for (const row of rows) {
@@ -123,7 +124,7 @@ export default class MariaDBProvider extends SettingProvider {
 
     settings[key] = val;
 
-    await this.knex.raw('INSERT INTO commando (guild_id, settings) values (?, ?) ON DUPLICATE KEY UPDATE settings=?',
+    await this.db.raw('INSERT INTO commando (guild_id, settings) values (?, ?) ON DUPLICATE KEY UPDATE settings=?',
       [
         (guildId !== 'global' ? guildId : 0),
         JSON.stringify(settings),
@@ -144,7 +145,7 @@ export default class MariaDBProvider extends SettingProvider {
     const val = settings[key];
     settings[key] = undefined;
 
-    await this.knex.raw('INSERT INTO commando (guild_id, settings) values (?, ?) ON DUPLICATE KEY UPDATE settings=?',
+    await this.db.raw('INSERT INTO commando (guild_id, settings) values (?, ?) ON DUPLICATE KEY UPDATE settings=?',
       [
         (guildId !== 'global' ? guildId : 0),
         JSON.stringify(settings),
@@ -166,7 +167,7 @@ export default class MariaDBProvider extends SettingProvider {
     this.settings.delete(guildId);
 
     // TODO Review
-    await this.knex('commando')
+    await this.db('commando')
       .where('guild_id', guildId !== 'global' ? guildId : 0)
       .delete();
   }

@@ -1,10 +1,11 @@
-import Knex from 'knex';
-import config from './config';
 import logger from '../logger';
+import config from './config';
+
+import Knex = require('knex');
 
 const debug = process.env.NODE_ENV === 'DEVELOPMENT';
 
-const knex: Knex = Knex({
+const db: Knex = Knex({
   ...config,
   asyncStackTraces: debug,
   debug,
@@ -21,4 +22,5 @@ const knex: Knex = Knex({
   },
 } as Knex.Config);
 
-export default knex;
+
+export default db;
