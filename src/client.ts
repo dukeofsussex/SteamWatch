@@ -4,14 +4,8 @@ import db from './db';
 import logger from './logger';
 import MariaDBProvider from './providers/mariadb';
 
-// eslint-disable-next-line no-unused-vars
-import Knex = require('knex');
-
 export default class Client {
     private client: CommandoClient;
-
-    // Database context
-    private db: Knex;
 
     constructor() {
       this.client = new CommandoClient({
@@ -19,12 +13,10 @@ export default class Client {
         owner: process.env.OWNERS?.split(','),
         // TODO Add invite
       });
-
-      this.db = db;
     }
 
     async startAsync() {
-      await this.db.migrate.latest();
+      await db.migrate.latest();
 
       logger.info('Database ready');
 
@@ -46,14 +38,14 @@ export default class Client {
       this.client.once('ready', async () => {
         logger.info(`Logged in as '${this.client.user.tag}'`);
 
-        const count = await this.db('app')
+        const count = await db('app')
           .count('* AS count')
           .then((result) => result[0].count);
 
         this.client.user.setActivity(`${count} apps`, { type: 'WATCHING' });
       });
 
-      if (process.env.NODE_ENV === 'DEVELOPMENT') {
+      if (process.env.NODE_ENV === 'development') {
         this.client.on('debug', (message) => logger.debug(message));
       }
 

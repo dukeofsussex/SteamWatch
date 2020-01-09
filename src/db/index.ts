@@ -3,7 +3,7 @@ import config from './config';
 
 import Knex = require('knex');
 
-const debug = process.env.NODE_ENV === 'DEVELOPMENT';
+const debug = process.env.NODE_ENV === 'development';
 
 const db: Knex = Knex({
   ...config,
