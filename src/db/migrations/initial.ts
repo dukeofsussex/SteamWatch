@@ -18,6 +18,7 @@ exports.up = (knex: Knex) => knex.schema.createTable('app', (table) => {
 });
 
 exports.down = (knex: Knex) => knex.schema
-  .dropTable('app')
+  .dropTable('app_news')
   .dropTable('app_watcher')
+  .dropTable('app')
   .dropTable('commando');
