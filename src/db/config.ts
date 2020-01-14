@@ -8,7 +8,9 @@ const config = {
   connection: {
     ...env.db,
     bigNumberStrings: true,
+    charset: 'utf8mb4',
     supportBigNumbers: true,
+    timezone: 'Z',
   },
   migrations: {
     directory: join(__dirname, 'migrations'),
