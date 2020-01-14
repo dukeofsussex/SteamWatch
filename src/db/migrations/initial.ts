@@ -2,18 +2,24 @@
 import Knex = require('knex');
 
 exports.up = (knex: Knex) => knex.schema.createTable('app', (table) => {
-  table.integer('id').unsigned().primary().notNullable();
-  table.bigInteger('article_id').unsigned().notNullable();
-  table.string('url', 255).notNullable();
-  table.dateTime('created_at').notNullable();
+  table.integer('id').unsigned().primary();
+  table.string('name', 256);
+  table.string('type', 32);
+  table.dateTime('last_checked');
+}).createTable('app_news', (table) => {
+  table.bigInteger('id').unsigned().primary();
+  table.integer('app_id').unsigned();
+  table.string('url', 256);
+  table.dateTime('created_at');
+  table.foreign('app_id').references('id').inTable('app');
 }).createTable('app_watcher', (table) => {
   table.increments('id');
-  table.integer('app_id').unsigned().notNullable();
-  table.bigInteger('guild_id').unsigned().notNullable();
-  table.bigInteger('channel_id').unsigned().notNullable();
+  table.integer('app_id').unsigned();
+  table.bigInteger('guild_id').unsigned();
+  table.bigInteger('channel_id').unsigned();
   table.foreign('app_id').references('id').inTable('app');
 }).createTable('commando', (table) => {
-  table.bigInteger('guild_id').unsigned().primary().notNullable();
+  table.bigInteger('guild_id').unsigned().primary();
   table.text('settings');
 });
 
