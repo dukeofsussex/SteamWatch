@@ -1,4 +1,5 @@
 import { createLogger, format, transports } from 'winston';
+import env from './env';
 
 const {
   colorize,
@@ -16,14 +17,14 @@ const logFormat = combine(
 );
 
 const logger = createLogger({
-  level: process.env.LOG_LEVEL,
+  level: env.logging.level,
   format: logFormat,
   transports: [
     new transports.File({ dirname: 'logs', filename: 'error.log', level: 'error' }),
   ],
 });
 
-if (process.env.NODE_ENV === 'development') {
+if (env.debug) {
   logger.add(new transports.Console({
     format: logFormat,
   }));

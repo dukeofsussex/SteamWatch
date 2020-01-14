@@ -1,14 +1,14 @@
 import logger from '../logger';
 import config from './config';
+import env from '../env';
 
 import Knex = require('knex');
 
-const debug = process.env.NODE_ENV === 'development';
 
 const db: Knex = Knex({
   ...config,
-  asyncStackTraces: debug,
-  debug,
+  asyncStackTraces: env.debug,
+  debug: env.debug,
   log: {
     debug(message: string) {
       return logger.debug(message);

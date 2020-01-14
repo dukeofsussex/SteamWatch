@@ -3,6 +3,7 @@ import fs from 'fs';
 import SteamPICS from './handlers/pics';
 import SteamUser from './steam-user';
 import logger from '../logger';
+import env from '../env';
 
 const NodeSteam = require('steam');
 
@@ -37,7 +38,7 @@ class Steam {
       this.user.logOnAnon();
     });
 
-    if (process.env.NODE_ENV === 'development') {
+    if (env.debug) {
       this.client.on('debug', (msg: string) => {
         logger.debug(msg);
       });

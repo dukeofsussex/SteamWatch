@@ -1,15 +1,14 @@
 // eslint-disable-next-line no-unused-vars
 import { Config } from 'knex';
 import { join } from 'path';
+import env from '../env';
 
 const config = {
   client: 'mysql',
   connection: {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
+    ...env.db,
+    bigNumberStrings: true,
+    supportBigNumbers: true,
   },
   migrations: {
     directory: join(__dirname, 'migrations'),
