@@ -16,6 +16,16 @@ async function processNews(client: CommandoClient, newsItem: { id: number, artic
     .from('app_watcher')
     .where('app_id', newsItem.id);
 
+  await db('app').update({ last_checked: new Date() })
+    .where('id', newsItem.id);
+
+  await db.insert({
+    id: news.gid,
+    app_id: news.appid,
+    url: news.url,
+    created_at: new Date(news.date * 1000),
+  }).into('app_news');
+
   for (let i = 0; i < guildChannels.length; i += 1) {
     const element = guildChannels[i];
     const guild = client.guilds.get(element.guildId);
@@ -28,16 +38,6 @@ async function processNews(client: CommandoClient, newsItem: { id: number, artic
       }
     }
   }
-
-  await db('app').update({ last_checked: new Date() })
-    .where('id', newsItem.id);
-
-  await db.insert({
-    id: news.gid,
-    app_id: news.appid,
-    url: news.url,
-    created_at: new Date(news.date * 1000),
-  }).into('app_news');
 }
 
 export default processNews;
