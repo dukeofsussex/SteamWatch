@@ -32,6 +32,7 @@ class Steam {
   constructor() {
     this.client = new NodeSteam.SteamClient();
     this.pics = new SteamPICS(this.client);
+    // @ts-ignore
     this.user = new SteamUser(this.client);
   }
 

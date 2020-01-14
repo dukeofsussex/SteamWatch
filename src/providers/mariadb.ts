@@ -167,9 +167,9 @@ export default class MariaDBProvider extends SettingProvider {
     this.settings.delete(guildId);
 
     // TODO Review
-    await this.db('commando')
-      .where('guild_id', guildId !== 'global' ? guildId : 0)
-      .delete();
+    await this.db.delete()
+      .from('commando')
+      .where('guild_id', guildId !== 'global' ? guildId : 0);
   }
 
   setupGuild(guild: string, settings: any) {

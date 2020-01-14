@@ -1,62 +1,81 @@
 import { CommandoClient } from 'discord.js-commando';
 import { join } from 'path';
 import db from './db';
+import env from './env';
 import logger from './logger';
 import MariaDBProvider from './providers/mariadb';
+import Manager from './tasks/manager';
+import steam from './steam/steam';
 
 export default class Client {
-    private client: CommandoClient;
+  private client: CommandoClient;
 
-    constructor() {
-      this.client = new CommandoClient({
-        commandPrefix: process.env.PREFIX,
-        owner: process.env.OWNERS?.split(','),
-        // TODO Add invite
+  private manager: Manager;
+
+  constructor() {
+    this.client = new CommandoClient({
+      commandPrefix: env.bot.prefix,
+      owner: env.bot.owners,
+      messageCacheMaxSize: 1,
+    });
+    this.manager = new Manager(this.client);
+  }
+
+  async startAsync() {
+    steam.init();
+
+    await db.migrate.latest();
+
+    logger.info('Database ready');
+
+    this.client.setProvider(new MariaDBProvider());
+
+    this.client.registry
+      .registerDefaultTypes()
+      .registerDefaultGroups()
+      .registerGroups([['apps', 'Apps']])
+      .registerDefaultCommands({
+        eval_: false,
+        commandState: false,
+      })
+      .registerCommandsIn({
+        filter: /^([^.].*)\.(js|ts)?$/,
+        dirname: join(__dirname, 'commands'),
       });
+
+    this.client.once('ready', async () => {
+      logger.info(`Logged in as '${this.client.user.tag}'`);
+
+      const count = await db.count('* AS count')
+        .from('app')
+        .first()
+        .then((res: any) => res.count);
+
+      this.client.user.setActivity(`${count} apps`, { type: 'WATCHING' });
+      this.manager.start();
+    });
+
+    if (env.debug) {
+      this.client.on('debug', (message) => logger.debug(message));
     }
 
-    async startAsync() {
-      await db.migrate.latest();
+    this.client.on('warn', (message) => logger.warn(message));
+    this.client.on('error', (err) => logger.error(err));
 
-      logger.info('Database ready');
+    this.client.login(env.bot.token);
 
-      this.client.setProvider(new MariaDBProvider());
+    process.on('unhandledRejection', (_, promise) => {
+      logger.error(promise);
+    });
 
-      this.client.registry
-        .registerDefaultTypes()
-        .registerDefaultGroups()
-        .registerGroups([['apps', 'Apps']])
-        .registerDefaultCommands({
-          eval_: false,
-        })
-        // .registerCommands(commands)
-        .registerCommandsIn({
-          filter: /^([^.].*)\.(js|ts)?$/,
-          dirname: join(__dirname, 'commands'),
-        });
+    process.on('SIGHUP', () => this.stopAsync());
+    process.on('SIGINT', () => this.stopAsync());
+    process.on('SIGTERM', () => this.stopAsync());
+  }
 
-      this.client.once('ready', async () => {
-        logger.info(`Logged in as '${this.client.user.tag}'`);
-
-        const count = await db('app')
-          .count('* AS count')
-          .then((result) => result[0].count);
-
-        this.client.user.setActivity(`${count} apps`, { type: 'WATCHING' });
-      });
-
-      if (process.env.NODE_ENV === 'development') {
-        this.client.on('debug', (message) => logger.debug(message));
-      }
-
-      this.client.on('warn', (message) => logger.warn(message));
-      this.client.on('error', (err) => logger.error(err));
-
-      this.client.login(process.env.TOKEN);
-
-      process.on('unhandledRejection', (err) => {
-        logger.error(err || 'Unhandled rejection');
-        process.exit(1);
-      });
-    }
+  async stopAsync() {
+    steam.quit();
+    this.manager.stop();
+    await this.client.destroy();
+  }
 }
