@@ -27,7 +27,7 @@ export default class SteamPICS {
 
       for (let i = 0; i < result.apps.length; i += 1) {
         const app = result.apps[i];
-        app.info = parse(app.buffer.toString('utf8')).appinfo;
+        app.details = parse(app.buffer.toString('utf8')).appinfo.common;
       }
 
       callback(result);

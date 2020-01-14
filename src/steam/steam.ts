@@ -7,6 +7,21 @@ import env from '../env';
 
 const NodeSteam = require('steam');
 
+// Irrelevant properties omitted
+interface AppInfo {
+  appid: number;
+  // eslint-disable-next-line camelcase
+  change_number: number;
+  // eslint-disable-next-line camelcase
+  missing_token: boolean;
+  // eslint-disable-next-line camelcase
+  only_public: boolean;
+  details: {
+    name: string;
+    type: string;
+  }
+}
+
 class Steam {
   private client: any;
 
@@ -20,7 +35,7 @@ class Steam {
     this.user = new SteamUser(this.client);
   }
 
-  async getAppInfoAsync(appid: number) {
+  async getAppInfoAsync(appid: number): Promise<AppInfo | undefined> {
     return new Promise((resolve) => {
       this.pics.getProductInfo([{ appid, only_public: true }], (result: any) => {
         resolve(result.apps[0] || undefined);
