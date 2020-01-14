@@ -4,9 +4,17 @@ import env from '../env';
 
 import Knex = require('knex');
 
-const convertCamelToSnake = (value: string) => value.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`);
+const convertCamelToSnake = (value: string) => value.replace(/[A-Z]/g, (char: string) => `_${char.toLowerCase()}`);
 
-const convertSnakeToCamel = (row: object) => Object.keys(row).map((key) => key.replace(/([-_]\w)/g, (g: string) => g[1].toUpperCase()));
+const convertSnakeToCamel = (value: string) => value.replace(/([-_]\w)/g, (char: string) => char[1].toUpperCase());
+
+const postProcessRow = (row: any): any => Object.keys(row).reduce(
+  (result, key) => ({
+    ...result,
+    [convertSnakeToCamel(key)]: row[key],
+  }),
+  {},
+);
 
 const db: Knex = Knex({
   ...config,
@@ -25,9 +33,9 @@ const db: Knex = Knex({
   },
   postProcessResponse: (result) => {
     if (Array.isArray(result)) {
-      return result.map((row) => convertSnakeToCamel(row));
+      return result.map((row) => postProcessRow(row));
     }
-    return convertSnakeToCamel(result);
+    return postProcessRow(result);
   },
   wrapIdentifier: (value: string) => convertCamelToSnake(value),
 } as Knex.Config);
