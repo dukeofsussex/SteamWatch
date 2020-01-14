@@ -22,6 +22,12 @@
       {
         "ts": "never"
       }
+    ],
+    "newline-per-chained-call": [
+      "error",
+      {
+        "ignoreChainWithDepth": 2
+      }
     ]
   }
 }

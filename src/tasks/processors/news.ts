@@ -5,7 +5,7 @@ import { TextChannel } from 'discord.js';
 import WebApi from '../../steam/web-api';
 import db from '../../db';
 
-async function processNews(client: CommandoClient, newsItem: {id: number, articleId: string}) {
+async function processNews(client: CommandoClient, newsItem: { id: number, articleId: string }) {
   const news = await WebApi.getAppNewsAsync(newsItem.id);
 
   if (!news || news.gid === newsItem.articleId) {
@@ -13,7 +13,7 @@ async function processNews(client: CommandoClient, newsItem: {id: number, articl
   }
 
   const guildChannels = await db.select('guild_id', 'channel_id')
-    .from('app_watchers')
+    .from('app_watcher')
     .where('app_id', newsItem.id);
 
   for (let i = 0; i < guildChannels.length; i += 1) {
@@ -29,15 +29,15 @@ async function processNews(client: CommandoClient, newsItem: {id: number, articl
     }
   }
 
-  await db('app').update({ last_checked: new Date().toISOString() })
+  await db('app').update({ last_checked: new Date() })
     .where('id', newsItem.id);
 
-  await db('app_news').insert({
-    id: news.appid,
+  await db.insert({
+    id: news.gid,
     app_id: news.appid,
     url: news.url,
-    created_at: new Date(news.date).toISOString(),
-  });
+    created_at: new Date(news.date * 1000),
+  }).into('app_news');
 }
 
 export default processNews;
