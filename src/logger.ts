@@ -4,6 +4,7 @@ import env from './env';
 const {
   colorize,
   combine,
+  errors,
   printf,
   timestamp,
 } = format;
@@ -11,6 +12,7 @@ const {
 const logFormat = combine(
   colorize({ all: true }),
   timestamp(),
+  errors({ stack: true }),
   printf(({
     level, message, timestamp,
   }) => `${timestamp} [${level.toUpperCase()}]: ${message}`),
@@ -20,13 +22,19 @@ const logger = createLogger({
   level: env.logging.level,
   format: logFormat,
   transports: [
-    new transports.File({ dirname: 'logs', filename: 'error.log', level: 'error' }),
+    new transports.File({
+      dirname: 'logs',
+      filename: 'error.log',
+      handleExceptions: true,
+      level: 'error',
+    }),
   ],
 });
 
 if (env.debug) {
   logger.add(new transports.Console({
     format: logFormat,
+    handleExceptions: true,
   }));
 }
 
