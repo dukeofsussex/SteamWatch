@@ -1,13 +1,20 @@
 // eslint-disable-next-line no-unused-vars
 import Knex = require('knex');
 
-exports.up = (knex: Knex) => knex.schema.createTable('app', (table) => {
-  table.integer('id').unsigned()
-    .primary();
-  table.string('name', 256);
-  table.string('type', 32);
-  table.dateTime('last_checked');
-})
+exports.up = (knex: Knex) => knex.schema
+  .createTable('guild', (table) => {
+    table.bigInteger('id').unsigned()
+      .primary();
+    table.string('currency', 16);
+    table.text('settings');
+  })
+  .createTable('app', (table) => {
+    table.integer('id').unsigned()
+      .primary();
+    table.string('name', 256);
+    table.string('type', 32);
+    table.dateTime('last_checked');
+  })
   .createTable('app_news', (table) => {
     table.bigInteger('id').unsigned()
       .primary();
@@ -24,6 +31,8 @@ exports.up = (knex: Knex) => knex.schema.createTable('app', (table) => {
     table.bigInteger('channel_id').unsigned();
     table.foreign('app_id').references('id')
       .inTable('app');
+    table.foreign('guild_id').references('id')
+      .inTable('guild');
   })
   .createTable('app_watcher_mention', (table) => {
     table.increments('id');
@@ -32,11 +41,6 @@ exports.up = (knex: Knex) => knex.schema.createTable('app', (table) => {
     table.enum('type', ['role', 'user']);
     table.foreign('watcher_id').references('id')
       .inTable('app_watcher');
-  })
-  .createTable('commando', (table) => {
-    table.bigInteger('guild_id').unsigned()
-      .primary();
-    table.text('settings');
   });
 
 exports.down = (knex: Knex) => knex.schema
@@ -44,4 +48,4 @@ exports.down = (knex: Knex) => knex.schema
   .dropTable('app_watcher_mention')
   .dropTable('app_watcher')
   .dropTable('app')
-  .dropTable('commando');
+  .dropTable('guild');
