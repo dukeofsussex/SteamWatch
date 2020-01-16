@@ -26,6 +26,7 @@
     "dotenv": "^8.2.0",
     "erlpack": "^0.1.3",
     "knex": "^0.20.6",
+    "markdown-table": "^1.1.3",
     "mysql": "^2.17.1",
     "node-fetch": "^2.6.0",
     "steam": "^1.4.1",

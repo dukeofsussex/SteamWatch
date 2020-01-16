@@ -6,6 +6,7 @@ import logger from './logger';
 import MariaDBProvider from './providers/mariadb';
 import Manager from './tasks/manager';
 import steam from './steam/steam';
+import MentionListType from './types/mentionList';
 
 export default class Client {
   private client: CommandoClient;
@@ -32,6 +33,7 @@ export default class Client {
 
     this.client.registry
       .registerDefaultTypes()
+      .registerType(MentionListType)
       .registerDefaultGroups()
       .registerGroups([['apps', 'Apps']])
       .registerDefaultCommands({
@@ -39,7 +41,7 @@ export default class Client {
         commandState: false,
       })
       .registerCommandsIn({
-        filter: /^([^.].*)\.(js|ts)?$/,
+        filter: /^([^.].*)\.(js|ts)$/,
         dirname: join(__dirname, 'commands'),
       });
 

@@ -11,6 +11,7 @@ const env = {
     delay: parseInt(process.env.BOT_DELAY || '5', 10),
     invite: process.env.BOT_INVITE || '',
     maxAppsPerGuild: parseInt(process.env.BOT_MAX_APPS_PER_GUILD || '10', 10),
+    maxMentionsPerWatcher: parseInt(process.env.BOT_MAX_MENTIONS_PER_WATCHER || '10', 10),
     owners: process.env.BOT_OWNERS?.split(',') || [],
     prefix: process.env.BOT_PREFIX || '$',
     token: process.env.BOT_TOKEN || '',
