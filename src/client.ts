@@ -26,6 +26,7 @@ export default class Client {
     steam.init();
 
     await db.migrate.latest();
+    await db.seed.run();
 
     logger.info('Database ready');
 

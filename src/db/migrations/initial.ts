@@ -6,7 +6,7 @@ exports.up = (knex: Knex) => knex.schema
     table.bigInteger('id').unsigned()
       .primary();
     table.string('currency', 16);
-    table.text('settings');
+    table.string('commando_prefix', 16).nullable();
   })
   .createTable('app', (table) => {
     table.integer('id').unsigned()
