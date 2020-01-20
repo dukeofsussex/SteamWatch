@@ -1,6 +1,4 @@
-// eslint-disable-next-line no-unused-vars
 import { Role, User } from 'discord.js';
-// eslint-disable-next-line no-unused-vars
 import { Argument, ArgumentType, CommandoClient } from 'discord.js-commando';
 
 class MentionListType extends ArgumentType {

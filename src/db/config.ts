@@ -1,4 +1,3 @@
-// eslint-disable-next-line no-unused-vars
 import { Config } from 'knex';
 import { join } from 'path';
 import env from '../env';

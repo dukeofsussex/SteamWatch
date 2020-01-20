@@ -1,4 +1,3 @@
-// eslint-disable-next-line no-unused-vars
 import Knex = require('knex');
 
 // eslint-disable-next-line import/prefer-default-export

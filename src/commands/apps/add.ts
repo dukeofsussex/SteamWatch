@@ -1,6 +1,4 @@
-// eslint-disable-next-line no-unused-vars
 import { Command, CommandoClient, CommandMessage } from 'discord.js-commando';
-// eslint-disable-next-line no-unused-vars
 import { GuildChannel, TextChannel } from 'discord.js';
 import db from '../../db';
 import env from '../../env';

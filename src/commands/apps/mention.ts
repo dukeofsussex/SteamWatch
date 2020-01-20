@@ -1,6 +1,4 @@
-// eslint-disable-next-line no-unused-vars
-import { Role, User, Message } from 'discord.js';
-// eslint-disable-next-line no-unused-vars
+import { Role, User } from 'discord.js';
 import { Command, CommandoClient, CommandMessage } from 'discord.js-commando';
 import db from '../../db';
 import env from '../../env';

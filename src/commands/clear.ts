@@ -1,4 +1,3 @@
-// eslint-disable-next-line no-unused-vars
 import { Command, CommandoClient, CommandMessage } from 'discord.js-commando';
 
 export default class AddCommand extends Command {
