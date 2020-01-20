@@ -8,7 +8,6 @@ if (result.error) {
 
 const env = {
   bot: {
-    delay: parseInt(process.env.BOT_DELAY || '5', 10),
     invite: process.env.BOT_INVITE || '',
     maxAppsPerGuild: parseInt(process.env.BOT_MAX_APPS_PER_GUILD || '10', 10),
     maxMentionsPerWatcher: parseInt(process.env.BOT_MAX_MENTIONS_PER_WATCHER || '10', 10),
