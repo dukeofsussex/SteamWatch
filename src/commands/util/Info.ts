@@ -1,10 +1,12 @@
-import { Command, CommandoClient, CommandMessage } from 'discord.js-commando';
-import db from '../db';
+import { stripIndent } from 'common-tags';
+import { version as DiscordVersion } from 'discord.js';
+import { CommandMessage } from 'discord.js-commando';
+import db from '../../db';
+import env from '../../env';
+import SteamWatchCommand from '../../structures/SteamWatchCommand';
+import SteamWatchClient from '../../structures/SteamWatchClient';
 
-const { version } = require('../../package.json');
-
-const countQuery = db.count('* AS count')
-  .first();
+const { version } = require('../../../package.json');
 
 function msToTime(ms: number) {
   let seconds = (ms / 1000);
@@ -15,17 +17,17 @@ function msToTime(ms: number) {
   const days = Math.floor(hours / 24);
   hours %= 24;
 
-  return `${days}d:${hours}h:${minutes}m`;
+  return `${days} days, ${hours} hours and ${minutes} minutes`;
 }
 
-export default class InfoCommand extends Command {
-  constructor(client: CommandoClient) {
+export default class InfoCommand extends SteamWatchCommand {
+  constructor(client: SteamWatchClient) {
     super(client, {
       name: 'info',
-      aliases: ['stats'],
       group: 'util',
       memberName: 'info',
-      description: 'Display information about the bot',
+      aliases: ['stats'],
+      description: 'Display information about the bot.',
       throttling: {
         duration: 30,
         usages: 1,
@@ -34,6 +36,9 @@ export default class InfoCommand extends Command {
   }
 
   async run(message: CommandMessage) {
+    const countQuery = db.count('* AS count')
+      .first();
+
     const guildCount = this.client.guilds.size.toString();
     const appCount = await countQuery.clone()
       .from('app')
@@ -46,11 +51,11 @@ export default class InfoCommand extends Command {
     return message.embed({
       title: 'SteamWatch Statistics',
       url: 'https://steamwatch.xyz',
-      color: 0xF1C40F,
+      color: 0x00ADEE,
       timestamp: new Date(),
       footer: {
         icon_url: this.client.user.avatarURL,
-        text: `SteamWatch v${version}`,
+        text: `SteamWatch v${version} | Discord.js v${DiscordVersion}`,
       },
       fields: [
         {
@@ -71,6 +76,15 @@ export default class InfoCommand extends Command {
         {
           name: 'Uptime',
           value: uptime,
+        },
+        {
+          name: 'Links',
+          value: stripIndent`
+            [Invite Bot](https://discordapp.com/oauth2/authorize?client_id=${this.client.user.id}&scope=bot)
+            [GitHub Repo](https://github.com/dukeofsussex/SteamWatch)
+            [Support](${env.bot.invite})
+            [Website](https://steamwatch.xyz)
+          `,
         },
       ],
     });
