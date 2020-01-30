@@ -26,6 +26,7 @@ const logger = createLogger({
       filename: '%DATE%.log',
       handleExceptions: true,
       level: 'warn',
+      format: logFormat,
       maxFiles: '30d',
       utc: true,
     }),

@@ -61,12 +61,8 @@ export default class Bot {
 
     this.client.on('warn', (message) => logger.warn(message));
     this.client.on('error', (err) => logger.error(err));
-    this.client.on('commandError', (command, err, message, args) => logger.error({
-      command,
-      err,
-      message,
-      args,
-    }));
+    this.client.on('reconnecting', () => logger.warn('Reconnecting'));
+    this.client.on('commandError', (_, err, message) => logger.error(`${message.content} : ${err}`));
 
     readdirSync(join(__dirname, 'events'))
       .forEach(async (eventFile) => {

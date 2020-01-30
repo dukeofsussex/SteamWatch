@@ -1,6 +1,7 @@
 import { oneLine } from 'common-tags';
 import { RichEmbed, TextChannel } from 'discord.js';
 import db from '../../db';
+import logger from '../../logger';
 import WebApi, { SteamPriceOverview } from '../../steam/WebApi';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import { CURRENCIES, EMBED_COLOURS } from '../../utils/constants';
@@ -111,10 +112,20 @@ export default class PricesProcessor {
   }
 
   private async process(apps: AppPrice[]) {
-    const prices = await WebApi.GetAppPricesAsync(
-      apps.map((app) => app.id),
-      CURRENCIES[apps[0].currencyAbbr].cc,
-    );
+    let prices = null;
+    try {
+      prices = await WebApi.GetAppPricesAsync(
+        apps.map((app) => app.id),
+        CURRENCIES[apps[0].currencyAbbr].cc,
+      );
+    } catch (err) {
+      logger.error(err);
+    }
+
+    if (!prices) {
+      setTimeout(() => this.preProcess(), PRICE_RATE_LIMIT);
+      return;
+    }
 
     const changed: AppPriceOverview[] = [];
     const removed: AppPriceRemoval[] = [];
@@ -190,8 +201,7 @@ export default class PricesProcessor {
         message = insertEmoji(oneLine)`
           :ALERT: Discount:
           **${app.overview.final_formatted}**
-          (-${app.overview.discount_percent}%)\n
-          https://store.steampowered.com/app/${app.id}
+          (-${app.overview.discount_percent}%)
         `;
       }
 
@@ -265,10 +275,12 @@ export default class PricesProcessor {
       const watcher = watchers[i];
       if (!watcher || currentWatcherId !== watcher.id) {
         const channel = this.client.channels
-          .get(watcher.channelId || watchers[watchers.length - 1].channelId) as TextChannel;
+          .get(watcher
+            ? watcher.channelId
+            : watchers[watchers.length - 1].channelId) as TextChannel;
         channel!.send(currentWatcherMentions.join(' ') || '', { embed });
 
-        currentWatcherId = watcher.id;
+        currentWatcherId = watcher ? watcher.id : -1;
         currentWatcherMentions = [];
       }
 

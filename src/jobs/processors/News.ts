@@ -1,6 +1,7 @@
 import { TextChannel, RichEmbed } from 'discord.js';
 import { oneLine } from 'common-tags';
 import db from '../../db';
+import logger from '../../logger';
 import WebApi, { SteamNewsItem } from '../../steam/WebApi';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import { EMBED_COLOURS } from '../../utils/constants';
@@ -90,7 +91,13 @@ export default class NewsProcessor {
 
   // eslint-disable-next-line class-methods-use-this
   private async process(newsItem: NewsItem) {
-    const news = await WebApi.getAppNewsAsync(newsItem.id);
+    let news = null;
+
+    try {
+      news = await WebApi.getAppNewsAsync(newsItem.id);
+    } catch (err) {
+      logger.error(err);
+    }
 
     await db('app').update({ lastCheckedNews: new Date() })
       .where('id', newsItem.id);
@@ -136,10 +143,12 @@ export default class NewsProcessor {
       const watcher = watchers[i];
       if (!watcher || currentWatcherId !== watcher.id) {
         const channel = this.client.channels
-          .get(watcher.channelId || watchers[watchers.length - 1].channelId) as TextChannel;
+          .get(watcher
+            ? watcher.channelId
+            : watchers[watchers.length - 1].channelId) as TextChannel;
         channel!.send(currentWatcherMentions.join(' ') || '', { embed });
 
-        currentWatcherId = watcher.id;
+        currentWatcherId = watcher ? watcher.id : -1;
         currentWatcherMentions = [];
       }
 

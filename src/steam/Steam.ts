@@ -50,7 +50,7 @@ export default class Steam {
     }
 
     this.client.on('connected', () => {
-      logger.debug('Connected to Steam');
+      logger.info('Connected to Steam');
       this.user.logOnAnon();
     });
 
@@ -66,11 +66,10 @@ export default class Steam {
 
     this.client.on('logOnResponse', (res: any) => {
       if (res.eresult !== NodeSteam.EResult.OK) {
-        logger.error('Steam login failed');
-        return;
+        throw new Error('Steam login failed');
       }
 
-      logger.debug('Logged in to Steam');
+      logger.info('Logged in to Steam');
     });
 
     this.client.on('servers', (servers: object) => {
