@@ -2,7 +2,7 @@
 const Steam = require('steam');
 const SteamID = require('steam/lib/steamID');
 
-class SteamUser extends Steam.SteamUser {
+export default class SteamUser extends Steam.SteamUser {
   logOnAnon() {
     const logOnDetails = {};
 
@@ -13,7 +13,7 @@ class SteamUser extends Steam.SteamUser {
       accountType: Steam.EAccountType.AnonUser,
     }).toString();
 
-    // @ts-ignore
+    // @ts-ignore Missing typings
     logOnDetails.protocol_version = 65575;
     this._client.send({
       msg: Steam.EMsg.ClientLogon,
@@ -21,5 +21,3 @@ class SteamUser extends Steam.SteamUser {
     }, new Steam.Internal.CMsgClientLogon(logOnDetails).toBuffer());
   }
 }
-
-export default SteamUser;

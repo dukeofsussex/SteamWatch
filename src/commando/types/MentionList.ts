@@ -1,15 +1,16 @@
-import { Role, User } from 'discord.js';
-import { Argument, ArgumentType, CommandoClient } from 'discord.js-commando';
+import { GuildMember, Role } from 'discord.js';
+import { Argument, ArgumentType } from 'discord.js-commando';
+import SteamWatchClient from '../../structures/SteamWatchClient';
 
-class MentionListType extends ArgumentType {
+export default class MentionListType extends ArgumentType {
   types: ArgumentType[];
 
-  constructor(client: CommandoClient) {
+  constructor(client: SteamWatchClient) {
     super(client, 'mention-list');
 
     this.types = [
       client.registry.types.get('role')!,
-      client.registry.types.get('user')!,
+      client.registry.types.get('member')!,
     ];
   }
 
@@ -44,7 +45,7 @@ class MentionListType extends ArgumentType {
   parse(val: string, msg: CommandoMessage, arg: Argument) {
     const mentions = val.split(',');
 
-    let results: (null | Role | User | Promise<Role | User>)[] = [];
+    let results: (null | Role | GuildMember | Promise<Role | GuildMember>)[] = [];
     for (let i = 0; i < mentions.length; i += 1) {
       results = results.concat(this.types.map((type) => type.parse(mentions[i].trim(), msg, arg)));
     }
@@ -63,5 +64,3 @@ class MentionListType extends ArgumentType {
     return !val || val.length === 0;
   }
 }
-
-export default MentionListType;

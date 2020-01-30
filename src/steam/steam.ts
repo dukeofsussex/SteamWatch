@@ -1,7 +1,7 @@
 import fs from 'fs';
 
-import SteamPICS from './handlers/pics';
-import SteamUser from './steam-user';
+import SteamPICS from './handlers/PICS';
+import SteamUser from './SteamUser';
 import logger from '../logger';
 import env from '../env';
 
@@ -22,7 +22,7 @@ interface AppInfo {
   }
 }
 
-class Steam {
+export default class Steam {
   private client: any;
 
   private pics: SteamPICS;
@@ -32,7 +32,7 @@ class Steam {
   constructor() {
     this.client = new NodeSteam.SteamClient();
     this.pics = new SteamPICS(this.client);
-    // @ts-ignore
+    // @ts-ignore Missing typings
     this.user = new SteamUser(this.client);
   }
 
@@ -84,5 +84,3 @@ class Steam {
     this.client.disconnect();
   }
 }
-
-export default new Steam();

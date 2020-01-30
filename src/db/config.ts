@@ -1,8 +1,7 @@
-import { Config } from 'knex';
 import { join } from 'path';
 import env from '../env';
 
-const config = {
+export default {
   client: 'mysql',
   connection: {
     ...env.db,
@@ -17,6 +16,4 @@ const config = {
   seeds: {
     directory: join(__dirname, 'seeds'),
   },
-} as Config;
-
-export default config;
+};

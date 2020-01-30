@@ -6,12 +6,22 @@ export async function seed(knex: Knex): Promise<any> {
     .from('guild')
     .where('id', 0)
     .first()
-    .then((result: any) => {
-      if (result.exists) {
+    .then(async (result: any) => {
+      if (result) {
         return null;
       }
 
-      return knex.insert({ id: 0, currency: '', commandoSettings: '{}' })
-        .into('guild');
+      const usdCurrencyId = await knex.select('id')
+        .from('currency')
+        .where('abbreviation', 'USD')
+        .first()
+        .then((currency) => currency.id);
+
+      return knex.insert({
+        id: 0,
+        name: 'Global',
+        currency_id: usdCurrencyId,
+        commando_prefix: null,
+      }).into('guild');
     });
 }

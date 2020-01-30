@@ -1,12 +1,9 @@
 /* eslint-disable no-underscore-dangle */
 // @ts-nocheck
-import {
-  CommandoClient,
-  GuildExtension,
-  SettingProvider,
-} from 'discord.js-commando';
-import db from '../db';
-import logger from '../logger';
+import { GuildExtension, SettingProvider } from 'discord.js-commando';
+import SteamWatchClient from '../../structures/SteamWatchClient';
+import db from '../../db';
+import logger from '../../logger';
 
 /**
  * Uses a MariaDB/MySQL database to store guild settings.
@@ -16,7 +13,7 @@ import logger from '../logger';
  */
 export default class MariaDBProvider extends SettingProvider {
   // Client that the provider is for.
-  private client: CommandoClient;
+  private client: SteamWatchClient;
 
   // Settings cached in memory, mapped by guild ID (or 'global').
   private prefixes: Map<string, string>;
@@ -31,7 +28,7 @@ export default class MariaDBProvider extends SettingProvider {
     this.listeners = new Map();
   }
 
-  async init(client: CommandoClient) {
+  async init(client: SteamWatchClient) {
     this.client = client;
 
     // Load all settings
@@ -94,7 +91,7 @@ export default class MariaDBProvider extends SettingProvider {
 
   // eslint-disable-next-line class-methods-use-this
   async remove(guild: GuildExtension | string, key: string) {
-    logger.warn(`MariaDB.remove() called for ${guild}`);
+    logger.warn(`MariaDB.remove() called for ${guild} ${key}`);
     return undefined;
   }
 
@@ -119,5 +116,3 @@ export default class MariaDBProvider extends SettingProvider {
     fetchedGuild._commandPrefix = prefix;
   }
 }
-
-module.exports = MariaDBProvider;

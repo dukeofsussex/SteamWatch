@@ -16,7 +16,7 @@ const postProcessRow = (row: any): any => Object.keys(row).reduce(
   {},
 );
 
-const db: Knex = Knex({
+export default Knex({
   ...config,
   asyncStackTraces: env.debug,
   debug: env.debug,
@@ -35,10 +35,12 @@ const db: Knex = Knex({
     if (Array.isArray(result)) {
       return result.map((row) => postProcessRow(row));
     }
-    return postProcessRow(result);
+
+    if (result) {
+      return postProcessRow(result);
+    }
+
+    return result;
   },
   wrapIdentifier: (value: string) => convertCamelToSnake(value),
-} as Knex.Config);
-
-
-export default db;
+});

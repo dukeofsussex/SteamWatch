@@ -2,8 +2,9 @@
   "compilerOptions": {
     "module": "commonjs",
     "esModuleInterop": true,
-    "target": "es6",
+    "target": "ES2018",
     "noImplicitAny": true,
+    "noImplicitReturns": true,
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "dist",

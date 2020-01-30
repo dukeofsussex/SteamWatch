@@ -6,14 +6,16 @@ if (result.error) {
   throw result.error;
 }
 
-const env = {
+export default {
   bot: {
     invite: process.env.BOT_INVITE || '',
-    maxAppsPerGuild: parseInt(process.env.BOT_MAX_APPS_PER_GUILD || '10', 10),
-    maxMentionsPerWatcher: parseInt(process.env.BOT_MAX_MENTIONS_PER_WATCHER || '10', 10),
     owners: process.env.BOT_OWNERS?.split(',') || [],
-    prefix: process.env.BOT_PREFIX || '$',
+    prefix: process.env.BOT_PREFIX || 'sw',
     token: process.env.BOT_TOKEN || '',
+  },
+  emoji: {
+    error: process.env.EMOJI_ERROR || '⛔',
+    success: process.env.EMOJI_SUCCESS || '✅',
   },
   db: {
     database: process.env.DB_DATABASE || 'steam_watch',
@@ -25,7 +27,9 @@ const env = {
   logging: {
     level: process.env.LOG_LEVEL || 'info',
   },
+  settings: {
+    maxMentionsPerWatcher: parseInt(process.env.BOT_MAX_MENTIONS_PER_WATCHER || '10', 10),
+    maxWatchersPerGuild: parseInt(process.env.BOT_MAX_WATCHERS_PER_GUILD || '10', 10),
+  },
   debug: process.env.NODE_ENV === 'development',
 };
-
-export default env;
