@@ -1,5 +1,4 @@
 import { stripIndent } from 'common-tags';
-import { version as DiscordVersion } from 'discord.js';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../db';
 import env from '../../env';
@@ -55,7 +54,7 @@ export default class InfoCommand extends SteamWatchCommand {
       timestamp: new Date(),
       footer: {
         icon_url: this.client.user.avatarURL,
-        text: `SteamWatch v${version} | Discord.js v${DiscordVersion}`,
+        text: `SteamWatch v${version}`,
       },
       fields: [
         {
