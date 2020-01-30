@@ -153,7 +153,7 @@ export default class NewsProcessor {
       }
 
       if (watcher && watcher.entityId) {
-        currentWatcherMentions.push(`<${watcher.type === 'role' ? '&' : ''}${watcher.entityId}>`);
+        currentWatcherMentions.push(`<@${watcher.type === 'role' ? '&' : ''}${watcher.entityId}>`);
       }
     }
   }

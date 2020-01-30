@@ -285,7 +285,7 @@ export default class PricesProcessor {
       }
 
       if (watcher && watcher.entityId) {
-        currentWatcherMentions.push(`<${watcher.type === 'role' ? '&' : ''}${watcher.entityId}>`);
+        currentWatcherMentions.push(`<@${watcher.type === 'role' ? '&' : ''}${watcher.entityId}>`);
       }
     }
   }
