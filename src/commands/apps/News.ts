@@ -50,6 +50,6 @@ export default class NewsCommand extends SteamWatchCommand {
       });
     }
 
-    return message.say(insertEmoji`:SUCCESS: ${news.map((n) => `<${n.url}>`).join('\n')}`);
+    return message.say(insertEmoji`:EYES: ${news.map((n) => `<${n.url}>`).join('\n')}`);
   }
 }

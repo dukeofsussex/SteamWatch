@@ -44,12 +44,12 @@ export default class UnwatchCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage, { id, option }: { id: number, option: 'all' | 'price' | 'news' }) {
+  async run(message: CommandMessage, { watcherId, option }: { watcherId: number, option: 'all' | 'price' | 'news' }) {
     const watcher = await db.select('app_watcher.watchNews', 'app_watcher.watchPrice', 'app.name')
       .from('app_watcher')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')
       .where({
-        id,
+        'app_watcher.id': watcherId,
         guildId: message.guild.id,
       })
       .first();
@@ -57,7 +57,7 @@ export default class UnwatchCommand extends SteamWatchCommand {
     if (!watcher) {
       return message.embed({
         color: EMBED_COLOURS.ERROR,
-        description: insertEmoji`:ERROR: Unable to find a watcher with the identifier **${id}**!`,
+        description: insertEmoji`:ERROR: Unable to find a watcher with the identifier **${watcherId}**!`,
       });
     }
 
@@ -66,7 +66,7 @@ export default class UnwatchCommand extends SteamWatchCommand {
         || (option === 'news' && !watcher.watchPrice)) {
       await db.delete()
         .from('app_watcher')
-        .where('id', id);
+        .where('id', watcherId);
 
       return message.embed({
         color: EMBED_COLOURS.SUCCESS,
@@ -78,7 +78,7 @@ export default class UnwatchCommand extends SteamWatchCommand {
       watchNews: !(option === 'news'),
       watchPrice: !(option === 'price'),
     })
-      .where('id', id);
+      .where('id', watcherId);
 
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,

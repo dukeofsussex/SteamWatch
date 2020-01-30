@@ -113,12 +113,13 @@ export default class WatchCommand extends SteamWatchCommand {
       }
     }
 
-    let existingType = existingWatcher.watchNews
-      && types.includes(WATCHER_TYPE.NEWS)
-      && WATCHER_TYPE.NEWS;
-    existingType = existingWatcher.watchPrice
-      && types.includes(WATCHER_TYPE.PRICE)
-      && WATCHER_TYPE.PRICE;
+    const existingType = existingWatcher
+      && ((existingWatcher.watchNews
+        && types.includes(WATCHER_TYPE.NEWS)
+        && WATCHER_TYPE.NEWS)
+        || (existingWatcher.watchPrice
+          && types.includes(WATCHER_TYPE.PRICE)
+          && WATCHER_TYPE.PRICE));
 
     if (existingType) {
       return message.embed({

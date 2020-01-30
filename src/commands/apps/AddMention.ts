@@ -1,4 +1,4 @@
-import { oneLine } from 'common-tags';
+import { oneLine, stripIndent } from 'common-tags';
 import { GuildMember, Role } from 'discord.js';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../db';
@@ -45,14 +45,15 @@ export default class AddMentionCommand extends SteamWatchCommand {
     message: CommandMessage,
     { watcherId, mentions }: { watcherId: number, mentions: (Role | GuildMember)[] },
   ) {
-    let filteredMentions = mentions;
+    // Filter duplicates
+    let filteredMentions = mentions.filter((v, i, a) => a.findIndex((m) => m.id === v.id) === i);
 
     const dbMentions = await db.select('app_watcher_mention.entity_id', 'app.name')
       .from('app_watcher')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')
       .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
       .where({
-        watcherId,
+        'app_watcher.id': watcherId,
         guildId: message.guild.id,
       });
 
@@ -75,21 +76,24 @@ export default class AddMentionCommand extends SteamWatchCommand {
 
     if (dbMentions.length > 0) {
       const existingIds = dbMentions.map((mention) => mention.entityId);
-      filteredMentions = dbMentions.filter((mention) => existingIds.includes(mention.id));
+      filteredMentions = filteredMentions.filter((mention) => !existingIds.includes(mention.id));
 
       if (dbMentions.length + filteredMentions.length > env.settings.maxMentionsPerWatcher) {
-        filteredMentions = mentions.slice(
+        filteredMentions = filteredMentions.slice(
           0,
           env.settings.maxMentionsPerWatcher - dbMentions.length,
         );
       }
-    }
 
-    if (filteredMentions.length === 0) {
-      return message.embed({
-        color: EMBED_COLOURS.ERROR,
-        description: insertEmoji`:ERROR: Nothing to add! Either already added or not found.`,
-      });
+      if (filteredMentions.length === 0) {
+        return message.embed({
+          color: EMBED_COLOURS.ERROR,
+          description: insertEmoji(stripIndent)`
+            :ERROR: Nothing to add!
+            Use ${message.anyUsage('mentions 1')} to view already added mentions.
+          `,
+        });
+      }
     }
 
     await db.insert(filteredMentions.map((mention) => ({
@@ -106,11 +110,13 @@ export default class AddMentionCommand extends SteamWatchCommand {
         value: filteredMentions.filter((mention) => mention instanceof Role)
           .map((mention: any) => mention.name)
           .join('\n') || 'None',
+        inline: true,
       }, {
         name: 'Users',
         value: filteredMentions.filter((mention) => mention instanceof GuildMember)
           .map((mention: any) => mention.displayName)
           .join('\n') || 'None',
+        inline: true,
       }],
     });
   }

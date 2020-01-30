@@ -87,9 +87,9 @@ export default class PrefixCommand extends SteamWatchCommand {
     } else {
       if (msg.guild) {
         // eslint-disable-next-line no-param-reassign
-        (msg.guild as GuildExtension).commandPrefix = prefix;
+        (msg.guild as GuildExtension).commandPrefix = usedPrefix;
       } else {
-        this.client.commandPrefix = prefix;
+        this.client.commandPrefix = usedPrefix;
       }
       response = usedPrefix ? `Set the command prefix to \`${prefix}\`.` : 'Removed the command prefix entirely.';
     }

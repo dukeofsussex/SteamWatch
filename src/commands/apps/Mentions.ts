@@ -1,4 +1,3 @@
-import { oneLineCommaListsAnd } from 'common-tags';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../db';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
@@ -54,21 +53,31 @@ export default class MentionsCommand extends SteamWatchCommand {
       });
     }
 
-    const entities = [];
+    const roles = [];
+    const users = [];
 
     for (let i = 0; i < mentions.length; i += 1) {
       const mention = mentions[i];
 
       if (mention.type === 'role') {
-        entities.push(message.guild.roles.get(mention.entityId)?.name || 'N/A');
+        roles.push(message.guild.roles.get(mention.entityId)?.name || 'N/A');
       } else {
-        entities.push(message.guild.members.get(mention.entityId)?.user.username || 'N/A');
+        users.push(message.guild.members.get(mention.entityId)?.user.username || 'N/A');
       }
     }
 
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
-      description: insertEmoji(oneLineCommaListsAnd)`:SUCCESS: Mentioning ${entities.map((entity) => `**${entity}**`)} for **${mentions[0].name}**.`,
+      title: `Mentions for ${mentions[0].name}`,
+      fields: [{
+        name: 'Roles',
+        value: roles.join('\n') || 'None',
+        inline: true,
+      }, {
+        name: 'Users',
+        value: users.join('\n') || 'None',
+        inline: true,
+      }],
     });
   }
 }
