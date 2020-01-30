@@ -1,9 +1,9 @@
 import { TextChannel, RichEmbed } from 'discord.js';
 import { oneLine } from 'common-tags';
-import { EMBED_COLOURS } from 'src/utils/constants';
 import db from '../../db';
 import WebApi, { SteamNewsItem } from '../../steam/WebApi';
 import SteamWatchClient from '../../structures/SteamWatchClient';
+import { EMBED_COLOURS } from '../../utils/constants';
 import { insertEmoji } from '../../utils/templateTags';
 
 import Knex = require('knex');
