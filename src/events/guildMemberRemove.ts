@@ -8,7 +8,7 @@ export default async function guildMemberRemove(member: GuildMember) {
     .where({
       entityId: member.id,
       guildId: member.guild.id,
-      type: 'user',
+      type: 'member',
     });
 
   if (!mentions) {

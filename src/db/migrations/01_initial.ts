@@ -60,7 +60,7 @@ exports.up = (knex: Knex) => knex.schema
       .notNullable();
     table.bigInteger('entity_id').unsigned()
       .notNullable();
-    table.enum('type', ['role', 'user']).notNullable();
+    table.enum('type', ['member', 'role']).notNullable();
     table.foreign('watcher_id').references('id')
       .inTable('app_watcher')
       .onUpdate('CASCADE')

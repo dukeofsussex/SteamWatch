@@ -99,7 +99,7 @@ export default class AddMentionCommand extends SteamWatchCommand {
     await db.insert(filteredMentions.map((mention) => ({
       watcherId,
       entityId: mention.id,
-      type: mention instanceof Role ? 'role' : 'user',
+      type: mention instanceof Role ? 'role' : 'member',
     }))).into('app_watcher_mention');
 
     return message.embed({
