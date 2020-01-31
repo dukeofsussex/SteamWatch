@@ -1,13 +1,12 @@
 import Bot from './Bot';
-import logger from './logger';
 
 const SIGNALS: NodeJS.Signals[] = ['SIGHUP', 'SIGINT', 'SIGTERM', 'SIGUSR1', 'SIGUSR2'];
 
 const bot = new Bot();
 bot.startAsync();
 
-process.on('unhandledRejection', (_, promise) => {
-  logger.error(promise);
+process.on('unhandledRejection', (err) => {
+  throw err;
 });
 
 for (let i = 0; i < SIGNALS.length; i += 1) {
