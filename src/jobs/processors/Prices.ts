@@ -173,8 +173,11 @@ export default class PricesProcessor {
     setTimeout(() => this.preProcess(), PRICE_RATE_LIMIT);
   }
 
-  private processChanged(apps: AppPriceOverview[]) {
-    apps.forEach(async (app) => {
+  private async processChanged(apps: AppPriceOverview[]) {
+    for (let i = 0; i < apps.length; i += 1) {
+      const app = apps[i];
+
+      // eslint-disable-next-line no-await-in-loop
       await db('app_price').update({
         price: app.overview.initial,
         discountedPrice: app.overview.final,
@@ -206,13 +209,17 @@ export default class PricesProcessor {
       }
 
       if (message) {
+        // eslint-disable-next-line no-await-in-loop
         await this.sendNotifications(app, message);
       }
-    });
+    }
   }
 
   private async processRemoved(apps: AppPriceRemoval[]) {
-    apps.forEach(async (app) => {
+    for (let i = 0; i < apps.length; i += 1) {
+      const app = apps[i];
+
+      // eslint-disable-next-line no-await-in-loop
       const watchers = await db.select('guild_id')
         .from('app_watcher')
         .where({
@@ -230,7 +237,7 @@ export default class PricesProcessor {
             Reason: ${app.reason}`,
         });
       });
-    });
+    }
 
     await db('app_watcher').update({
       watchPrice: false,

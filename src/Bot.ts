@@ -64,11 +64,11 @@ export default class Bot {
     this.client.on('reconnecting', () => logger.warn('Reconnecting'));
     this.client.on('commandError', (_, err, message) => logger.error(`${message.content} : ${err}`));
 
-    readdirSync(join(__dirname, 'events'))
-      .forEach(async (eventFile) => {
-        const eventHandler = await import(join(__dirname, 'events', eventFile));
-        this.client.on(eventFile.split('.')[0], eventHandler.default);
-      });
+    const eventFiles = readdirSync(join(__dirname, 'events'));
+    const eventHandlers = await Promise.all(eventFiles.map((file) => import(join(__dirname, 'events', file))));
+    eventFiles.forEach((file, i) => {
+      this.client.on(file.split('.')[0], eventHandlers[i].default);
+    });
 
     this.client.login(env.bot.token);
   }
