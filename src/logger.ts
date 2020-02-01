@@ -1,3 +1,4 @@
+import { oneLine } from 'common-tags';
 import { createLogger, format, transports } from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import env from './env';
@@ -13,7 +14,11 @@ const {
 const logFormat = combine(
   timestamp(),
   errors({ stack: true }),
-  printf((info) => `${info.timestamp} [${info.level.toUpperCase()}]: ${info.message}`),
+  printf((info) => oneLine`
+    ${info.timestamp}
+    [${info.level.toUpperCase()}]:
+    ${(info.group ? `[${info.group}] ` : '')}${info.message}
+  `),
 );
 
 const logger = createLogger({

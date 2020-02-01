@@ -96,7 +96,10 @@ export default class NewsProcessor {
     try {
       news = await WebApi.getAppNewsAsync(newsItem.id);
     } catch (err) {
-      logger.error(err);
+      logger.error({
+        group: 'Processor',
+        ...err,
+      });
     }
 
     await db('app').update({ lastCheckedNews: new Date() })

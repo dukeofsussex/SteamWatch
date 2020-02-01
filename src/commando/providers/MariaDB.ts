@@ -66,7 +66,10 @@ export default class MariaDBProvider extends SettingProvider {
 
   get(guild: GuildExtension | string, key: string, defVal: any) {
     if (key !== 'prefix') {
-      logger.error(`Unable to process MariaDB.get(${guild}, ${key}, ${defVal})`);
+      logger.error({
+        group: 'Provider',
+        message: `Unable to process MariaDB.get(${guild}, ${key}, ${defVal})`,
+      });
       return defVal;
     }
 
@@ -76,7 +79,10 @@ export default class MariaDBProvider extends SettingProvider {
 
   async set(guild: GuildExtension | string, key: string, val: any) {
     if (key !== 'prefix') {
-      logger.error(`Unable to process MariaDB.set(${guild}, ${key}, ${val})`);
+      logger.error({
+        group: 'Provider',
+        message: `Unable to process MariaDB.set(${guild}, ${key}, ${val})`,
+      });
       return val;
     }
 
@@ -91,13 +97,19 @@ export default class MariaDBProvider extends SettingProvider {
 
   // eslint-disable-next-line class-methods-use-this
   async remove(guild: GuildExtension | string, key: string) {
-    logger.warn(`MariaDB.remove() called for ${guild} ${key}`);
+    logger.warn({
+      group: 'Provider',
+      message: `MariaDB.remove() called for ${guild} ${key}`,
+    });
     return undefined;
   }
 
   // eslint-disable-next-line class-methods-use-this
   async clear(guild: GuildExtension | string) {
-    logger.warn(`MariaDB.clear() called for ${guild}`);
+    logger.warn({
+      group: 'Provider',
+      message: `MariaDB.clear() called for ${guild}`,
+    });
   }
 
   private setupGuildPrefix(guild: string, prefix: any) {

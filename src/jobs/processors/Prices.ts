@@ -119,7 +119,10 @@ export default class PricesProcessor {
         CURRENCIES[apps[0].currencyAbbr].cc,
       );
     } catch (err) {
-      logger.error(err);
+      logger.error({
+        group: 'Processor',
+        ...err,
+      });
     }
 
     if (!prices) {

@@ -22,13 +22,22 @@ export default Knex({
   debug: env.debug,
   log: {
     debug(message: string) {
-      return logger.debug(message);
+      return logger.debug({
+        group: 'Knex',
+        message,
+      });
     },
     error(message: string) {
-      return logger.error(message);
+      return logger.error({
+        group: 'Knex',
+        message,
+      });
     },
     warn(message: string) {
-      return logger.warn(message);
+      return logger.warn({
+        group: 'Knex',
+        message,
+      });
     },
   },
   postProcessResponse: (result) => {

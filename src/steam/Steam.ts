@@ -50,18 +50,27 @@ export default class Steam {
     }
 
     this.client.on('connected', () => {
-      logger.info('Connected to Steam');
+      logger.info({
+        group: 'Steam',
+        message: 'Connected',
+      });
       this.user.logOnAnon();
     });
 
     if (env.debug) {
-      this.client.on('debug', (msg: string) => {
-        logger.debug(msg);
+      this.client.on('debug', (message: string) => {
+        logger.debug({
+          group: 'Steam',
+          message,
+        });
       });
     }
 
     this.client.on('error', (err: Error) => {
-      logger.error(err);
+      logger.error({
+        ...err,
+        group: 'Steam',
+      });
     });
 
     this.client.on('logOnResponse', (res: any) => {
@@ -69,7 +78,17 @@ export default class Steam {
         throw new Error('Steam login failed');
       }
 
-      logger.info('Logged in to Steam');
+      logger.info({
+        group: 'Steam',
+        message: 'Logged in',
+      });
+    });
+
+    this.client.on('loggedOff', () => {
+      logger.info({
+        group: 'Steam',
+        message: 'Logged out',
+      });
     });
 
     this.client.on('servers', (servers: object) => {
