@@ -1,5 +1,5 @@
 import { oneLine, stripIndent } from 'common-tags';
-import { Channel, GuildChannel } from 'discord.js';
+import { GuildChannel } from 'discord.js';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../db';
 import env from '../../env';
@@ -55,7 +55,7 @@ export default class WatchCommand extends SteamWatchCommand {
           key: 'channel',
           prompt: 'Channel',
           type: 'channel',
-          default: -1,
+          default: (msg: CommandMessage) => msg.channel,
         },
       ],
       throttling: {
@@ -68,28 +68,26 @@ export default class WatchCommand extends SteamWatchCommand {
   // eslint-disable-next-line class-methods-use-this
   async run(
     message: CommandMessage,
-    { watcherType, appId, channel }: { watcherType: string, appId: number, channel: Channel },
+    { watcherType, appId, channel }: { watcherType: string, appId: number, channel: GuildChannel },
   ) {
     const types = watcherType.toLowerCase() === WATCHER_TYPE.ALL
       ? Object.values(WATCHER_TYPE).filter((type) => type !== WATCHER_TYPE.ALL)
       : [watcherType.toLowerCase()];
 
     // Check whether the channel is valid
-    if (channel instanceof GuildChannel && channel.type !== 'text') {
+    if (channel.type !== 'text') {
       return message.embed({
         color: EMBED_COLOURS.ERROR,
-        description: insertEmoji`:ERROR: <#${channel.id}> isn't a text channel!`,
+        description: insertEmoji`:ERROR: ${channel} isn't a text channel!`,
       });
     }
-
-    const watcherChannelId = channel.id || message.channel.id;
 
     // Check whether a watcher already exists for the app <> channel combination
     const existingWatcher = await db.select('app_id', 'watch_news', 'watch_price')
       .from('app_watcher')
       .where({
         appId,
-        channelId: watcherChannelId,
+        channelId: channel.id,
         guildId: message.guild.id,
       })
       .first();
@@ -126,7 +124,7 @@ export default class WatchCommand extends SteamWatchCommand {
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji(oneLine)`
           :ERROR: Already added a ${existingType} watcher for **${appId}**
-          to <#${watcherChannelId}>!
+          to ${channel}>!
         `,
       });
     }
@@ -243,13 +241,13 @@ export default class WatchCommand extends SteamWatchCommand {
         })
         .where({
           appId,
-          channelId: watcherChannelId,
+          channelId: channel.id,
           guildId: message.guild.id,
         });
     } else {
       await db.insert({
         appId,
-        channelId: watcherChannelId,
+        channelId: channel.id,
         guildId: message.guild.id,
         watchNews: types.includes(WATCHER_TYPE.NEWS),
         watchPrice: types.includes(WATCHER_TYPE.PRICE),
@@ -261,7 +259,7 @@ export default class WatchCommand extends SteamWatchCommand {
       description: insertEmoji(oneLine)`
         :SUCCESS: ${(existingWatcher ? 'Updated' : 'Added')} watcher for
         **${app.name} (${app.type})**
-        ${(existingWatcher ? 'in' : 'to')} <#${watcherChannelId}>.
+        ${(existingWatcher ? 'in' : 'to')} ${channel}.
       `,
     });
   }

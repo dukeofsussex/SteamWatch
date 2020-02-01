@@ -1,4 +1,4 @@
-import { Channel, GuildChannel, TextChannel } from 'discord.js';
+import { GuildChannel, TextChannel } from 'discord.js';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../db';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
@@ -37,7 +37,7 @@ export default class WatchersCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage, { identifier }: { identifier: number | Channel }) {
+  async run(message: CommandMessage, { identifier }: { identifier: number | GuildChannel }) {
     let query = db.select('app.name', 'app_watcher.*')
       .from('app')
       .innerJoin('app_watcher', 'app.id', 'app_watcher.app_id')
@@ -51,11 +51,11 @@ export default class WatchersCommand extends SteamWatchCommand {
       if (!(identifier instanceof TextChannel)) {
         return message.embed({
           color: EMBED_COLOURS.ERROR,
-          description: insertEmoji`:ERROR: <#${identifier.id}> isn't a text channel!`,
+          description: insertEmoji`:ERROR: ${identifier} isn't a text channel!`,
         });
       }
       query = query.andWhere('channel_id', identifier.id);
-      notFoundCategory = `for <#${identifier.id}>`;
+      notFoundCategory = `for ${identifier}`;
     }
 
     const watchers = await query.orderBy('name', 'asc');
