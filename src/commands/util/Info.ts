@@ -1,4 +1,3 @@
-import { stripIndent } from 'common-tags';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../db';
 import env from '../../env';
@@ -46,6 +45,12 @@ export default class InfoCommand extends SteamWatchCommand {
       .from('app_watcher')
       .then((res: any) => res.count);
     const uptime = msToTime(this.client.uptime);
+    const links = [
+      `[Invite Bot](https://discordapp.com/oauth2/authorize?client_id=${this.client.user.id}&scope=bot)`,
+      '[GitHub Repo](https://github.com/dukeofsussex/SteamWatch)',
+      `[Support](${env.bot.invite})`,
+      '[Website](https://steamwatch.xyz)',
+    ];
 
     return message.embed({
       title: 'SteamWatch Statistics',
@@ -78,12 +83,7 @@ export default class InfoCommand extends SteamWatchCommand {
         },
         {
           name: 'Links',
-          value: stripIndent`
-            [Invite Bot](https://discordapp.com/oauth2/authorize?client_id=${this.client.user.id}&scope=bot)
-            [GitHub Repo](https://github.com/dukeofsussex/SteamWatch)
-            [Support](${env.bot.invite})
-            [Website](https://steamwatch.xyz)
-          `,
+          value: links.join(' | '),
         },
       ],
     });
