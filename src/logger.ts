@@ -30,7 +30,7 @@ const logger = createLogger({
       dirname: 'logs',
       filename: '%DATE%.log',
       handleExceptions: true,
-      level: 'warn',
+      level: 'info',
       format: logFormat,
       maxFiles: '30d',
       utc: true,
