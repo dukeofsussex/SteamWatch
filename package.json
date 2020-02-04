@@ -4,9 +4,10 @@
   "description": "A Discord bot for keeping track of Steam apps",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npm run lint && tsc",
+    "build": "npm run lint:fix && tsc",
     "start": "node .",
-    "lint": "eslint --fix --ignore-path .gitignore src/**",
+    "lint": "eslint --ext ts src",
+    "lint:fix": "eslint --ext ts --fix src",
     "dev": "nodemon -e ts --exec ts-node src/index.ts"
   },
   "repository": {
