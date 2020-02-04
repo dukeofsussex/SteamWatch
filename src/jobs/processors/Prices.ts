@@ -262,6 +262,7 @@ export default class PricesProcessor {
       .where('currency_id', apps[0].currencyId);
   }
 
+  // TODO Move to a dedicated notification service once the guild count rises
   private async sendNotifications(app: AppPrice, message: string) {
     const watchers = await db.select('app_watcher.id', 'channel_id', 'entity_id', 'type')
       .from('app_watcher')

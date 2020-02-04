@@ -105,19 +105,16 @@ export default class NewsProcessor {
     await db('app').update({ lastCheckedNews: new Date() })
       .where('id', newsItem.id);
 
-    if (!news || news.gid === newsItem.articleId) {
-      this.timeout = setTimeout(() => this.preProcess(), NEWS_RATE_LIMIT);
-      return;
+    if (news && news.gid !== newsItem.articleId) {
+      await db.insert({
+        id: news.gid,
+        appId: news.appid,
+        url: news.url,
+        createdAt: new Date(news.date * 1000),
+      }).into('app_news');
+
+      await this.postProcess(newsItem.name, news);
     }
-
-    await db.insert({
-      id: news.gid,
-      appId: news.appid,
-      url: news.url,
-      createdAt: new Date(news.date * 1000),
-    }).into('app_news');
-
-    await this.postProcess(newsItem.name, news);
 
     this.timeout = setTimeout(() => this.preProcess(), NEWS_RATE_LIMIT);
   }
@@ -142,6 +139,7 @@ export default class NewsProcessor {
     let currentWatcherId = watchers[0].id || -1;
     let currentWatcherMentions = [];
 
+    // TODO Move to a dedicated notification service once the guild count rises
     for (let i = 0; i <= watchers.length; i += 1) {
       const watcher = watchers[i];
       if (!watcher || currentWatcherId !== watcher.id) {
