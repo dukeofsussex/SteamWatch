@@ -189,7 +189,7 @@ const EMOJIS: {
   ALERT: '\uD83D\uDEA8',
   DM: '\uD83D\uDCEC',
   ERROR: env.emoji.error,
-  EYES: '\uD83D\uDC40\u0020',
+  EYES: '\uD83D\uDC40',
   NEWS: '\uD83D\uDCF0',
   PING_PONG: '\uD83C\uDFD3',
   PRICE_DOWN: '\uD83D\uDCC9',
