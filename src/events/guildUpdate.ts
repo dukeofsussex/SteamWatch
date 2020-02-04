@@ -7,5 +7,6 @@ export default async function guildUpdate(guild: Guild) {
       name: guild.name,
       region: guild.region,
       memberCount: guild.memberCount,
-    });
+    })
+    .where('id', guild.id);
 }
