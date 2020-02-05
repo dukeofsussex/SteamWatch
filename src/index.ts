@@ -11,5 +11,8 @@ process.on('unhandledRejection', (err) => {
 
 for (let i = 0; i < SIGNALS.length; i += 1) {
   const event = SIGNALS[i];
-  process.on(event, () => bot.stopAsync());
+  process.on(event, async () => {
+    await bot.stopAsync();
+    process.exit(0);
+  });
 }
