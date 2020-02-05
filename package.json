@@ -5,7 +5,6 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "npm run lint:fix && tsc",
-    "start": "node .",
     "lint": "eslint --ext ts src",
     "lint:fix": "eslint --ext ts --fix src",
     "dev": "nodemon -e ts --exec ts-node src/index.ts"
