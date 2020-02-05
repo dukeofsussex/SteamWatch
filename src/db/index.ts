@@ -8,13 +8,16 @@ const convertCamelToSnake = (value: string) => value.replace(/[A-Z]/g, (char: st
 
 const convertSnakeToCamel = (value: string) => value.replace(/([-_]\w)/g, (char: string) => char[1].toUpperCase());
 
-const postProcessRow = (row: any): any => Object.keys(row).reduce(
-  (result, key) => ({
+const postProcessRow = (row: any): any => {
+  if (typeof row !== 'object' || row === null) {
+    return row;
+  }
+
+  return Object.entries(row).reduce((result, [key, value]) => ({
     ...result,
-    [convertSnakeToCamel(key)]: row[key],
-  }),
-  {},
-);
+    [convertSnakeToCamel(key)]: value,
+  }), {});
+};
 
 export default Knex({
   ...config,
