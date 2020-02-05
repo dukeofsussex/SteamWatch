@@ -1,3 +1,4 @@
+import { oneLine } from 'common-tags';
 import { RateLimitInfo } from 'discord.js';
 import { readdirSync } from 'fs';
 import { join } from 'path';
@@ -58,7 +59,7 @@ export default class Bot {
       this.manager.start();
     });
 
-    this.client.setInterval(() => this.setActivity(), 90000);
+    this.client.setInterval(() => this.setActivity(), 300000);
 
     if (env.debug) {
       this.client.on('debug', (message) => logger.debug({ group: 'Discord', message }));
@@ -84,8 +85,10 @@ export default class Bot {
       message: `Resuming, replayed ${replayed} events`,
     }));
 
-    const eventFiles = readdirSync(join(__dirname, 'events')).filter((file) => !file.endsWith('.map'));
-    const eventHandlers = await Promise.all(eventFiles.map((file) => import(join(__dirname, 'events', file))));
+    const eventFiles = readdirSync(join(__dirname, 'events'))
+      .filter((file) => !file.endsWith('.map'));
+    const eventHandlers = await Promise
+      .all(eventFiles.map((file) => import(join(__dirname, 'events', file))));
     eventFiles.forEach((file, i) => {
       this.client.on(file.split('.')[0], eventHandlers[i].default);
     });
@@ -107,7 +110,10 @@ export default class Bot {
       .then((res: any) => res.count);
 
     this.client.user.setActivity(
-      `${count} apps for ${this.client.guilds.size} guilds | ${this.client.commandPrefix}help`,
+      oneLine`
+        ${count} apps for ${this.client.guilds.size} guilds
+        | ${this.client.commandPrefix}${this.client.commandPrefix.length > 1 ? ' ' : ''}help
+      `,
       { type: 'WATCHING' },
     );
   }
