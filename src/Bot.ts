@@ -84,7 +84,7 @@ export default class Bot {
       message: `Resuming, replayed ${replayed} events`,
     }));
 
-    const eventFiles = readdirSync(join(__dirname, 'events'));
+    const eventFiles = readdirSync(join(__dirname, 'events')).filter((file) => !file.endsWith('.map'));
     const eventHandlers = await Promise.all(eventFiles.map((file) => import(join(__dirname, 'events', file))));
     eventFiles.forEach((file, i) => {
       this.client.on(file.split('.')[0], eventHandlers[i].default);
