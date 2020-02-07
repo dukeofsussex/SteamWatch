@@ -11,7 +11,7 @@ export default async function guildMemberRemove(member: GuildMember) {
       type: 'member',
     });
 
-  if (!mentions) {
+  if (mentions.length === 0) {
     return;
   }
 

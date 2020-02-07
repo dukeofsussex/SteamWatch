@@ -16,7 +16,7 @@ export default async function channelDelete(channel: GuildChannel) {
       guildId: channel.guild.id,
     });
 
-  if (!mentions) {
+  if (mentions.length === 0) {
     return;
   }
 

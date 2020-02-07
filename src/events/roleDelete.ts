@@ -11,7 +11,7 @@ export default async function roleDelete(role: Role) {
       type: 'role',
     });
 
-  if (!mentions) {
+  if (mentions.length === 0) {
     return;
   }
 
