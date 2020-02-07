@@ -27,7 +27,11 @@ export default class WatchCommand extends SteamWatchCommand {
       group: 'apps',
       memberName: 'watch',
       description: 'Add a watcher for a Steam app.',
-      details: 'Default `channel` is the channel the command is run in.',
+      details: stripIndent`
+        Default \`channel\` is the channel the command is run in.
+        The **app id** is the last number in the app's store page url:
+        https://store.steampowered.com/app/appid/name_of_app
+      `,
       examples: [
         'watch news 730',
         'watch price 271590 196820438398140417',
