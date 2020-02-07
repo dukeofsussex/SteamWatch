@@ -1,7 +1,6 @@
-<br />
 <p align="center">
-  <a href="https://steamwatch.xyz">
-    <img src="https://steamwatch.xyz/img/logo.png" alt="Logo" width="160" height="160">
+  <a href="https://steam.watch">
+    <img src="https://steam.watch/img/logo.svg" alt="Logo" height="192">
   </a>
   <h3 align="center">Steam Watch</h3>
   <p align="center">

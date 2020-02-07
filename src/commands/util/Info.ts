@@ -49,12 +49,12 @@ export default class InfoCommand extends SteamWatchCommand {
       `[Invite Bot](https://discordapp.com/oauth2/authorize?client_id=${this.client.user.id}&scope=bot)`,
       '[GitHub Repo](https://github.com/dukeofsussex/SteamWatch)',
       `[Support](${env.bot.invite})`,
-      '[Website](https://steamwatch.xyz)',
+      '[Website](https://steam.watch)',
     ];
 
     return message.embed({
       title: 'SteamWatch Statistics',
-      url: 'https://steamwatch.xyz',
+      url: 'https://steam.watch',
       color: 0x00ADEE,
       timestamp: new Date(),
       footer: {
