@@ -17,11 +17,9 @@
 
 ## Getting Started
 
-To get a local copy up and running follow these simple example steps:
+To get a local copy up and running follow these simple steps:
 
 ### Prerequisites
-
-This is an example of how to list things you need to use the software and how to install them.
 
 * [Discord bot token](https://discordapp.com/developers/applications)
 * [NodeJS](https://nodejs.org/en/)
@@ -37,11 +35,23 @@ git clone https://github.com/dukeofsussex/SteamWatch.git
 ```sh
 npm install
 ```
-3. Make a copy of `.env.example` called `.env` and enter the required parameters
+3. Configure the bot by copying `.env.example` to `.env` and setting the provided parameters
+4. (Optional) Build the bot for production
+```sh
+npm run build
+```
+5. Run the bot
+```sh
+# development
+npm run dev
+
+# production
+node .
+```
 
 ## Contributing
 
-Any contributions you make are very welcome and greatly appreciated.
+Any contributions made are welcome and greatly appreciated.
 
 1. Fork the project
 2. Create your feature branch (`git checkout -b feature`)
