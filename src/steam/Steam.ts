@@ -71,6 +71,15 @@ export default class Steam {
         ...err,
         group: 'Steam',
       });
+
+      if (!this.client.loggedOn) {
+        logger.info({
+          group: 'Steam',
+          message: 'Reconnecting',
+        });
+
+        this.client.connect();
+      }
     });
 
     this.client.on('logOnResponse', (res: any) => {
