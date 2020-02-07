@@ -44,6 +44,10 @@ export default class Steam {
     });
   }
 
+  get isAvailable() {
+    return this.client.loggedOn;
+  }
+
   init() {
     if (fs.existsSync('servers.json')) {
       NodeSteam.servers = JSON.parse(fs.readFileSync('servers.json').toString());

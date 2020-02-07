@@ -142,7 +142,17 @@ export default class WatchCommand extends SteamWatchCommand {
 
     // Nothing stored, fetch app details from Steam
     if (!app) {
-      // @ts-ignore this.client is actually a SteamWatchClient
+      // Ensure we're connected to Steam
+      if (!this.client.steam.isAvailable) {
+        return message.embed({
+          color: EMBED_COLOURS.ERROR,
+          description: insertEmoji(stripIndent)`
+            :ERROR: Steam connection unavailable!
+            Please try again later.
+          `,
+        });
+      }
+
       app = await this.client.steam.getAppInfoAsync(appId);
 
       // App doesn't exist
