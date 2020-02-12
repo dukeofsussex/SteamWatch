@@ -8,7 +8,6 @@ export default class SteamUser extends Steam.SteamUser {
 
     // construct temporary SteamID
     this._client.steamID = new SteamID({
-      accountInstance: 1,
       accountUniverse: Steam.EUniverse.Public,
       accountType: Steam.EAccountType.AnonUser,
     }).toString();
