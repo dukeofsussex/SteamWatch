@@ -88,6 +88,11 @@ export default class Steam {
 
     this.client.on('logOnResponse', (res: any) => {
       if (res.eresult !== NodeSteam.EResult.OK) {
+        logger.error({
+          group: 'Steam',
+          message: res,
+        });
+
         throw new Error('Steam login failed');
       }
 
