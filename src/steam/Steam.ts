@@ -72,8 +72,8 @@ export default class Steam {
 
     this.client.on('error', (err: Error) => {
       logger.error({
-        ...err,
         group: 'Steam',
+        message: err,
       });
 
       if (!this.client.loggedOn) {

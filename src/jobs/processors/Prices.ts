@@ -121,7 +121,7 @@ export default class PricesProcessor {
     } catch (err) {
       logger.error({
         group: 'Processor',
-        ...err,
+        message: err,
       });
     }
 

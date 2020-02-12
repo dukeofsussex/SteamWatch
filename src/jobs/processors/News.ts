@@ -98,7 +98,7 @@ export default class NewsProcessor {
     } catch (err) {
       logger.error({
         group: 'Processor',
-        ...err,
+        message: err,
       });
     }
 

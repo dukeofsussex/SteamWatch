@@ -70,7 +70,7 @@ export default class Bot {
       message: `${message.content} : ${err}`,
     }));
     this.client.on('disconnect', () => logger.info({ group: 'Discord', message: 'Disconnected' }));
-    this.client.on('error', (err) => logger.error({ ...err, group: 'Discord' }));
+    this.client.on('error', (err) => logger.error({ group: 'Discord', message: err }));
     this.client.on('warn', (message) => logger.warn({ group: 'Discord', message }));
     this.client.on('rateLimit', (info: RateLimitInfo) => logger.warn({
       group: 'Discord',
