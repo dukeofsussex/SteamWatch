@@ -31,7 +31,7 @@ interface AppPriceRemoval extends AppPrice {
   reason: string;
 }
 
-export default class PricesProcessor {
+export default class PriceWatcher {
   private client: SteamWatchClient;
 
   private timeout?: NodeJS.Timeout;
@@ -120,7 +120,7 @@ export default class PricesProcessor {
       );
     } catch (err) {
       logger.error({
-        group: 'Processor',
+        group: 'Watcher',
         message: err,
       });
     }
@@ -162,7 +162,7 @@ export default class PricesProcessor {
     }
 
     if (unchanged.length > 0) {
-      await PricesProcessor.processUnchanged(unchanged);
+      await PriceWatcher.processUnchanged(unchanged);
     }
 
     if (changed.length > 0) {

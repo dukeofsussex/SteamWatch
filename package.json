@@ -7,7 +7,9 @@
     "build": "npm run lint:fix && tsc",
     "lint": "eslint --ext ts src",
     "lint:fix": "eslint --ext ts --fix src",
-    "dev": "nodemon -e ts --exec ts-node src/index.ts"
+    "dev": "nodemon -e ts --exec ts-node src/index.ts",
+    "dev:bot": "nodemon -e ts --exec ts-node src/index.ts --no-watcher",
+    "dev:watcher": "nodemon -e ts --exec ts-node src/index.ts --no-bot"
   },
   "repository": {
     "type": "git",

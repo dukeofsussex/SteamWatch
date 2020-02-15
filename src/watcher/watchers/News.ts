@@ -19,7 +19,7 @@ interface NewsItem {
   articleId: string;
 }
 
-export default class NewsProcessor {
+export default class NewsWatcher {
   private client: SteamWatchClient;
 
   private timeout?: NodeJS.Timeout;
@@ -97,7 +97,7 @@ export default class NewsProcessor {
       news = await WebApi.getAppNewsAsync(newsItem.id);
     } catch (err) {
       logger.error({
-        group: 'Processor',
+        group: 'Watcher',
         message: err,
       });
     }
