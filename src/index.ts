@@ -1,4 +1,4 @@
-import Bot from './Bot';
+import Bot from './bot/Bot';
 
 const SIGNALS: NodeJS.Signals[] = ['SIGHUP', 'SIGINT', 'SIGTERM', 'SIGUSR1', 'SIGUSR2'];
 
