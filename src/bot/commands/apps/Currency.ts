@@ -2,8 +2,8 @@ import { oneLine } from 'common-tags';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../../db';
 import WebApi from '../../../steam/WebApi';
-import SteamWatchCommand from '../../../structures/SteamWatchCommand';
-import SteamWatchClient from '../../../structures/SteamWatchClient';
+import SteamWatchCommand from '../../structures/SteamWatchCommand';
+import SteamWatchClient from '../../structures/SteamWatchClient';
 import { CURRENCIES, EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 

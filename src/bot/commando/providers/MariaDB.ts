@@ -1,7 +1,7 @@
 /* eslint-disable no-underscore-dangle */
 // @ts-nocheck
 import { GuildExtension, SettingProvider } from 'discord.js-commando';
-import SteamWatchClient from '../../../structures/SteamWatchClient';
+import SteamWatchClient from '../../structures/SteamWatchClient';
 import db from '../../../db';
 import logger from '../../../logger';
 

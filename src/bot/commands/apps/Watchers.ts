@@ -1,8 +1,8 @@
 import { GuildChannel, TextChannel } from 'discord.js';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../../db';
-import SteamWatchCommand from '../../../structures/SteamWatchCommand';
-import SteamWatchClient from '../../../structures/SteamWatchClient';
+import SteamWatchCommand from '../../structures/SteamWatchCommand';
+import SteamWatchClient from '../../structures/SteamWatchClient';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 
