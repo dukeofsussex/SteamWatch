@@ -25,14 +25,6 @@ export default class Bot {
   }
 
   async startAsync() {
-    if (!env.debug) {
-      await db.migrate.latest();
-      await db.seed.run();
-      logger.info('Database migrated and seeded');
-    }
-
-    logger.info('Database ready');
-
     this.client.setProvider(new MariaDBProvider());
 
     this.client.registry

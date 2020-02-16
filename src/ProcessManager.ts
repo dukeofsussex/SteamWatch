@@ -12,6 +12,20 @@ export default class ProcessManager {
   private watcherManager?: WatcherManager;
 
   async startAsync() {
+    if (!env.debug) {
+      await db.migrate.latest();
+      await db.seed.run();
+      logger.info({
+        group: 'Database',
+        message: 'Migrated and seeded',
+      });
+    }
+
+    logger.info({
+      group: 'Database',
+      message: 'Ready',
+    });
+
     if (!process.argv.includes('--no-bot')) {
       this.shard();
     }
