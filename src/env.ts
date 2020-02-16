@@ -13,10 +13,6 @@ export default {
     prefix: process.env.BOT_PREFIX || 'sw',
     token: process.env.BOT_TOKEN || '',
   },
-  emoji: {
-    error: process.env.EMOJI_ERROR || '⛔',
-    success: process.env.EMOJI_SUCCESS || '✅',
-  },
   db: {
     database: process.env.DB_DATABASE || 'steam_watch',
     host: process.env.DB_HOST || 'localhost',

@@ -188,13 +188,13 @@ const EMOJIS: {
 } = {
   ALERT: '\uD83D\uDEA8',
   DM: '\uD83D\uDCEC',
-  ERROR: env.emoji.error,
+  ERROR: '\u274C',
   EYES: '\uD83D\uDC40',
   NEWS: '\uD83D\uDCF0',
   PING_PONG: '\uD83C\uDFD3',
   PRICE_DOWN: '\uD83D\uDCC9',
   PRICE_UP: '\uD83D\uDCC8',
-  SUCCESS: env.emoji.success,
+  SUCCESS: '\u2705',
 };
 
 export {
