@@ -18,8 +18,8 @@ export default class ClearCommand extends SteamWatchCommand {
 
   // eslint-disable-next-line class-methods-use-this
   async run(message: CommandMessage) {
-    if (!env.debug) {
-      return message.say(insertEmoji`:ERROR: Only available in debug mode!`);
+    if (!env.dev) {
+      return message.say(insertEmoji`:ERROR: Only available in dev mode!`);
     }
 
     await message.channel.bulkDelete(25);

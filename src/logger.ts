@@ -45,7 +45,7 @@ const logger = createLogger({
   ],
 });
 
-if (env.debug) {
+if (env.dev) {
   logger.add(new transports.Console({
     format: combine(
       colorize({ all: true }),

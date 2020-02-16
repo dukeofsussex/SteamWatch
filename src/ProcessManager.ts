@@ -12,7 +12,7 @@ export default class ProcessManager {
   private watcherManager?: WatcherManager;
 
   async startAsync() {
-    if (!env.debug) {
+    if (!env.dev) {
       await db.migrate.latest();
       await db.seed.run();
       logger.info({

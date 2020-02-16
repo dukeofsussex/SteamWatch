@@ -27,5 +27,6 @@ export default {
     maxMentionsPerWatcher: parseInt(process.env.BOT_MAX_MENTIONS_PER_WATCHER || '10', 10),
     maxWatchersPerGuild: parseInt(process.env.BOT_MAX_WATCHERS_PER_GUILD || '10', 10),
   },
-  debug: process.env.NODE_ENV === 'development',
+  debug: process.env.DEBUG === 'true',
+  dev: process.env.NODE_ENV === 'development',
 };
