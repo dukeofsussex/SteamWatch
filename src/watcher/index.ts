@@ -7,7 +7,7 @@ interface Watcher {
   stop: Function;
 }
 
-export default class Manager {
+export default class WatcherManager {
   private watchers: Watcher[];
 
   constructor(client: SteamWatchClient) {
