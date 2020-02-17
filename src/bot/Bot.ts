@@ -7,7 +7,6 @@ import env from '../env';
 import logger from '../logger';
 import SteamWatchClient from './structures/SteamWatchClient';
 import MariaDBProvider from './commando/providers/MariaDB';
-import MentionListType from './commando/types/MentionList';
 import Steam from '../steam/Steam';
 
 export default class Bot {
@@ -29,7 +28,10 @@ export default class Bot {
 
     this.client.registry
       .registerDefaultTypes()
-      .registerType(MentionListType)
+      .registerTypesIn({
+        filter: /^([^.].*)\.(js|ts)$/,
+        dirname: join(__dirname, 'commando', 'types'),
+      })
       .registerDefaultGroups()
       .registerGroups([['apps', 'Apps']])
       .registerCommandsIn({
