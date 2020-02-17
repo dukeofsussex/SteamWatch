@@ -1,10 +1,10 @@
-import { oneLine } from 'common-tags';
+import { oneLine, stripIndent } from 'common-tags';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../../db';
 import WebApi from '../../../steam/WebApi';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import SteamWatchClient from '../../structures/SteamWatchClient';
-import { CURRENCIES, EMBED_COLOURS } from '../../../utils/constants';
+import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 
 export default class CurrencyCommand extends SteamWatchCommand {
@@ -47,7 +47,7 @@ export default class CurrencyCommand extends SteamWatchCommand {
       return message.embed({
         color: EMBED_COLOURS.DEFAULT,
         description: oneLine`
-          ${CURRENCIES[dbCurrency.abbreviation].flag}
+          ${dbCurrency.flag}
           Current currency is **${dbCurrency.abbreviation}**
           (${dbCurrency.name}).
         `,
@@ -67,7 +67,36 @@ export default class CurrencyCommand extends SteamWatchCommand {
     }
 
     // Fetch all apps that aren't already being tracked in the new currency
-    const apps = await db.select('app.id', 'app.name')
+    const apps = await CurrencyCommand.fetchAppsAsync(dbCurrency.id, message.guild.id);
+
+    // Process missing app prices for new currency
+    if (apps.length > 0) {
+      const invalidApps = await CurrencyCommand.processAppPrices(apps, currency);
+
+      if (invalidApps.length > 0) {
+        return message.embed({
+          color: EMBED_COLOURS.ERROR,
+          description: insertEmoji(stripIndent)`
+            :ERROR: Unable to change currency to **${dbCurrency.abbreviation}**.
+            ${invalidApps.join('\n')}
+          `,
+        });
+      }
+    }
+
+    await db('guild').update('currency_id', dbCurrency.id)
+      .where('id', message.guild.id);
+
+    return message.embed({
+      color: EMBED_COLOURS.SUCCESS,
+      description: insertEmoji`
+        :SUCCESS: Currency set to **${dbCurrency.abbreviation}** (${dbCurrency.name}).
+      `,
+    });
+  }
+
+  private static fetchAppsAsync(currencyId: string, guildId: string) {
+    return db.select('app.id', 'app.name')
       .from('guild')
       .innerJoin('app_watcher', 'app_watcher.guild_id', 'guild.id')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')
@@ -77,53 +106,43 @@ export default class CurrencyCommand extends SteamWatchCommand {
       })
       .leftJoin({ newAppPrice: 'app_price' }, function appPriceLeftJoin() {
         this.on('new_app_price.app_id', '=', 'app_watcher.app_id')
-          .andOn('new_app_price.currency_id', '=', dbCurrency.id);
+          .andOn('new_app_price.currency_id', '=', currencyId);
       })
       .whereNull('new_app_price.id')
       .andWhere('app_watcher.watch_price', true)
-      .andWhere('guild.id', message.guild.id);
+      .andWhere('guild.id', guildId);
+  }
 
-    // Process missing app prices for new currency
-    if (apps.length > 0) {
-      const steamApps = await WebApi.GetAppPricesAsync(
-        apps.map((app) => app.id),
-        CURRENCIES[dbCurrency.abbreviation].cc,
-      );
+  private static async processAppPrices(apps: any[], currency: any) {
+    const steamApps = await WebApi.GetAppPricesAsync(
+      apps.map((app) => app.id),
+      currency.countryCode,
+    );
 
-      const insert = [];
+    const invalidApps = [];
+    const insert = [];
 
-      for (let i = 0; i < apps.length; i += 1) {
-        const app = apps[i];
-        const steamApp = steamApps[app.id];
+    for (let i = 0; i < apps.length; i += 1) {
+      const app = apps[i];
+      const steamApp = steamApps[app.id];
 
-        if (!steamApp.success || !steamApp.data.price_overview) {
-          return message.embed({
-            color: EMBED_COLOURS.ERROR,
-            description: insertEmoji(oneLine)`
-              :ERROR: Unable to change currency,
-              as the price watcher for **${app.name}**
-              isn't available in **${dbCurrency.abbreviation}**!
-            `,
-          });
-        }
-
+      if (!steamApp.success || !steamApp.data.price_overview) {
+        invalidApps.push(oneLine`
+          Price watcher for **${app.name}**
+          isn't available in **${currency.abbreviation}**!
+        `);
+      } else {
         insert.push({
           appId: app.id,
-          currencyId: dbCurrency.id,
+          currencyId: currency.id,
           price: steamApp.data.price_overview.initial,
           discountedPrice: steamApp.data.price_overview.initial,
         });
       }
-
-      await db.insert(insert).into('app_price');
     }
 
-    await db('guild').update('currency_id', dbCurrency.id)
-      .where('id', message.guild.id);
+    await db.insert(insert).into('app_price');
 
-    return message.embed({
-      color: EMBED_COLOURS.SUCCESS,
-      description: insertEmoji`:SUCCESS: Currency set to **${dbCurrency.abbreviation}** (${dbCurrency.name}).`,
-    });
+    return invalidApps;
   }
 }
