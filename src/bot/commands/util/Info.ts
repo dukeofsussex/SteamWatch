@@ -3,6 +3,7 @@ import db from '../../../db';
 import env from '../../../env';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import SteamWatchClient from '../../structures/SteamWatchClient';
+import { EMBED_COLOURS } from '../../../utils/constants';
 
 const { version } = require('../../../../package.json');
 
@@ -55,7 +56,7 @@ export default class InfoCommand extends SteamWatchCommand {
     return message.embed({
       title: 'SteamWatch Statistics',
       url: 'https://steam.watch',
-      color: 0x00ADEE,
+      color: EMBED_COLOURS.DEFAULT,
       timestamp: new Date(),
       footer: {
         icon_url: this.client.user.avatarURL,
