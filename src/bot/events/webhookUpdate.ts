@@ -15,6 +15,7 @@ export default async function webhookUpdate(channel: TextChannel) {
     channel.fetchWebhooks(),
     db.select('token')
       .from('webhook')
+      .innerJoin('app_watcher', 'app_watcher.channel_id', 'webhook.id')
       .where('id', channel.id)
       .first(),
   ]);
