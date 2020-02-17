@@ -1,4 +1,4 @@
-import { oneLine, stripIndent } from 'common-tags';
+import { oneLine, stripIndents } from 'common-tags';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../../db';
 import WebApi from '../../../steam/WebApi';
@@ -76,7 +76,7 @@ export default class CurrencyCommand extends SteamWatchCommand {
       if (invalidApps.length > 0) {
         return message.embed({
           color: EMBED_COLOURS.ERROR,
-          description: insertEmoji(stripIndent)`
+          description: insertEmoji(stripIndents)`
             :ERROR: Unable to change currency to **${dbCurrency.abbreviation}**.
             ${invalidApps.join('\n')}
           `,

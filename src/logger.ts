@@ -1,4 +1,4 @@
-import { oneLine, stripIndent } from 'common-tags';
+import { oneLine, stripIndents } from 'common-tags';
 import { createLogger, format, transports } from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import env from './env';
@@ -20,7 +20,7 @@ const logFormat = combine(
     group,
     message,
     stack,
-  }) => stripIndent`
+  }) => stripIndents`
     ${oneLine`
       ${ts}
       [${level.toUpperCase()}]:

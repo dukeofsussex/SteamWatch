@@ -1,4 +1,4 @@
-import { oneLine, stripIndent } from 'common-tags';
+import { oneLine, stripIndents } from 'common-tags';
 import { GuildMember, Role } from 'discord.js';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../../db';
@@ -88,7 +88,7 @@ export default class AddMentionCommand extends SteamWatchCommand {
       if (filteredMentions.length === 0) {
         return message.embed({
           color: EMBED_COLOURS.ERROR,
-          description: insertEmoji(stripIndent)`
+          description: insertEmoji(stripIndents)`
             :ERROR: Nothing to add!
             Use ${message.anyUsage('mentions 1')} to view already added mentions.
           `,

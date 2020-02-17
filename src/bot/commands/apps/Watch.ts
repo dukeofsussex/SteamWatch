@@ -1,4 +1,4 @@
-import { oneLine, stripIndent } from 'common-tags';
+import { oneLine, stripIndents } from 'common-tags';
 import { GuildChannel } from 'discord.js';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../../db';
@@ -27,7 +27,7 @@ export default class WatchCommand extends SteamWatchCommand {
       group: 'apps',
       memberName: 'watch',
       description: 'Add a watcher for a Steam app.',
-      details: stripIndent`
+      details: stripIndents`
         Default \`channel\` is the channel the command is run in.
         The **app id** is the last number in the app's store page url:
         https://store.steampowered.com/app/appid/name_of_app
@@ -146,7 +146,7 @@ export default class WatchCommand extends SteamWatchCommand {
       if (!this.client.steam.isAvailable) {
         return message.embed({
           color: EMBED_COLOURS.ERROR,
-          description: insertEmoji(stripIndent)`
+          description: insertEmoji(stripIndents)`
             :ERROR: Steam connection unavailable!
             Please try again later.
           `,
@@ -159,7 +159,7 @@ export default class WatchCommand extends SteamWatchCommand {
       if (!app) {
         return message.embed({
           color: EMBED_COLOURS.ERROR,
-          description: insertEmoji(stripIndent)`
+          description: insertEmoji(stripIndents)`
             :ERROR: Unable to find an app with the id **${appId}**!
             Make sure the id doesn't belong to a package or bundle.
           `,
@@ -218,7 +218,7 @@ export default class WatchCommand extends SteamWatchCommand {
         if (!priceOverview[appId].success) {
           return message.embed({
             color: EMBED_COLOURS.ERROR,
-            description: insertEmoji(stripIndent)`
+            description: insertEmoji(stripIndents)`
               ${oneLine`
                 :ERROR: Unable to watch app prices for **${app.name} (${app.type})**
                 in **${appPrice.currencyAbbr}**!`}
@@ -231,7 +231,7 @@ export default class WatchCommand extends SteamWatchCommand {
         } if (!priceOverview[appId].data.price_overview) {
           return message.embed({
             color: EMBED_COLOURS.ERROR,
-            description: insertEmoji(stripIndent)`
+            description: insertEmoji(stripIndents)`
               :ERROR: Unable to watch app prices for **${app.name} (${app.type})** in **${appPrice.currencyAbbr}**!
               Free apps cannot be watched for price changes!
             `,
