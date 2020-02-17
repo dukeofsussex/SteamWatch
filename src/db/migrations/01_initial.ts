@@ -4,7 +4,9 @@ exports.up = (knex: Knex) => knex.schema
   .createTable('currency', (table) => {
     table.increments('id').unsigned();
     table.string('name', 32).notNullable();
+    table.string('country_code', 2).notNullable();
     table.string('abbreviation', 16).notNullable();
+    table.string('flag', 8).notNullable();
   })
   .createTable('guild', (table) => {
     table.bigInteger('id').unsigned()
