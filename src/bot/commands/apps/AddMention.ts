@@ -15,8 +15,10 @@ export default class AddMentionCommand extends SteamWatchCommand {
       group: 'apps',
       memberName: 'addmention',
       description: 'Add mentions to a watcher.',
-      details: oneLine`Mentions can be a comma-separated list of any combination
-        of direct mentions, user ids, usernames, role ids and role names.`,
+      details: oneLine`
+        Mentions can be a comma-separated list of any combination
+        of direct mentions, user ids, usernames, role ids and role names.
+      `,
       examples: [
         'addmention 1 MyName',
         'addmention 1 JustTheRoleName,@Me,209752756708311041',
@@ -108,13 +110,13 @@ export default class AddMentionCommand extends SteamWatchCommand {
       fields: [{
         name: 'Roles',
         value: filteredMentions.filter((mention) => mention instanceof Role)
-          .map((mention: any) => mention.name)
+          .map((mention: any) => mention.toString())
           .join('\n') || 'None',
         inline: true,
       }, {
         name: 'Users',
         value: filteredMentions.filter((mention) => mention instanceof GuildMember)
-          .map((mention: any) => mention.displayName)
+          .map((mention: any) => mention.toString())
           .join('\n') || 'None',
         inline: true,
       }],

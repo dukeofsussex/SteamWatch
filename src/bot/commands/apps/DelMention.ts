@@ -1,5 +1,5 @@
 import { oneLine } from 'common-tags';
-import { Role, User } from 'discord.js';
+import { GuildMember, Role } from 'discord.js';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../../db';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
@@ -14,8 +14,10 @@ export default class DelMentionCommand extends SteamWatchCommand {
       group: 'apps',
       memberName: 'delmention',
       description: 'Delete mentions from a watcher.',
-      details: oneLine`Mentions can be a comma-separated list of any combination
-        of direct mentions, user ids, usernames, role ids and role names.`,
+      details: oneLine`
+        Mentions can be a comma-separated list of any combination
+        of direct mentions, user ids, usernames, role ids and role names.
+      `,
       examples: [
         'delmention 1 MyName',
         'delmention 1 JustTheRoleName,@Me,209752756708311041',
@@ -42,7 +44,7 @@ export default class DelMentionCommand extends SteamWatchCommand {
   // eslint-disable-next-line class-methods-use-this
   async run(
     message: CommandMessage,
-    { watcherId, mentions }: { watcherId: number, mentions: (Role | User)[] },
+    { watcherId, mentions }: { watcherId: number, mentions: (Role | GuildMember)[] },
   ) {
     const dbWatcher = await db.select('app.name')
       .from('app_watcher')
@@ -57,8 +59,7 @@ export default class DelMentionCommand extends SteamWatchCommand {
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji(oneLine)`
-          :ERROR: Unable to find a watcher with the identifier
-          **${watcherId}**!
+          :ERROR: Unable to find a watcher with the identifier **${watcherId}**!
         `,
       });
     }
