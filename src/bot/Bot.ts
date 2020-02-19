@@ -1,5 +1,6 @@
 import { oneLine } from 'common-tags';
 import { RateLimitInfo } from 'discord.js';
+import { ArgumentType } from 'discord.js-commando';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 import db from '../db';
@@ -29,13 +30,14 @@ export default class Bot {
     this.client.registry
       .registerDefaultTypes()
       .registerTypesIn({
-        filter: /^([^.].*)\.(js|ts)$/,
+        filter: /^([^.].*)\.(?:js|ts)$/,
         dirname: join(__dirname, 'commando', 'types'),
+        resolve: (a: { default: ArgumentType }) => a.default,
       })
       .registerDefaultGroups()
       .registerGroups([['apps', 'Apps']])
       .registerCommandsIn({
-        filter: /^([^.].*)\.(js|ts)$/,
+        filter: /^([^.].*)\.(?:js|ts)$/,
         dirname: join(__dirname, 'commands'),
       });
 
