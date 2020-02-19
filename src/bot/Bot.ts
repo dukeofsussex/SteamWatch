@@ -45,10 +45,14 @@ export default class Bot {
         message: `Logged in as '${this.client.user.tag}'`,
       });
 
-      this.setActivity();
+      if (this.client.shard.id === 0) {
+        this.setActivity();
+      }
     });
 
-    this.client.setInterval(() => this.setActivity(), 300000);
+    if (this.client.shard.id === 0) {
+      this.client.setInterval(() => this.setActivity(), 300000);
+    }
 
     if (env.debug) {
       this.client.on('debug', (message) => logger.debug({ group: 'Discord', message }));
@@ -91,15 +95,21 @@ export default class Bot {
   }
 
   private async setActivity() {
-    const count = await db.count('* AS count')
-      .from('app')
-      .innerJoin('app_watcher', 'app_watcher.app_id', 'app.id')
-      .first()
-      .then((res: any) => res.count);
+    const counts = await Promise.all([
+      db.countDistinct('app_id AS count')
+        .from('app_watcher')
+        .first()
+        .then((res: any) => res.count),
+      db.count('* AS count')
+        .from('guild')
+        .whereNot('id', 0)
+        .first()
+        .then((res: any) => res.count),
+    ]);
 
     this.client.user.setActivity(
       oneLine`
-        ${count} apps for ${this.client.guilds.size} guilds
+        ${counts[0]} apps for ${counts[1]} guilds
         | ${this.client.commandPrefix}${this.client.commandPrefix.length > 1 ? ' ' : ''}help
       `,
       { type: 'WATCHING' },

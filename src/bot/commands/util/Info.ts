@@ -38,7 +38,9 @@ export default class InfoCommand extends SteamWatchCommand {
     const countQuery = db.count('* AS count')
       .first();
 
-    const guildCount = this.client.guilds.size.toString();
+    const guildCount = await countQuery.clone()
+      .from('guild')
+      .then((res: any) => res.count);
     const appCount = await countQuery.clone()
       .from('app')
       .then((res: any) => res.count);
