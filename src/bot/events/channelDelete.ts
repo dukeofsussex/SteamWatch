@@ -30,9 +30,6 @@ export default async function channelDelete(channel: GuildChannel) {
   });
 
   await db.delete()
-    .from('app_watcher')
-    .where({
-      channelId: channel.id,
-      guildId: channel.guild.id,
-    });
+    .from('channel')
+    .where('id', channel.id);
 }

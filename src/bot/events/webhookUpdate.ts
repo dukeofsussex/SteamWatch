@@ -14,7 +14,7 @@ export default async function webhookUpdate(channel: TextChannel) {
   const results = await Promise.all([
     channel.fetchWebhooks(),
     db.select('token')
-      .from('webhook')
+      .from('channel')
       .innerJoin('app_watcher', 'app_watcher.channel_id', 'webhook.id')
       .where('id', channel.id)
       .first(),
@@ -32,7 +32,7 @@ export default async function webhookUpdate(channel: TextChannel) {
     'Required by SteamWatch',
   );
 
-  await db('webhook').update({ token: webhook?.token })
+  await db('channel').update({ webhookToken: webhook.token })
     .where('id', channel.id);
 
   delete webhookBeingSet[channel.id];

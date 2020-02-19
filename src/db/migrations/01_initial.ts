@@ -20,10 +20,16 @@ exports.up = (knex: Knex) => knex.schema
     table.foreign('currency_id').references('id')
       .inTable('currency');
   })
-  .createTable('webhook', (table) => {
+  .createTable('channel', (table) => {
     table.bigInteger('id').unsigned()
       .primary();
-    table.string('token', 80).notNullable();
+    table.bigInteger('guild_id').unsigned()
+      .notNullable();
+    table.string('webhook_token', 80).notNullable();
+    table.foreign('guild_id').references('id')
+      .inTable('guild')
+      .onUpdate('CASCADE')
+      .onDelete('CASCADE');
   })
   .createTable('app', (table) => {
     table.integer('id').unsigned()
@@ -58,7 +64,7 @@ exports.up = (knex: Knex) => knex.schema
     table.foreign('app_id').references('id')
       .inTable('app');
     table.foreign('channel_id').references('id')
-      .inTable('webhook')
+      .inTable('channel')
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
     table.foreign('guild_id').references('id')
@@ -103,6 +109,6 @@ exports.down = (knex: Knex) => knex.schema
   .dropTable('app_watcher_mention')
   .dropTable('app_watcher')
   .dropTable('app')
-  .dropTable('webhook')
+  .dropTable('channel')
   .dropTable('guild')
   .dropTable('currency');

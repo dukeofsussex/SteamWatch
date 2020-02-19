@@ -234,7 +234,7 @@ export default class WatchCommand extends SteamWatchCommand {
 
   private async setWebhook(channel: TextChannel) {
     const dbWebhook = db.select('token')
-      .from('webhook')
+      .from('channel')
       .where('id', channel.id)
       .first();
 
@@ -259,8 +259,9 @@ export default class WatchCommand extends SteamWatchCommand {
 
     await db.insert({
       id: channel.id,
-      token: webhook.token,
-    }).into('webhook');
+      guildId: channel.guild.id,
+      webhookToken: webhook.token,
+    }).into('channel');
 
     return null;
   }
