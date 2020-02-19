@@ -48,4 +48,8 @@ export default class WebApi {
     return fetch(`https://store.steampowered.com/api/appdetails?appids=${appids.join(',')}&filters=price_overview&cc=${cc}`)
       .then((res) => res.json());
   }
+
+  static GetIconUrl(appId: number, icon: string) {
+    return `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.ico`;
+  }
 }
