@@ -13,7 +13,8 @@ exports.up = (knex: Knex) => knex.schema
       .primary();
     table.string('name', 128).notNullable();
     table.string('region', 16).notNullable();
-    table.integer('member_count').unsigned();
+    table.integer('member_count').unsigned()
+      .notNullable();
     table.integer('currency_id').unsigned()
       .notNullable();
     table.string('commando_prefix', 16);
