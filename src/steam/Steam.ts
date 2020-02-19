@@ -83,7 +83,7 @@ export default class Steam {
           message: 'Reconnecting',
         });
 
-        this.client.connect();
+        setTimeout(() => this.client.connect(), 15000);
       }
     });
 
