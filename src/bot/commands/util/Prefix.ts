@@ -36,6 +36,10 @@ export default class PrefixCommand extends SteamWatchCommand {
           default: '',
         },
       ],
+      throttling: {
+        duration: 5,
+        usages: 1,
+      },
     });
   }
 

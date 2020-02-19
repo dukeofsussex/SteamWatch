@@ -39,6 +39,8 @@ export default class WatchCommand extends SteamWatchCommand {
       format: '<"all" | "price" | "news"> <app id> [channel]',
       guildOnly: true,
       // @ts-ignore Missing typings
+      clientPermissions: ['MANAGE_WEBHOOKS'],
+      // @ts-ignore Missing typings
       userPermissions: ['MANAGE_CHANNELS'],
       argsPromptLimit: 0,
       args: [
