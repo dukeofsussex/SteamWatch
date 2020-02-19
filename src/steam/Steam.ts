@@ -19,6 +19,7 @@ interface AppInfo {
   details: {
     name: string;
     type: string;
+    clienticon: string;
   }
 }
 

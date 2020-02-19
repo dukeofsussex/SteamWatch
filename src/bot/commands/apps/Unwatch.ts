@@ -44,7 +44,10 @@ export default class UnwatchCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage, { watcherId, option }: { watcherId: number, option: 'all' | 'price' | 'news' }) {
+  async run(
+    message: CommandMessage,
+    { watcherId, option }: { watcherId: number, option: 'all' | 'price' | 'news' },
+  ) {
     const watcher = await db.select('app_watcher.watchNews', 'app_watcher.watchPrice', 'app.name')
       .from('app_watcher')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')

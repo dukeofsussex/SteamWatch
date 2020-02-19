@@ -1,12 +1,12 @@
 import { oneLine, stripIndents } from 'common-tags';
-import { GuildChannel } from 'discord.js';
+import { GuildChannel, TextChannel } from 'discord.js';
 import { CommandMessage } from 'discord.js-commando';
 import db from '../../../db';
 import env from '../../../env';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import WebApi from '../../../steam/WebApi';
-import { CURRENCIES, EMBED_COLOURS } from '../../../utils/constants';
+import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji, capitalize } from '../../../utils/templateTags';
 
 const WATCHER_TYPE = {
@@ -29,8 +29,7 @@ export default class WatchCommand extends SteamWatchCommand {
       description: 'Add a watcher for a Steam app.',
       details: stripIndents`
         Default \`channel\` is the channel the command is run in.
-        The **app id** is the last number in the app's store page url:
-        https://store.steampowered.com/app/appid/name_of_app
+        You can also pass the store page or steamcommunity url as app id.
       `,
       examples: [
         'watch news 730',
@@ -69,51 +68,31 @@ export default class WatchCommand extends SteamWatchCommand {
     });
   }
 
-  // eslint-disable-next-line class-methods-use-this
   async run(
     message: CommandMessage,
     { watcherType, appId, channel }: { watcherType: string, appId: number, channel: GuildChannel },
   ) {
-    const types = watcherType.toLowerCase() === WATCHER_TYPE.ALL
-      ? Object.values(WATCHER_TYPE).filter((type) => type !== WATCHER_TYPE.ALL)
-      : [watcherType.toLowerCase()];
-
-    // Check whether the channel is valid
-    if (channel.type !== 'text') {
+    if (!(channel instanceof TextChannel)) {
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji`:ERROR: ${channel} isn't a text channel!`,
       });
     }
 
+    const types = watcherType.toLowerCase() === WATCHER_TYPE.ALL
+      ? Object.values(WATCHER_TYPE).filter((type) => type !== WATCHER_TYPE.ALL)
+      : [watcherType.toLowerCase()];
+
     // Check whether a watcher already exists for the app <> channel combination
-    const existingWatcher = await db.select('app_id', 'watch_news', 'watch_price')
+    const existingWatcher = await db.select('app.*', 'watch_news', 'watch_price')
       .from('app_watcher')
+      .innerJoin('app', 'app.id', 'app_watcher.app_id')
       .where({
         appId,
         channelId: channel.id,
         guildId: message.guild.id,
       })
       .first();
-
-    if (!existingWatcher) {
-      // Check whether the guild has reached the max amount of watchers
-      const watchedCount = await db.count('* AS count')
-        .from('app_watcher')
-        .where('guild_id', message.guild.id)
-        .first()
-        .then((result: any) => result.count);
-
-      if (watchedCount >= env.settings.maxWatchersPerGuild) {
-        return message.embed({
-          color: EMBED_COLOURS.ERROR,
-          description: insertEmoji(oneLine)`
-            :ERROR: Reached the maximum amount of watchers
-            [${watchedCount}/${env.settings.maxWatchersPerGuild}]!
-          `,
-        });
-      }
-    }
 
     const existingType = existingWatcher
       && ((existingWatcher.watchNews
@@ -133,15 +112,26 @@ export default class WatchCommand extends SteamWatchCommand {
       });
     }
 
-    // Fetch stored app details
-    let app: any = await db.select('id', 'name', 'type')
-      .from('app')
-      .where('id', appId)
-      .first();
-    let newApp = false;
+    const app: any = {};
 
-    // Nothing stored, fetch app details from Steam
-    if (!app) {
+    if (!existingWatcher) {
+      // Check whether the guild has reached the max amount of watchers
+      const watchedCount = await db.count('* AS count')
+        .from('app_watcher')
+        .where('guild_id', message.guild.id)
+        .first()
+        .then((result: any) => result.count);
+
+      if (watchedCount >= env.settings.maxWatchersPerGuild) {
+        return message.embed({
+          color: EMBED_COLOURS.ERROR,
+          description: insertEmoji(oneLine)`
+            :ERROR: Reached the maximum amount of watchers
+            [${watchedCount}/${env.settings.maxWatchersPerGuild}]!
+          `,
+        });
+      }
+
       // Ensure we're connected to Steam
       if (!this.client.steam.isAvailable) {
         return message.embed({
@@ -153,10 +143,10 @@ export default class WatchCommand extends SteamWatchCommand {
         });
       }
 
-      app = await this.client.steam.getAppInfoAsync(appId);
+      const appInfo = await this.client.steam.getAppInfoAsync(appId);
 
       // App doesn't exist
-      if (!app) {
+      if (!appInfo) {
         return message.embed({
           color: EMBED_COLOURS.ERROR,
           description: insertEmoji(stripIndents)`
@@ -166,10 +156,10 @@ export default class WatchCommand extends SteamWatchCommand {
         });
       }
 
-      app.name = app.details.name;
-      app.type = app.details.type;
-
-      newApp = true;
+      app.id = appInfo.appid;
+      app.name = appInfo.details.name;
+      app.icon = appInfo.details.clienticon;
+      app.type = appInfo.details.type;
     }
 
     // Ensure the app <> type combination is valid
@@ -186,65 +176,29 @@ export default class WatchCommand extends SteamWatchCommand {
       }
     }
 
-    if (newApp) {
-      await db.insert({
-        id: app.appid,
-        name: app.name,
-        type: app.type,
-      }).into('app');
+    if (app) {
+      await db.insert(app)
+        .into('app');
     }
 
     if (types.includes(WATCHER_TYPE.PRICE)) {
-      const appPrice = await db.select(
-        'app_price.id',
-        { currencyId: 'currency.id' },
-        { currencyAbbr: 'currency.abbreviation' },
-      ).from('guild')
-        .innerJoin('currency', 'currency.id', 'guild.currency_id')
-        .leftJoin('app_price', function appPriceLeftJoin() {
-          this.on('app_price.app_id', '=', appId.toString())
-            .andOn('app_price.currency_id', '=', 'currency.id');
-        })
-        .where('guild.id', message.guild.id)
-        .first();
+      const error = await WatchCommand.setAppPrice(app, message.guild.id);
 
-      // Don't have the app <> currency combination in the db
-      if (!appPrice.id) {
-        const priceOverview = await WebApi.GetAppPricesAsync(
-          [appId],
-          CURRENCIES[appPrice.currencyAbbr].cc,
-        );
-
-        if (!priceOverview[appId].success) {
-          return message.embed({
-            color: EMBED_COLOURS.ERROR,
-            description: insertEmoji(stripIndents)`
-              ${oneLine`
-                :ERROR: Unable to watch app prices for **${app.name} (${app.type})**
-                in **${appPrice.currencyAbbr}**!`}
-              This may be due to regional restrictions.
-              ${oneLine`
-                You can change your currency using
-                \`${message.anyUsage('currency')} <currency>\``}
-            `,
-          });
-        } if (!priceOverview[appId].data.price_overview) {
-          return message.embed({
-            color: EMBED_COLOURS.ERROR,
-            description: insertEmoji(stripIndents)`
-              :ERROR: Unable to watch app prices for **${app.name} (${app.type})** in **${appPrice.currencyAbbr}**!
-              Free apps cannot be watched for price changes!
-            `,
-          });
-        }
-
-        await db.insert({
-          appId,
-          currencyId: appPrice.currencyId,
-          price: priceOverview[appId].data.price_overview.initial,
-          discountedPrice: priceOverview[appId].data.price_overview.initial,
-        }).into('app_price');
+      if (error) {
+        return message.embed({
+          color: EMBED_COLOURS.ERROR,
+          description: error,
+        });
       }
+    }
+
+    const error = await this.setWebhook(channel);
+
+    if (error) {
+      return message.embed({
+        color: EMBED_COLOURS.ERROR,
+        description: error,
+      });
     }
 
     if (existingWatcher) {
@@ -276,5 +230,89 @@ export default class WatchCommand extends SteamWatchCommand {
         ${(existingWatcher ? 'in' : 'to')} ${channel}.
       `,
     });
+  }
+
+  private async setWebhook(channel: TextChannel) {
+    const dbWebhook = db.select('token')
+      .from('webhook')
+      .where('id', channel.id)
+      .first();
+
+    if (dbWebhook) {
+      return null;
+    }
+
+    const webhooks = await channel.fetchWebhooks();
+
+    if (webhooks.size >= 10) {
+      return insertEmoji(stripIndents)`
+        :ERROR: ${channel} already has the maximum amount of webhooks.
+        Please remove any unused webhooks and try again.
+      `;
+    }
+
+    const webhook = await channel.createWebhook(
+      this.client.user.username,
+      this.client.user.avatarURL,
+      'Required by SteamWatch',
+    );
+
+    await db.insert({
+      id: channel.id,
+      token: webhook.token,
+    }).into('webhook');
+
+    return null;
+  }
+
+  private static async setAppPrice(app: any, guildId: string) {
+    const appPrice = await db.select(
+      'app_price.id',
+      { currencyId: 'currency.id' },
+      { currencyAbbr: 'currency.abbreviation' },
+      'currency.country_code',
+    ).from('guild')
+      .innerJoin('currency', 'currency.id', 'guild.currency_id')
+      .leftJoin('app_price', function appPriceLeftJoin() {
+        this.on('app_price.app_id', '=', app.id)
+          .andOn('app_price.currency_id', '=', 'currency.id');
+      })
+      .where('guild.id', guildId)
+      .first();
+
+    // Don't have the app <> currency combination in the db
+    if (!appPrice.id) {
+      const priceOverview = await WebApi.GetAppPricesAsync(
+        [app.id],
+        appPrice.countryCode,
+      );
+
+      if (!priceOverview[app.id].success) {
+        return insertEmoji(stripIndents)`
+          ${oneLine`
+            :ERROR: Unable to watch app prices for **${app.name} (${app.type})**
+            in **${appPrice.currencyAbbr}**!`}
+          This may be due to regional restrictions.
+          ${oneLine`
+            You can change your currency using
+            \`${this.usage('currency')} <currency>\``}
+        `;
+      }
+      if (!priceOverview[app.id].data.price_overview) {
+        return insertEmoji(stripIndents)`
+          :ERROR: Unable to watch app prices for **${app.name} (${app.type})** in **${appPrice.currencyAbbr}**!
+          Free apps cannot be watched for price changes!
+        `;
+      }
+
+      await db.insert({
+        appId: app.id,
+        currencyId: appPrice.currencyId,
+        price: priceOverview[app.id].data.price_overview.initial,
+        discountedPrice: priceOverview[app.id].data.price_overview.initial,
+      }).into('app_price');
+    }
+
+    return null;
   }
 }

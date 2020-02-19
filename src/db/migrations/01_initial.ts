@@ -29,6 +29,7 @@ exports.up = (knex: Knex) => knex.schema
     table.integer('id').unsigned()
       .primary();
     table.string('name', 256).notNullable();
+    table.string('icon', 42).notNullable();
     table.string('type', 32).notNullable();
     table.dateTime('last_checked_news');
   })

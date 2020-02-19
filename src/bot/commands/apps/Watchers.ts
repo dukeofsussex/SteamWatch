@@ -29,7 +29,7 @@ export default class WatchersCommand extends SteamWatchCommand {
         {
           key: 'identifier',
           prompt: 'Identifier',
-          type: 'channel|integer',
+          type: 'channel|app-id',
           default: -1,
         },
       ],
@@ -38,15 +38,15 @@ export default class WatchersCommand extends SteamWatchCommand {
 
   // eslint-disable-next-line class-methods-use-this
   async run(message: CommandMessage, { identifier }: { identifier: number | GuildChannel }) {
+    let notFoundCategory = 'for this guild';
     let query = db.select('app.name', 'app_watcher.*')
       .from('app')
       .innerJoin('app_watcher', 'app.id', 'app_watcher.app_id')
       .where('guild_id', message.guild.id);
-    let notFoundCategory = 'for this guild';
 
     if (typeof identifier === 'number' && identifier !== -1) {
-      query = query.andWhere('app_id', identifier);
       notFoundCategory = `for **${identifier}**`;
+      query = query.andWhere('app_id', identifier);
     } else if (identifier instanceof GuildChannel) {
       if (!(identifier instanceof TextChannel)) {
         return message.embed({
@@ -54,8 +54,9 @@ export default class WatchersCommand extends SteamWatchCommand {
           description: insertEmoji`:ERROR: ${identifier} isn't a text channel!`,
         });
       }
-      query = query.andWhere('channel_id', identifier.id);
+
       notFoundCategory = `for ${identifier}`;
+      query = query.andWhere('channel_id', identifier.id);
     }
 
     const watchers = await query.orderBy('name', 'asc');
