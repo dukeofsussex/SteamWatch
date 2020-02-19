@@ -91,16 +91,14 @@ export default class Steam {
       if (res.eresult !== NodeSteam.EResult.OK) {
         logger.error({
           group: 'Steam',
-          message: res,
+          message: `Failed to log in:\n${JSON.stringify(res, null, 2)}`,
         });
-
-        throw new Error('Steam login failed');
+      } else {
+        logger.info({
+          group: 'Steam',
+          message: 'Logged in',
+        });
       }
-
-      logger.info({
-        group: 'Steam',
-        message: 'Logged in',
-      });
     });
 
     this.client.on('loggedOff', () => {
