@@ -13,14 +13,14 @@ export default async function webhookUpdate(channel: TextChannel) {
 
   const results = await Promise.all([
     channel.fetchWebhooks(),
-    db.select('token')
-      .from('channel')
+    db.select({ id: 'webhook_id' })
+      .from('channel_webhook')
       .innerJoin('app_watcher', 'app_watcher.channel_id', 'webhook.id')
       .where('id', channel.id)
       .first(),
   ]);
 
-  if (!results[1] || results[0].map((hook: Webhook) => hook.token).includes(results[1].token)) {
+  if (!results[1] || results[0].map((hook: Webhook) => hook.id).includes(results[1].id)) {
     return;
   }
 
@@ -32,7 +32,7 @@ export default async function webhookUpdate(channel: TextChannel) {
     'Required by SteamWatch',
   );
 
-  await db('channel').update({ webhookToken: webhook.token })
+  await db('channel_webhook').update({ webhookId: webhook.id, webhookToken: webhook.token })
     .where('id', channel.id);
 
   delete webhookBeingSet[channel.id];

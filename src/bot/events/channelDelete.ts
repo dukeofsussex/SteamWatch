@@ -32,6 +32,6 @@ export default async function channelDelete(channel: GuildChannel) {
   });
 
   await db.delete()
-    .from('channel')
+    .from('channel_webhook')
     .where('id', channel.id);
 }
