@@ -25,6 +25,7 @@ export interface SteamPriceOverview {
 export interface SteamNewsItem {
   appid: number;
   author: string;
+  contents: string;
   date: number;
   feedlabel: string;
   feedname: string;
@@ -39,7 +40,7 @@ export interface SteamNewsItem {
 
 export default class WebApi {
   static async getAppNewsAsync(appid: number): Promise<SteamNewsItem | undefined> {
-    return fetch(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2?appid=${appid}&maxlength=1&count=1`)
+    return fetch(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2?appid=${appid}&count=1`)
       .then((res) => res.json())
       .then((res) => res.appnews.newsitems[0]);
   }
@@ -49,7 +50,15 @@ export default class WebApi {
       .then((res) => res.json());
   }
 
+  static GetClanLogo(image: string) {
+    return image.replace(/\{STEAM_CLAN(?:_LOC)?_IMAGE\}/, 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/clans');
+  }
+
   static GetIconUrl(appId: number, icon: string) {
     return `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.ico`;
+  }
+
+  static GetStoreUrl(appId: number) {
+    return `https://store.steampowered.com/app/${appId}`;
   }
 }

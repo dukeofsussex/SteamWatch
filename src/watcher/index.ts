@@ -1,27 +1,29 @@
+import MessageQueue from './MessageQueue';
 import NewsWatcher from './watchers/News';
 import PriceWatcher from './watchers/Prices';
-import SteamWatchClient from '../bot/structures/SteamWatchClient';
-
-interface Watcher {
-  start: Function;
-  stop: Function;
-}
+import Watcher from './watchers/Watcher';
 
 export default class WatcherManager {
+  private messageQueue: MessageQueue;
+
   private watchers: Watcher[];
 
-  constructor(client: SteamWatchClient) {
+  constructor() {
+    this.messageQueue = new MessageQueue();
+
     this.watchers = [
-      new NewsWatcher(client),
-      new PriceWatcher(client),
+      new NewsWatcher(this.messageQueue),
+      new PriceWatcher(this.messageQueue),
     ];
   }
 
-  start() {
+  async startAsync() {
+    await this.messageQueue.startAsync();
     this.watchers.map((watcher) => watcher.start());
   }
 
-  stop() {
+  async stopAsync() {
     this.watchers.map((watcher) => watcher.stop());
+    await this.messageQueue.stopAsync();
   }
 }

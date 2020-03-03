@@ -35,16 +35,17 @@ export default class ProcessManager {
     }
   }
 
-  stop() {
+  async stopAsync() {
     logger.info({
       group: 'Shard',
       message: 'All shutting down',
     });
-    this.watcherManager?.stop();
+    await this.watcherManager?.stopAsync();
     setTimeout(() => {
       db.destroy();
-      logger.destroy();
-      process.exit(0);
+      logger.end(() => {
+        process.exit(0);
+      });
     }, 5000);
   }
 
@@ -85,8 +86,7 @@ export default class ProcessManager {
   }
 
   private watch() {
-  // TODO Change manager to no longer require the client
-  // this.watcherManager = new Manager();
-  // this.watcherManager.start();
+    this.watcherManager = new WatcherManager();
+    this.watcherManager.start();
   }
 }

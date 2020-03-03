@@ -1,11 +1,10 @@
-import { oneLine } from 'common-tags';
-import { RichEmbed, TextChannel } from 'discord.js';
+import { oneLine, stripIndents } from 'common-tags';
 import db from '../../db';
 import logger from '../../logger';
+import MessageQueue from '../MessageQueue';
 import WebApi, { SteamPriceOverview } from '../../steam/WebApi';
-import SteamWatchClient from '../../bot/structures/SteamWatchClient';
-import { CURRENCIES, EMBED_COLOURS } from '../../utils/constants';
 import { insertEmoji } from '../../utils/templateTags';
+import Watcher from './Watcher';
 
 import Knex = require('knex');
 
@@ -13,6 +12,7 @@ const PRICE_FREQUENCY = 12; // 12h
 const PRICE_RATE_LIMIT = 5000; // 5s
 
 interface AppPrice {
+  icon: string;
   id: number;
   name: string;
   currencyId: number;
@@ -27,30 +27,142 @@ interface AppPriceOverview extends AppPrice {
   overview: SteamPriceOverview;
 }
 
-interface AppPriceRemoval extends AppPrice {
-  reason: string;
-}
-
-export default class PriceWatcher {
-  private client: SteamWatchClient;
-
-  private timeout?: NodeJS.Timeout;
-
-  constructor(client: SteamWatchClient) {
-    this.client = client;
+export default class PriceWatcher extends Watcher {
+  constructor(queue: MessageQueue) {
+    super(queue, PRICE_RATE_LIMIT);
   }
 
-  start() {
-    this.preProcess();
+  protected async watchAsync() {
+    const apps = await PriceWatcher.fetchNextAppPricesAsync();
+
+    if (!apps) {
+      this.retry();
+      return;
+    }
+
+    let prices = null;
+
+    try {
+      prices = await WebApi.GetAppPricesAsync(
+        apps.map((app) => app.id),
+        apps[0].currencyAbbr,
+      );
+    } catch (err) {
+      logger.error({
+        group: 'Watcher',
+        message: err,
+      });
+    }
+
+    if (!prices) {
+      this.retry();
+      return;
+    }
+
+    const removed: AppPrice[] = [];
+    const unchanged: AppPrice[] = [];
+
+    for (let i = 0; i < apps.length; i += 1) {
+      const app = apps[i];
+
+      if (!prices[app.id].success || Array.isArray(prices[app.id].data)) {
+        const message = !prices[app.id].success
+          ? `No longer available in **${app.currencyAbbr}**.`
+          : 'App is now free-to-play.';
+
+        // eslint-disable-next-line no-await-in-loop
+        await this.preEnqueueAsync(
+          app,
+          insertEmoji(stripIndents)`
+            :ALERT: Price watcher removed!
+            Reason: ${message}
+          `,
+        );
+      } else if (prices[app.id].data.price_overview.initial === app.price
+          && prices[app.id].data.price_overview.final === app.discountedPrice) {
+        unchanged.push(app);
+      } else {
+        // eslint-disable-next-line no-await-in-loop
+        await this.processChangesAsync(app, prices[app.id].data.price_overview);
+      }
+    }
+
+    if (unchanged.length > 0) {
+      const ids = unchanged.map((app) => app.id);
+
+      await db('app_price').update({ lastChecked: new Date() })
+        .whereIn('app_id', ids)
+        .andWhere('currency_id', unchanged[0].currencyId);
+    }
+
+    if (removed.length > 0) {
+      const ids = removed.map((app) => app.id);
+
+      await db('app_watcher').update({
+        watchPrice: false,
+      })
+        .whereIn('app_id', ids)
+        .andWhere('watch_price', true);
+
+      await db.delete()
+        .whereIn('app_id', ids)
+        .andWhere({
+          watchNews: false,
+          watchPrice: false,
+        });
+    }
+
+    this.next();
   }
 
-  stop() {
-    if (this.timeout) {
-      clearTimeout(this.timeout);
+  private async processChangesAsync(app: AppPrice, priceOverview: SteamPriceOverview) {
+    await db('app_price').update({
+      price: priceOverview.initial,
+      discountedPrice: priceOverview.final,
+      lastChecked: new Date(),
+    })
+      .where({
+        appId: app.id,
+        currencyId: app.currencyId,
+      });
+
+    let message = '';
+
+    if (priceOverview.initial > app.price) {
+      message = insertEmoji(oneLine)`
+          :PRICE_UP: Base price increased to
+          **${priceOverview.initial_formatted}**!
+        `;
+    } else if (priceOverview.initial < app.price) {
+      message = insertEmoji(oneLine)`
+          :PRICE_DOWN: Base price dropped to
+          **${priceOverview.initial_formatted}**!
+        `;
+    } else if (priceOverview.final < app.discountedPrice) {
+      message = insertEmoji(oneLine)`
+        :ALERT: Discount:
+        **${priceOverview.final_formatted}**
+        (-${priceOverview.discount_percent}%)
+      `;
+    }
+
+    if (message) {
+      await this.preEnqueueAsync(app, message);
     }
   }
 
-  private async preProcess() {
+  private async preEnqueueAsync(app: AppPrice, message: string) {
+    const embed = Watcher.getEmbed(app, {
+      title: `**${app.name}**`,
+      description: message,
+      url: WebApi.GetStoreUrl(app.id),
+      timestamp: new Date(),
+    });
+
+    this.enqueueAsync(app.id, embed);
+  }
+
+  private static async fetchNextAppPricesAsync() {
     const average = await db.avg('count', { as: 'average' })
       .from(function innerCount(this: Knex) {
         this.count('app_id AS count')
@@ -65,6 +177,7 @@ export default class PriceWatcher {
     const appBaseQuery = db.select<AppPrice[]>(
       'app.id',
       'app.name',
+      'app.icon',
       'guild.currency_id',
       { currencyAbbr: 'currency.abbreviation' },
       { currencyName: 'currency.name' },
@@ -73,10 +186,10 @@ export default class PriceWatcher {
       'app_price.last_checked',
       db.raw(
         oneLine`
-          COUNT(*)
-          + (TIMESTAMPDIFF(HOUR, IFNULL(last_checked, NOW() - INTERVAL 1 YEAR), NOW()) DIV ?) * ?
-          AS priority
-        `,
+        COUNT(*)
+        + (TIMESTAMPDIFF(HOUR, IFNULL(last_checked, NOW() - INTERVAL 1 YEAR), NOW()) DIV ?) * ?
+        AS priority
+      `,
         [PRICE_FREQUENCY, average],
       ),
     ).from('app')
@@ -99,205 +212,12 @@ export default class PriceWatcher {
       .then((res) => res?.currencyId || 0);
 
     if (currencyId === 0) {
-      this.timeout = setTimeout(() => this.preProcess(), 900000);
-      return;
+      return null;
     }
 
-    const apps = await appBaseQuery
+    return appBaseQuery
       .clone()
       .where('currency.id', currencyId)
       .limit(100);
-
-    this.process(apps);
-  }
-
-  private async process(apps: AppPrice[]) {
-    let prices = null;
-    try {
-      prices = await WebApi.GetAppPricesAsync(
-        apps.map((app) => app.id),
-        CURRENCIES[apps[0].currencyAbbr].cc,
-      );
-    } catch (err) {
-      logger.error({
-        group: 'Watcher',
-        message: err,
-      });
-    }
-
-    if (!prices) {
-      setTimeout(() => this.preProcess(), PRICE_RATE_LIMIT);
-      return;
-    }
-
-    const changed: AppPriceOverview[] = [];
-    const removed: AppPriceRemoval[] = [];
-    const unchanged: AppPrice[] = [];
-
-    for (let i = 0; i < apps.length; i += 1) {
-      const app = apps[i];
-
-      if (!prices[app.id].success) {
-        removed.push({
-          ...app,
-          reason: `No longer available in **${app.currencyAbbr}**.`,
-        });
-      } else if (Array.isArray(prices[app.id].data)) {
-        removed.push({
-          ...app,
-          reason: 'App is now free-to-play.',
-        });
-      } else if (
-        (prices[app.id].data.price_overview.discount_percent === 0
-          && app.discountedPrice === app.price)
-        || (prices[app.id].data.price_overview.discount_percent > 0
-          && prices[app.id].data.price_overview.final === app.discountedPrice)) {
-        unchanged.push(app);
-      } else {
-        changed.push({
-          ...app,
-          overview: prices[app.id].data.price_overview,
-        });
-      }
-    }
-
-    if (unchanged.length > 0) {
-      await PriceWatcher.processUnchanged(unchanged);
-    }
-
-    if (changed.length > 0) {
-      this.processChanged(changed);
-    }
-
-    if (removed.length > 0) {
-      this.processRemoved(removed);
-    }
-
-    setTimeout(() => this.preProcess(), PRICE_RATE_LIMIT);
-  }
-
-  private async processChanged(apps: AppPriceOverview[]) {
-    for (let i = 0; i < apps.length; i += 1) {
-      const app = apps[i];
-
-      // eslint-disable-next-line no-await-in-loop
-      await db('app_price').update({
-        price: app.overview.initial,
-        discountedPrice: app.overview.final,
-        lastChecked: new Date(),
-      })
-        .where({
-          appId: app.id,
-          currencyId: app.currencyId,
-        });
-
-      let message = '';
-
-      if (app.overview.initial > app.price) {
-        message = insertEmoji(oneLine)`
-            :PRICE_UP: Base price increased to
-            **${app.overview.initial_formatted}**!
-          `;
-      } else if (app.overview.initial < app.price) {
-        message = insertEmoji(oneLine)`
-            :PRICE_DOWN: Base price dropped to
-            **${app.overview.initial_formatted}**!
-          `;
-      } else if (app.overview.final < app.discountedPrice) {
-        message = insertEmoji(oneLine)`
-          :ALERT: Discount:
-          **${app.overview.final_formatted}**
-          (-${app.overview.discount_percent}%)
-        `;
-      }
-
-      if (message) {
-        // eslint-disable-next-line no-await-in-loop
-        await this.sendNotifications(app, message);
-      }
-    }
-  }
-
-  private async processRemoved(apps: AppPriceRemoval[]) {
-    for (let i = 0; i < apps.length; i += 1) {
-      const app = apps[i];
-
-      // eslint-disable-next-line no-await-in-loop
-      const watchers = await db.select('guild_id')
-        .from('app_watcher')
-        .where({
-          appId: app.id,
-          watchPrice: true,
-        });
-
-      watchers.forEach((watcher) => {
-        const guild = this.client.guilds.get(watcher.guildId);
-        guild?.owner.sendEmbed({
-          color: EMBED_COLOURS.DEFAULT,
-          description: insertEmoji(oneLine)`
-            :ALERT: Removed a price watcher for **${app.name}**
-            in **${guild.name}**.\n
-            Reason: ${app.reason}`,
-        });
-      });
-    }
-
-    await db('app_watcher').update({
-      watchPrice: false,
-    })
-      .whereIn('app_id', apps.map((app) => app.id))
-      .andWhere('watch_price', true);
-
-    await db.delete()
-      .whereIn('app_id', apps.map((app) => app.id))
-      .andWhere({
-        watchNews: false,
-        watchPrice: false,
-      });
-  }
-
-  private static async processUnchanged(apps: AppPrice[]) {
-    await db('app_price').update({ lastChecked: new Date() })
-      .whereIn('app_id', apps.map((app) => app.id))
-      .where('currency_id', apps[0].currencyId);
-  }
-
-  // TODO Move to a dedicated notification service once the guild count rises
-  private async sendNotifications(app: AppPrice, message: string) {
-    const watchers = await db.select('app_watcher.id', 'channel_id', 'entity_id', 'type')
-      .from('app_watcher')
-      .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
-      .where({
-        appId: app.id,
-        watchPrice: true,
-      });
-
-    const embed = new RichEmbed({
-      color: EMBED_COLOURS.DEFAULT,
-      title: `**${app.name}**`,
-      description: message,
-      url: `https://store.steampowered.com/app/${app.id}`,
-    });
-
-    let currentWatcherId = watchers[0].id || -1;
-    let currentWatcherMentions = [];
-
-    for (let i = 0; i <= watchers.length; i += 1) {
-      const watcher = watchers[i];
-      if (!watcher || currentWatcherId !== watcher.id) {
-        const channel = this.client.channels
-          .get(watcher
-            ? watcher.channelId
-            : watchers[watchers.length - 1].channelId) as TextChannel;
-        channel!.send(currentWatcherMentions.join(' ') || '', { embed });
-
-        currentWatcherId = watcher ? watcher.id : -1;
-        currentWatcherMentions = [];
-      }
-
-      if (watcher && watcher.entityId) {
-        currentWatcherMentions.push(`<@${watcher.type === 'role' ? '&' : ''}${watcher.entityId}>`);
-      }
-    }
   }
 }

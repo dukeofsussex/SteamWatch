@@ -9,7 +9,7 @@ const { AllHtmlEntities } = require('html-entities');
 interface TransformedArticle {
   exceedsMaxlength: boolean;
   markdown: string;
-  thumbnail: string;
+  thumbnail: string | null;
 }
 
 export default function transformArticle(
@@ -19,7 +19,7 @@ export default function transformArticle(
 ): TransformedArticle {
   let decodedContent = content;
   let options: any = { render: createRender(maxLength, maxNewlines) };
-  let thumbnail = '';
+  let thumbnail: string | null = null;
 
   if (/<\/?p>|<br\/?>/i.test(content)) {
     // Respect html tags.
