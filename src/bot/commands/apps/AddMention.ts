@@ -47,8 +47,8 @@ export default class AddMentionCommand extends SteamWatchCommand {
     message: CommandMessage,
     { watcherId, mentions }: { watcherId: number, mentions: (Role | GuildMember)[] },
   ) {
-    // Filter duplicates
-    let filteredMentions = mentions.filter((v, i, a) => a.findIndex((m) => m.id === v.id) === i);
+    // Filter out duplicates
+    let filteredMentions = [...new Set(mentions)];
 
     const dbMentions = await db.select('app_watcher_mention.entity_id', 'app.name')
       .from('app_watcher')
