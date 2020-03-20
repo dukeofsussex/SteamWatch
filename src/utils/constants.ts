@@ -15,7 +15,6 @@ const EMOJIS: {
   DM: '\uD83D\uDCEC',
   ERROR: '\u274C',
   EYES: '\uD83D\uDC40',
-  NEWS: '\uD83D\uDCF0',
   PING_PONG: '\uD83C\uDFD3',
   PRICE_DOWN: '\uD83D\uDCC9',
   PRICE_UP: '\uD83D\uDCC8',
