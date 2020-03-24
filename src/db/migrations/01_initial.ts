@@ -98,7 +98,11 @@ exports.up = (knex: Knex) => knex.schema
       .notNullable();
     table.integer('price').unsigned()
       .notNullable();
+    table.string('formatted_price', 32).notNullable();
     table.integer('discounted_price').unsigned()
+      .notNullable();
+    table.string('formatted_discounted_price', 32).notNullable();
+    table.integer('discount').unsigned()
       .notNullable();
     table.dateTime('last_checked');
     table.foreign('app_id').references('id')

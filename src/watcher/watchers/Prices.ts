@@ -20,6 +20,7 @@ interface AppPrice {
   currencyName: string;
   price: number;
   discountedPrice: number;
+  discount: number;
   lastChecked: Date;
 }
 
@@ -79,6 +80,7 @@ export default class PriceWatcher extends Watcher {
           `,
         );
       } else if (prices[app.id].data.price_overview.initial === app.price
+          && prices[app.id].data.price_overview.discount_percent === app.discount
           && prices[app.id].data.price_overview.final === app.discountedPrice) {
         unchanged.push(app);
       } else {
@@ -118,7 +120,10 @@ export default class PriceWatcher extends Watcher {
   private async processChangesAsync(app: AppPrice, priceOverview: SteamPriceOverview) {
     await db('app_price').update({
       price: priceOverview.initial,
+      formattedPrice: priceOverview.initial_formatted,
       discountedPrice: priceOverview.final,
+      formattedDiscountedPrice: priceOverview.final_formatted,
+      discount: priceOverview.discount_percent,
       lastChecked: new Date(),
     })
       .where({
@@ -138,7 +143,7 @@ export default class PriceWatcher extends Watcher {
           :PRICE_DOWN: Base price dropped to
           **${priceOverview.initial_formatted}**!
         `;
-    } else if (priceOverview.final < app.discountedPrice) {
+    } else if (priceOverview.discount_percent > app.discount) {
       message = insertEmoji(oneLine)`
         :ALERT: Discount:
         **${priceOverview.final_formatted}**
@@ -182,6 +187,7 @@ export default class PriceWatcher extends Watcher {
       { currencyAbbr: 'currency.abbreviation' },
       { currencyName: 'currency.name' },
       'app_price.price',
+      'app_price.discount',
       'app_price.discounted_price',
       'app_price.last_checked',
       db.raw(
