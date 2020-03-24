@@ -2,8 +2,8 @@ import { CommandMessage } from 'discord.js-commando';
 import db from '../../../db';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import SteamWatchClient from '../../structures/SteamWatchClient';
+import WebApi from '../../../steam/WebApi';
 import { EMBED_COLOURS } from '../../../utils/constants';
-import { insertEmoji } from '../../../utils/templateTags';
 
 export default class NewsCommand extends SteamWatchCommand {
   constructor(client: SteamWatchClient) {
@@ -11,45 +11,62 @@ export default class NewsCommand extends SteamWatchCommand {
       name: 'news',
       group: 'apps',
       memberName: 'news',
-      description: 'Fetch cached news articles for the specified app id.',
+      description: 'Fetch the latest cached news article for the specified app.',
       examples: [
         'news 730',
-        'news 730 2',
       ],
       argsPromptLimit: 0,
       args: [
         {
-          key: 'appid',
+          key: 'appId',
           prompt: 'App identifier',
-          type: 'integer',
-        },
-        {
-          key: 'count',
-          prompt: 'Count',
-          type: 'integer',
-          default: 1,
-          max: 5,
-          min: 1,
+          type: 'app-id',
         },
       ],
     });
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage, { appid, count }: { appid: number, count: number }) {
-    const news = await db.select('url')
-      .from('app_news')
-      .where('app_id', appid)
+  async run(message: CommandMessage, { appid: appId }: { appid: number }) {
+    const news = await db.select(
+      'name',
+      'icon',
+      'app_id',
+      'title',
+      'markdown',
+      'thumbnail',
+      'url',
+      'created_at',
+    ).from('app_news')
+      .innerJoin('app', 'app.id', 'app_news.app_id')
+      .where('app_id', appId)
       .orderBy('created_at', 'desc')
-      .limit(count);
+      .first();
 
-    if (news.length === 0) {
+    if (!news) {
       return message.embed({
         color: EMBED_COLOURS.DEFAULT,
         description: 'No cached news available!',
       });
     }
 
-    return message.say(insertEmoji`:EYES: ${news.map((n) => `<${n.url}>`).join('\n')}`);
+    return message.embed({
+      color: EMBED_COLOURS.DEFAULT,
+      title: `**${news.title}**`,
+      description: news.markdown,
+      footer: {
+        text: news.name,
+      },
+      url: news.url,
+      timestamp: new Date(),
+      image: news.thumbnail
+        ? {
+          url: WebApi.GetClanLogo(news.thumbnail),
+        }
+        : null,
+      thumbnail: {
+        url: WebApi.GetIconUrl(news.appId, news.icon),
+      },
+    });
   }
 }
