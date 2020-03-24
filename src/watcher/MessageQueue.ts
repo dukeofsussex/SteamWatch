@@ -13,19 +13,31 @@ const pExistsSync = promisify(existsSync);
 const pReadFile = promisify(readFile);
 const pWriteFile = promisify(writeFile);
 
+interface QueuedItem {
+  id: string;
+  token: string;
+  message: { content: string, embeds: RichEmbed[] }
+}
+
 export default class MessageQueue {
-  private queue: { id: string, token: string, message: { content: string, embeds: RichEmbed[] } }[];
+  private queue: { [index: number]: QueuedItem };
+
+  private queueHead: number;
+
+  private queueTail: number;
 
   private backupInterval?: NodeJS.Timeout;
 
   private queueTimeout?: NodeJS.Timeout;
 
   constructor() {
-    this.queue = [];
+    this.queue = {};
+    this.queueHead = 0;
+    this.queueTail = 0;
   }
 
   push(id: string, token: string, message: { content: string, embeds: RichEmbed[] }) {
-    this.queue.push({ id, token, message });
+    this.enQueue({ id, token, message });
 
     if (!this.queueTimeout) {
       this.queueTimeout = setTimeout(() => this.notify(), QUEUE_DELAY);
@@ -57,7 +69,7 @@ export default class MessageQueue {
   }
 
   private async notify() {
-    const { id, message, token } = this.queue.shift()!;
+    const { id, message, token } = this.deQueue()!;
 
     const body = {
       content: message.content,
@@ -80,7 +92,7 @@ export default class MessageQueue {
         message: err,
       });
 
-      this.queue.push({ id, message, token });
+      this.enQueue({ id, message, token });
     }
 
     if (result && !result.ok) {
@@ -93,11 +105,42 @@ export default class MessageQueue {
       }
     }
 
-    if (this.queue.length > 0) {
+    if (this.queueSize() > 0) {
       this.queueTimeout = setTimeout(() => this.notify(), QUEUE_DELAY);
     } else if (this.queueTimeout) {
       clearTimeout(this.queueTimeout);
     }
+  }
+
+  private enQueue(item: any) {
+    this.queue[this.queueTail] = item;
+    this.queueTail += 1;
+  }
+
+  private deQueue() {
+    const size = this.queueTail - this.queueHead;
+
+    if (size <= 0) {
+      return undefined;
+    }
+
+    const item = this.queue[this.queueHead];
+
+    delete this.queue[this.queueHead];
+
+    this.queueHead += 1;
+
+    // Reset the counter
+    if (this.queueHead === this.queueTail) {
+      this.queueHead = 0;
+      this.queueTail = 0;
+    }
+
+    return item;
+  }
+
+  private queueSize() {
+    return this.queueTail - this.queueHead;
   }
 
   private static async purgeWebhook(id: string) {
