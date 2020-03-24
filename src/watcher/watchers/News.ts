@@ -60,6 +60,7 @@ export default class NewsWatcher extends Watcher {
     await db.insert({
       id: news.gid,
       appId: news.appid,
+      title: news.title,
       markdown: transformed.markdown,
       thumbnail: transformed.thumbnail,
       url: news.url,

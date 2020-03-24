@@ -47,6 +47,7 @@ exports.up = (knex: Knex) => knex.schema
       .primary();
     table.integer('app_id').unsigned()
       .notNullable();
+    table.string('title', 128).notNullable();
     table.string('markdown', 2048).notNullable();
     table.string('thumbnail', 256);
     table.string('url', 256).notNullable();
