@@ -17,7 +17,7 @@ export default class CurrencyCommand extends SteamWatchCommand {
       details: 'A list of currencies can be found at https://partner.steamgames.com/doc/store/pricing/currencies',
       examples: [
         'currency',
-        'currency USD',
+        'currency GBP',
         'currency CIS-USD',
       ],
       guildOnly: true,

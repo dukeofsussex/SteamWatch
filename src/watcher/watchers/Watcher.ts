@@ -12,7 +12,7 @@ interface App {
   name: string;
 }
 
-export default abstract class Watcher implements Watcher {
+export default abstract class Watcher {
   private readonly queue: MessageQueue;
 
   private readonly rateLimit: number;
