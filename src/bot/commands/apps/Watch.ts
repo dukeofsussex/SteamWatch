@@ -54,7 +54,7 @@ export default class WatchCommand extends SteamWatchCommand {
         {
           key: 'appId',
           prompt: 'App identifier',
-          type: 'integer',
+          type: 'app-id',
         },
         {
           key: 'channel',
@@ -85,84 +85,53 @@ export default class WatchCommand extends SteamWatchCommand {
       ? Object.values(WATCHER_TYPE).filter((type) => type !== WATCHER_TYPE.ALL)
       : [watcherType.toLowerCase()];
 
-    // Check whether a watcher already exists for the app <> channel combination
-    const existingWatcher = await db.select('app.*', 'watch_news', 'watch_price')
+    // Check whether the guild has reached the max amount of watchers
+    const watchedCount = await db.count('* AS count')
       .from('app_watcher')
-      .innerJoin('app', 'app.id', 'app_watcher.app_id')
-      .where({
-        appId,
-        channelId: channel.id,
-        guildId: message.guild.id,
-      })
-      .first();
+      .where('guild_id', message.guild.id)
+      .first()
+      .then((result: any) => result.count);
 
-    const existingType = existingWatcher
-      && ((existingWatcher.watchNews
-        && types.includes(WATCHER_TYPE.NEWS)
-        && WATCHER_TYPE.NEWS)
-        || (existingWatcher.watchPrice
-          && types.includes(WATCHER_TYPE.PRICE)
-          && WATCHER_TYPE.PRICE));
-
-    if (existingType) {
+    if (watchedCount >= env.settings.maxWatchersPerGuild) {
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji(oneLine)`
-          :ERROR: Already added a ${existingType} watcher for **${appId}**
-          to ${channel}>!
+          :ERROR: Reached the maximum amount of watchers
+          [${watchedCount}/${env.settings.maxWatchersPerGuild}]!
         `,
       });
     }
 
-    const app: any = {};
-
-    if (!existingWatcher) {
-      // Check whether the guild has reached the max amount of watchers
-      const watchedCount = await db.count('* AS count')
-        .from('app_watcher')
-        .where('guild_id', message.guild.id)
-        .first()
-        .then((result: any) => result.count);
-
-      if (watchedCount >= env.settings.maxWatchersPerGuild) {
-        return message.embed({
-          color: EMBED_COLOURS.ERROR,
-          description: insertEmoji(oneLine)`
-            :ERROR: Reached the maximum amount of watchers
-            [${watchedCount}/${env.settings.maxWatchersPerGuild}]!
-          `,
-        });
-      }
-
-      // Ensure we're connected to Steam
-      if (!this.client.steam.isAvailable) {
-        return message.embed({
-          color: EMBED_COLOURS.ERROR,
-          description: insertEmoji(stripIndents)`
-            :ERROR: Steam connection unavailable!
-            Please try again later.
-          `,
-        });
-      }
-
-      const appInfo = await this.client.steam.getAppInfoAsync(appId);
-
-      // App doesn't exist
-      if (!appInfo) {
-        return message.embed({
-          color: EMBED_COLOURS.ERROR,
-          description: insertEmoji(stripIndents)`
-            :ERROR: Unable to find an app with the id **${appId}**!
-            Make sure the id doesn't belong to a package or bundle.
-          `,
-        });
-      }
-
-      app.id = appInfo.appid;
-      app.name = appInfo.details.name;
-      app.icon = appInfo.details.clienticon;
-      app.type = appInfo.details.type;
+    // Ensure we're connected to Steam
+    if (!this.client.steam.isAvailable) {
+      return message.embed({
+        color: EMBED_COLOURS.ERROR,
+        description: insertEmoji(stripIndents)`
+          :ERROR: Steam connection unavailable!
+          Please try again later.
+        `,
+      });
     }
+
+    const appInfo = await this.client.steam.getAppInfoAsync(appId);
+
+    // App doesn't exist
+    if (!appInfo) {
+      return message.embed({
+        color: EMBED_COLOURS.ERROR,
+        description: insertEmoji(stripIndents)`
+          :ERROR: Unable to find an app with the id **${appId}**!
+          Make sure the id doesn't belong to a package or bundle.
+        `,
+      });
+    }
+
+    const app = {
+      id: appInfo.appid,
+      name: appInfo.details.name,
+      icon: appInfo.details.clienticon,
+      type: appInfo.details.type,
+    };
 
     // Ensure the app <> type combination is valid
     for (let i = 0; i < types.length; i += 1) {
@@ -178,10 +147,8 @@ export default class WatchCommand extends SteamWatchCommand {
       }
     }
 
-    if (app) {
-      await db.insert(app)
-        .into('app');
-    }
+    await db.insert(app)
+      .into('app');
 
     if (types.includes(WATCHER_TYPE.PRICE)) {
       const error = await WatchCommand.setAppPrice(app, message.guild.id);
@@ -203,34 +170,22 @@ export default class WatchCommand extends SteamWatchCommand {
       });
     }
 
-    if (existingWatcher) {
-      await db('app_watcher')
-        .update({
-          watchNews: types.includes(WATCHER_TYPE.NEWS) || existingWatcher.watchNews,
-          watchPrice: types.includes(WATCHER_TYPE.PRICE) || existingWatcher.watchPrice,
-        })
-        .where({
-          appId,
-          channelId: channel.id,
-          guildId: message.guild.id,
-        });
-    } else {
-      await db.insert({
-        appId,
-        channelId: channel.id,
-        guildId: message.guild.id,
-        watchNews: types.includes(WATCHER_TYPE.NEWS),
-        watchPrice: types.includes(WATCHER_TYPE.PRICE),
-      }).into('app_watcher');
-    }
+    await db.insert({
+      appId,
+      channelId: channel.id,
+      guildId: message.guild.id,
+      watchNews: types.includes(WATCHER_TYPE.NEWS),
+      watchPrice: types.includes(WATCHER_TYPE.PRICE),
+    }).into('app_watcher');
 
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
       description: insertEmoji(oneLine)`
-        :SUCCESS: ${(existingWatcher ? 'Updated' : 'Added')} watcher for
-        **${app.name} (${app.type})**
-        ${(existingWatcher ? 'in' : 'to')} ${channel}.
+        :SUCCESS: Added watcher for **${app.name} (${app.type})** to ${channel}.
       `,
+      thumbnail: {
+        url: WebApi.GetIconUrl(app.id, app.icon),
+      },
     });
   }
 
@@ -304,8 +259,10 @@ export default class WatchCommand extends SteamWatchCommand {
       }
       if (!priceOverview[app.id].data.price_overview) {
         return insertEmoji(stripIndents)`
-          :ERROR: Unable to watch app prices for **${app.name} (${app.type})** in **${appPrice.currencyAbbr}**!
-          Free apps cannot be watched for price changes!
+          ${oneLine`
+            :ERROR: Unable to watch app prices for **${app.name} (${app.type})**
+            in **${appPrice.currencyAbbr}**!`}
+          App is either free or doesn'\t have a (regional) price assigned.
         `;
       }
 
@@ -313,7 +270,10 @@ export default class WatchCommand extends SteamWatchCommand {
         appId: app.id,
         currencyId: appPrice.currencyId,
         price: priceOverview[app.id].data.price_overview.initial,
-        discountedPrice: priceOverview[app.id].data.price_overview.initial,
+        formattedPrice: priceOverview[app.id].data.price_overview.initial_formatted,
+        discountedPrice: priceOverview[app.id].data.price_overview.final,
+        formattedDiscountedPrice: priceOverview[app.id].data.price_overview.final_formatted,
+        discount: priceOverview[app.id].data.price_overview.discount_percent,
       }).into('app_price');
     }
 
