@@ -1,4 +1,5 @@
 import { CommandMessage } from 'discord.js-commando';
+import { DMChannel } from 'discord.js';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
@@ -27,16 +28,29 @@ export default class PriceCommand extends SteamWatchCommand {
           key: 'currency',
           prompt: 'Currency',
           type: 'string',
-          default: 'USD',
+          default: '',
         },
       ],
     });
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage, { appid, currency }: { appid: number, currency: string }) {
-    const price = await db.select(
-      'name',
+  async run(message: CommandMessage, { appId, currency }: { appId: number, currency: string }) {
+    let selectedCurrency = currency.toUpperCase();
+
+    if (!currency) {
+      selectedCurrency = message.channel instanceof DMChannel
+        ? 'USD'
+        : await db.select('abbreviation')
+          .from('currency')
+          .innerJoin('guild', 'guild.currency_id', 'currency.id')
+          .first()
+          .then((result) => result.abbreviation);
+    }
+
+    const app = await db.select(
+      'app.id',
+      'app.name',
       'icon',
       'app_id',
       'formatted_price',
@@ -46,12 +60,12 @@ export default class PriceCommand extends SteamWatchCommand {
       .innerJoin('app', 'app.id', 'app_price.app_id')
       .innerJoin('currency', 'currency.id', 'app_price.currency_id')
       .where({
-        appid,
-        abbreviation: currency.toUpperCase(),
+        appId,
+        abbreviation: selectedCurrency,
       })
       .first();
 
-    if (!price) {
+    if (!app) {
       return message.embed({
         color: EMBED_COLOURS.DEFAULT,
         description: 'No cached price found!',
@@ -60,27 +74,24 @@ export default class PriceCommand extends SteamWatchCommand {
 
     return message.embed({
       color: EMBED_COLOURS.DEFAULT,
-      title: `**${price.name}**`,
-      footer: {
-        text: price.name,
-      },
-      url: WebApi.GetStoreUrl(price.appId),
+      title: `**${app.name}**`,
+      url: WebApi.getStoreUrl(app.id),
       timestamp: new Date(),
       thumbnail: {
-        url: WebApi.GetIconUrl(price.appId, price.icon),
+        url: WebApi.getIconUrl(app.id, app.icon),
       },
       fields: [
         {
           name: 'Price',
-          value: price.discount
-            ? `~~${price.formattedPrice}~~\n**${price.formattedDiscountPrice}**`
-            : price.formattedPrice,
+          value: app.discount
+            ? `~~${app.formattedPrice}~~\n**${app.formattedDiscountedPrice}**`
+            : app.formattedPrice,
           inline: true,
         },
-      ].concat(price.discount
+      ].concat(app.discount
         ? [{
           name: 'Discount',
-          value: `-${price.discount}%`,
+          value: `-${app.discount}%`,
           inline: true,
         }]
         : []),
