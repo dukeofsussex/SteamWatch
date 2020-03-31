@@ -62,7 +62,7 @@ export default class Bot {
 
     this.client.on('commandError', (_, err, message) => logger.error({
       group: 'Commando',
-      message: `${message.content} : ${err}`,
+      message: `${message.content} : ${err}\n${err.stack}`,
     }));
     this.client.on('disconnect', () => logger.info({ group: 'Discord', message: 'Disconnected' }));
     this.client.on('error', (err) => logger.error({ group: 'Discord', message: err }));
