@@ -19,7 +19,7 @@ export default class MariaDBProvider extends SettingProvider {
   private prefixes: Map<string, string>;
 
   // Listeners on the Client, mapped by the event name.
-  private listeners: Map<string, any>;
+  private listeners: Map<string, Function>;
 
   constructor() {
     super();
@@ -70,11 +70,11 @@ export default class MariaDBProvider extends SettingProvider {
         group: 'Provider',
         message: `Unable to process MariaDB.get(${guild}, ${key}, ${defVal})`,
       });
+
       return defVal;
     }
 
-    const prefix = this.prefixes.get(this.constructor.getGuildID(guild));
-    return prefix || defVal;
+    return this.prefixes.get(MariaDBProvider.getGuildID(guild)) || defVal;
   }
 
   async set(guild: GuildExtension | string, key: string, val: any) {
@@ -83,10 +83,11 @@ export default class MariaDBProvider extends SettingProvider {
         group: 'Provider',
         message: `Unable to process MariaDB.set(${guild}, ${key}, ${val})`,
       });
+
       return val;
     }
 
-    const guildId = this.constructor.getGuildID(guild);
+    const guildId = MariaDBProvider.getGuildID(guild);
     this.prefixes.set(guildId, val);
 
     await db('guild').update({ commandoPrefix: val })
@@ -101,6 +102,7 @@ export default class MariaDBProvider extends SettingProvider {
       group: 'Provider',
       message: `MariaDB.remove() called for ${guild} ${key}`,
     });
+
     return undefined;
   }
 
@@ -112,7 +114,7 @@ export default class MariaDBProvider extends SettingProvider {
     });
   }
 
-  private setupGuildPrefix(guild: string, prefix: any) {
+  private setupGuildPrefix(guild: string, prefix: string) {
     if (typeof guild !== 'string') {
       throw new TypeError('The guild must be a guild ID or "global".');
     }
@@ -123,8 +125,6 @@ export default class MariaDBProvider extends SettingProvider {
     }
 
     const fetchedGuild = this.client.guilds.get(guild) as GuildExtension;
-
-    // eslint-disable-next-line no-param-reassign
     fetchedGuild._commandPrefix = prefix;
   }
 }

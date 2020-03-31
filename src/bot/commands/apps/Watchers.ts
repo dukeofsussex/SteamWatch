@@ -51,7 +51,7 @@ export default class WatchersCommand extends SteamWatchCommand {
       if (!(identifier instanceof TextChannel)) {
         return message.embed({
           color: EMBED_COLOURS.ERROR,
-          description: insertEmoji`:ERROR: ${identifier} isn't a text channel!`,
+          description: insertEmoji`:ERROR: **${identifier}** isn't a text channel!`,
         });
       }
 

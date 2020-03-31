@@ -37,8 +37,8 @@ export default class ProcessManager {
 
   async stopAsync() {
     logger.info({
-      group: 'Shard',
-      message: 'All shutting down',
+      group: 'Process',
+      message: 'Shutting down',
     });
     await this.watcherManager?.stopAsync();
     setTimeout(() => {

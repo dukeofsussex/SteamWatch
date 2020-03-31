@@ -27,7 +27,7 @@ export default class NewsCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage, { appid: appId }: { appid: number }) {
+  async run(message: CommandMessage, { appId }: { appId: number }) {
     const news = await db.select(
       'name',
       'icon',
@@ -46,7 +46,7 @@ export default class NewsCommand extends SteamWatchCommand {
     if (!news) {
       return message.embed({
         color: EMBED_COLOURS.DEFAULT,
-        description: 'No cached news available!',
+        description: 'No cached news found!',
       });
     }
 
@@ -63,7 +63,7 @@ export default class NewsCommand extends SteamWatchCommand {
         ? {
           url: WebApi.getNewsImage(news.thumbnail),
         }
-        : null,
+        : undefined,
       thumbnail: {
         url: WebApi.getIconUrl(news.id, news.icon),
       },

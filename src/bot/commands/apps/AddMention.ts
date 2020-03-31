@@ -92,7 +92,7 @@ export default class AddMentionCommand extends SteamWatchCommand {
           color: EMBED_COLOURS.ERROR,
           description: insertEmoji(stripIndents)`
             :ERROR: Nothing to add!
-            Use ${message.anyUsage('mentions 1')} to view already added mentions.
+            Use ${message.anyUsage(`mentions ${watcherId}`)} to view already added mentions.
           `,
         });
       }

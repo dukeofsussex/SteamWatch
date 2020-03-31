@@ -21,7 +21,7 @@ const postProcessRow = (row: any): any => {
 
 export default Knex({
   ...config,
-  asyncStackTraces: env.debug,
+  asyncStackTraces: env.dev,
   debug: env.debug,
   log: {
     debug(message: string) {

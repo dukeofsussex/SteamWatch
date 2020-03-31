@@ -68,7 +68,7 @@ export default class MentionsCommand extends SteamWatchCommand {
 
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
-      title: `Mentions for ${mentions[0].name}`,
+      title: mentions[0].name,
       fields: [{
         name: 'Roles',
         value: roles.join('\n') || 'None',

@@ -6,11 +6,10 @@ export default class AppIdType extends ArgumentType {
     super(client, 'app-id');
   }
 
-  // @ts-ignore Missing typings
   // eslint-disable-next-line class-methods-use-this
   async validate(val: string) {
     const appId = Number.parseInt(val, 10);
-    if (!Number.isNaN(appId)) {
+    if (!Number.isNaN(appId) && Number.isFinite(appId)) {
       return appId > 0;
     }
 
@@ -22,7 +21,6 @@ export default class AppIdType extends ArgumentType {
     return false;
   }
 
-  // @ts-ignore Missing typings
   // eslint-disable-next-line class-methods-use-this
   parse(val: string) {
     const appId = parseInt(val, 10);

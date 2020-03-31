@@ -146,6 +146,7 @@ export default class PriceWatcher extends Watcher {
     } else if (priceOverview.discount_percent > app.discount) {
       message = insertEmoji(oneLine)`
         :ALERT: Discount:
+        ~~${priceOverview.initial_formatted}~~
         **${priceOverview.final_formatted}**
         (-${priceOverview.discount_percent}%)
       `;

@@ -78,7 +78,7 @@ export default class DelMentionCommand extends SteamWatchCommand {
 
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
-      description: insertEmoji`:SUCCESS: Mentions removed from **${dbWatcher.name}**.`,
+      description: insertEmoji`:SUCCESS: Removed ${removed} mention(s) from **${dbWatcher.name}**.`,
     });
   }
 }
