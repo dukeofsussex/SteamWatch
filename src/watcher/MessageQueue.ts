@@ -1,17 +1,12 @@
 // @ts-ignore Missing typings
 import { Constants, RichEmbed } from 'discord.js';
 import fetch from 'node-fetch';
-import { existsSync, readFile, writeFile } from 'fs';
-import { promisify } from 'util';
 import db from '../db';
 import logger from '../logger';
+import { existsAsync, readFileAsync, writeFileAsync } from '../utils/fsAsync';
 
 const BACKUP_INTERVAL = 60000; // 1m
 const QUEUE_DELAY = 250; // 0.25s
-
-const pExistsSync = promisify(existsSync);
-const pReadFile = promisify(readFile);
-const pWriteFile = promisify(writeFile);
 
 interface QueuedItem {
   id: string;
@@ -45,8 +40,8 @@ export default class MessageQueue {
   }
 
   async startAsync() {
-    if (await pExistsSync('queue.json')) {
-      this.queue = JSON.parse((await pReadFile('queue.json')).toString());
+    if (await existsAsync('queue.json')) {
+      this.queue = JSON.parse((await readFileAsync('queue.json')).toString());
     }
 
     this.backupInterval = setInterval(() => this.backupQueue(), BACKUP_INTERVAL);
@@ -64,8 +59,8 @@ export default class MessageQueue {
     }
   }
 
-  private async backupQueue() {
-    return pWriteFile('queue.json', JSON.stringify(this.queue));
+  private backupQueue() {
+    return writeFileAsync('queue.json', JSON.stringify(this.queue));
   }
 
   private async notify() {

@@ -1,7 +1,6 @@
 import { oneLine } from 'common-tags';
 import { RateLimitInfo } from 'discord.js';
 import { ArgumentType } from 'discord.js-commando';
-import { readdirSync } from 'fs';
 import { join } from 'path';
 import db from '../db';
 import env from '../env';
@@ -9,6 +8,7 @@ import logger from '../logger';
 import SteamWatchClient from './structures/SteamWatchClient';
 import MariaDBProvider from './commando/providers/MariaDB';
 import Steam from '../steam/Steam';
+import { readdirAsync } from '../utils/fsAsync';
 
 export default class Bot {
   private client: SteamWatchClient;
@@ -80,7 +80,7 @@ export default class Bot {
       message: `Resuming, replayed ${replayed} events`,
     }));
 
-    const eventFiles = readdirSync(join(__dirname, 'events'))
+    const eventFiles = (await readdirAsync(join(__dirname, 'events')))
       .filter((file) => !file.endsWith('.map'));
     const eventHandlers = await Promise
       .all(eventFiles.map((file) => import(join(__dirname, 'events', file))));

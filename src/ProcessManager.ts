@@ -1,10 +1,10 @@
 import { Shard, ShardingManager } from 'discord.js';
-import { existsSync } from 'fs';
 import { join } from 'path';
 import env from './env';
 import WatcherManager from './watcher';
 import logger from './logger';
 import db from './db';
+import { existsAsync } from './utils/fsAsync';
 
 export default class ProcessManager {
   private shardingManager?: ShardingManager;
@@ -27,7 +27,7 @@ export default class ProcessManager {
     });
 
     if (!process.argv.includes('--no-bot')) {
-      this.shard();
+      this.shardAsync();
     }
 
     if (!process.argv.includes('--no-watcher')) {
@@ -49,9 +49,9 @@ export default class ProcessManager {
     }, 5000);
   }
 
-  private shard() {
+  private async shardAsync() {
     let botFilePath = join(__dirname, 'bot', 'index.js');
-    if (!existsSync(botFilePath)) {
+    if (!(await existsAsync(botFilePath))) {
       botFilePath = join(__dirname, 'bot', 'index.ts');
     }
 
