@@ -60,9 +60,9 @@ export default class MentionsCommand extends SteamWatchCommand {
       const mention = mentions[i];
 
       if (mention.type === 'role') {
-        roles.push(`<@&${mention.entityId}`);
+        roles.push(`<@&${mention.entityId}>`);
       } else {
-        users.push(`<@${mention.entityId}`);
+        users.push(`<@${mention.entityId}>`);
       }
     }
 
