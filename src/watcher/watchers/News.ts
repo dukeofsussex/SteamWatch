@@ -78,7 +78,7 @@ export default class NewsWatcher extends Watcher {
       embed.image = { url: WebApi.getNewsImage(transformed.thumbnail) };
     }
 
-    this.enqueueAsync(newsItem.id, embed);
+    await this.enqueueAsync(newsItem.id, embed, 'watchNews');
 
     this.next();
   }

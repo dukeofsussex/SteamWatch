@@ -34,7 +34,7 @@ export default abstract class Watcher {
     }
   }
 
-  protected async enqueueAsync(appId: number, embed: RichEmbed) {
+  protected async enqueueAsync(appId: number, embed: RichEmbed, watcherType: 'watchPrice' | 'watchNews') {
     const watchers = await db.select(
       'app_watcher.id',
       'entity_id',
@@ -43,10 +43,10 @@ export default abstract class Watcher {
       'webhook_token',
     ).from('app_watcher')
       .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
-      .innerJoin('channel_webhook', 'channel_webhook.guild_id', 'app_watcher.guild_id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'app_watcher.channel_id')
       .where({
         appId,
-        watchPrice: true,
+        [watcherType]: true,
       });
 
     const groupedWatchers = watchers.reduce((group, watcher) => {
