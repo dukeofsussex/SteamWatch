@@ -61,11 +61,11 @@ export default class NewsCommand extends SteamWatchCommand {
       timestamp: new Date(),
       image: news.thumbnail
         ? {
-          url: WebApi.GetClanLogo(news.thumbnail),
+          url: WebApi.getNewsImage(news.thumbnail),
         }
         : null,
       thumbnail: {
-        url: WebApi.GetIconUrl(news.appId, news.icon),
+        url: WebApi.getIconUrl(news.id, news.icon),
       },
     });
   }

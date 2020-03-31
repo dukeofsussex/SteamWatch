@@ -41,19 +41,19 @@ export default class Bot {
         dirname: join(__dirname, 'commands'),
       });
 
-    this.client.once('ready', async () => {
+    this.client.once('ready', () => {
       logger.info({
         group: 'Discord',
         message: `Logged in as '${this.client.user.tag}'`,
       });
 
       if (this.client.shard.id === 0) {
-        this.setActivity();
+        this.setActivityAsync();
       }
     });
 
     if (this.client.shard.id === 0) {
-      this.client.setInterval(() => this.setActivity(), 300000);
+      this.client.setInterval(() => this.setActivityAsync(), 300000);
     }
 
     if (env.debug) {
@@ -96,7 +96,7 @@ export default class Bot {
     db.destroy();
   }
 
-  private async setActivity() {
+  private async setActivityAsync() {
     const counts = await Promise.all([
       db.countDistinct('app_id AS count')
         .from('app_watcher')

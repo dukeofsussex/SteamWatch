@@ -45,20 +45,20 @@ export default class WebApi {
       .then((res) => res.appnews.newsitems[0]);
   }
 
-  static async GetAppPricesAsync(appids: number[], cc: string): Promise<SteamAppDetails> {
-    return fetch(`https://store.steampowered.com/api/appdetails?appids=${appids.join(',')}&filters=price_overview&cc=${cc}`)
+  static async getAppPricesAsync(appIds: number[], cc: string): Promise<SteamAppDetails> {
+    return fetch(`https://store.steampowered.com/api/appdetails?appids=${appIds.join(',')}&filters=price_overview&cc=${cc}`)
       .then((res) => res.json());
   }
 
-  static GetClanLogo(image: string) {
+  static getNewsImage(image: string) {
     return image.replace(/\{STEAM_CLAN(?:_LOC)?_IMAGE\}/, 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/clans');
   }
 
-  static GetIconUrl(appId: number, icon: string) {
-    return `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.ico`;
+  static getIconUrl(appId: number, icon: string) {
+    return `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.jpg`;
   }
 
-  static GetStoreUrl(appId: number) {
+  static getStoreUrl(appId: number) {
     return `https://store.steampowered.com/app/${appId}`;
   }
 }

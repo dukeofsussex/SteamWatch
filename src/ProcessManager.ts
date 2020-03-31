@@ -87,6 +87,6 @@ export default class ProcessManager {
 
   private watch() {
     this.watcherManager = new WatcherManager();
-    this.watcherManager.start();
+    this.watcherManager.startAsync();
   }
 }

@@ -44,7 +44,7 @@ export default class PriceWatcher extends Watcher {
     let prices = null;
 
     try {
-      prices = await WebApi.GetAppPricesAsync(
+      prices = await WebApi.getAppPricesAsync(
         apps.map((app) => app.id),
         apps[0].currencyAbbr,
       );
@@ -160,7 +160,7 @@ export default class PriceWatcher extends Watcher {
     const embed = Watcher.getEmbed(app, {
       title: `**${app.name}**`,
       description: message,
-      url: WebApi.GetStoreUrl(app.id),
+      url: WebApi.getStoreUrl(app.id),
       timestamp: new Date(),
     });
 

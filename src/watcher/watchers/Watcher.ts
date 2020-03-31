@@ -102,7 +102,7 @@ export default abstract class Watcher {
       url,
       timestamp,
       thumbnail: {
-        url: WebApi.GetIconUrl(app.id, app.icon),
+        url: WebApi.getIconUrl(app.id, app.icon),
       },
     });
   }

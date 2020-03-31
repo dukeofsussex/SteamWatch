@@ -75,7 +75,7 @@ export default class NewsWatcher extends Watcher {
     });
 
     if (transformed.thumbnail) {
-      embed.image = { url: WebApi.GetClanLogo(transformed.thumbnail) };
+      embed.image = { url: WebApi.getNewsImage(transformed.thumbnail) };
     }
 
     this.enqueueAsync(newsItem.id, embed);

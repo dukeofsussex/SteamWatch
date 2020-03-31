@@ -35,7 +35,7 @@ export default class MessageQueue {
     this.enQueue({ id, token, message });
 
     if (!this.queueTimeout) {
-      this.queueTimeout = setTimeout(() => this.notify(), QUEUE_DELAY);
+      this.queueTimeout = setTimeout(() => this.notifyAsync(), QUEUE_DELAY);
     }
   }
 
@@ -63,7 +63,7 @@ export default class MessageQueue {
     return writeFileAsync('queue.json', JSON.stringify(this.queue));
   }
 
-  private async notify() {
+  private async notifyAsync() {
     const { id, message, token } = this.deQueue()!;
 
     const body = {
@@ -94,14 +94,14 @@ export default class MessageQueue {
       const json = await result.json();
 
       if (json.code === Constants.APIErrors.UNKNOWN_WEBHOOK) {
-        await MessageQueue.purgeWebhook(id);
+        await MessageQueue.purgeWebhookAsync(id);
       } else {
         throw new Error(json.message);
       }
     }
 
     if (this.queueSize() > 0) {
-      this.queueTimeout = setTimeout(() => this.notify(), QUEUE_DELAY);
+      this.queueTimeout = setTimeout(() => this.notifyAsync(), QUEUE_DELAY);
     } else if (this.queueTimeout) {
       clearTimeout(this.queueTimeout);
     }
@@ -138,7 +138,7 @@ export default class MessageQueue {
     return this.queueTail - this.queueHead;
   }
 
-  private static async purgeWebhook(id: string) {
+  private static async purgeWebhookAsync(id: string) {
     return db.delete()
       .from('channel_webhook')
       .where('id', id);

@@ -71,7 +71,7 @@ export default class CurrencyCommand extends SteamWatchCommand {
 
     // Process missing app prices for new currency
     if (apps.length > 0) {
-      const invalidApps = await CurrencyCommand.processAppPrices(apps, currency);
+      const invalidApps = await CurrencyCommand.processAppPricesAsync(apps, currency);
 
       if (invalidApps.length > 0) {
         return message.embed({
@@ -113,8 +113,8 @@ export default class CurrencyCommand extends SteamWatchCommand {
       .andWhere('guild.id', guildId);
   }
 
-  private static async processAppPrices(apps: any[], currency: any) {
-    const steamApps = await WebApi.GetAppPricesAsync(
+  private static async processAppPricesAsync(apps: any[], currency: any) {
+    const steamApps = await WebApi.getAppPricesAsync(
       apps.map((app) => app.id),
       currency.countryCode,
     );
