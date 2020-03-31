@@ -71,7 +71,7 @@ export default class CurrencyCommand extends SteamWatchCommand {
 
     // Process missing app prices for new currency
     if (apps.length > 0) {
-      const invalidApps = await CurrencyCommand.processAppPricesAsync(apps, currency);
+      const invalidApps = await CurrencyCommand.processAppPricesAsync(apps, dbCurrency);
 
       if (invalidApps.length > 0) {
         return message.embed({
@@ -96,7 +96,7 @@ export default class CurrencyCommand extends SteamWatchCommand {
   }
 
   private static fetchAppsAsync(currencyId: string, guildId: string) {
-    return db.select('app.id', 'app.name')
+    return db.distinct('app.id', 'app.name')
       .from('guild')
       .innerJoin('app_watcher', 'app_watcher.guild_id', 'guild.id')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')
