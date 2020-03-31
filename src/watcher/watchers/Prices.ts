@@ -1,10 +1,10 @@
 import { oneLine, stripIndents } from 'common-tags';
+import Watcher from './Watcher';
+import MessageQueue from '../MessageQueue';
 import db from '../../db';
 import logger from '../../logger';
-import MessageQueue from '../MessageQueue';
 import WebApi, { SteamPriceOverview } from '../../steam/WebApi';
 import { insertEmoji } from '../../utils/templateTags';
-import Watcher from './Watcher';
 
 import Knex = require('knex');
 

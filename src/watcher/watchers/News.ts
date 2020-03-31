@@ -1,11 +1,11 @@
 import { oneLine } from 'common-tags';
+import Watcher from './Watcher';
+import MessageQueue from '../MessageQueue';
+import transformArticle from '../transformers';
 import db from '../../db';
 import env from '../../env';
 import logger from '../../logger';
-import MessageQueue from '../MessageQueue';
 import WebApi from '../../steam/WebApi';
-import transformArticle from '../transformers';
-import Watcher from './Watcher';
 
 import Knex = require('knex');
 

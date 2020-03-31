@@ -2,11 +2,11 @@ import { oneLine } from 'common-tags';
 import { RateLimitInfo } from 'discord.js';
 import { ArgumentType } from 'discord.js-commando';
 import { join } from 'path';
+import MariaDBProvider from './commando/providers/MariaDB';
+import SteamWatchClient from './structures/SteamWatchClient';
 import db from '../db';
 import env from '../env';
 import logger from '../logger';
-import SteamWatchClient from './structures/SteamWatchClient';
-import MariaDBProvider from './commando/providers/MariaDB';
 import Steam from '../steam/Steam';
 import { readdirAsync } from '../utils/fsAsync';
 

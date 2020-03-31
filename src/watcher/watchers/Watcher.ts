@@ -1,6 +1,6 @@
 import { RichEmbed, RichEmbedOptions } from 'discord.js';
-import db from '../../db';
 import MessageQueue from '../MessageQueue';
+import db from '../../db';
 import WebApi from '../../steam/WebApi';
 import { EMBED_COLOURS } from '../../utils/constants';
 

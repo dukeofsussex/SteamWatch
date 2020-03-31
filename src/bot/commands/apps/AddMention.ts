@@ -1,10 +1,10 @@
 import { oneLine, stripIndents } from 'common-tags';
 import { GuildMember, Role } from 'discord.js';
 import { CommandMessage } from 'discord.js-commando';
-import db from '../../../db';
-import env from '../../../env';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
+import db from '../../../db';
+import env from '../../../env';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 

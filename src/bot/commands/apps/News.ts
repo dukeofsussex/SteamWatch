@@ -1,7 +1,7 @@
 import { CommandMessage } from 'discord.js-commando';
-import db from '../../../db';
-import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import SteamWatchClient from '../../structures/SteamWatchClient';
+import SteamWatchCommand from '../../structures/SteamWatchCommand';
+import db from '../../../db';
 import WebApi from '../../../steam/WebApi';
 import { EMBED_COLOURS } from '../../../utils/constants';
 

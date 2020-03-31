@@ -1,8 +1,8 @@
 // @ts-ignore Missing typings
 import core from '@bbob/core';
+import { TagNode } from './BBob';
 import createPreset from './preset';
 import createRender from './render';
-import { TagNode } from './BBob';
 
 const { AllHtmlEntities } = require('html-entities');
 

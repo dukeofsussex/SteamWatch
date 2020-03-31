@@ -1,9 +1,9 @@
 import { oneLine, stripIndents } from 'common-tags';
 import { CommandMessage } from 'discord.js-commando';
+import SteamWatchClient from '../../structures/SteamWatchClient';
+import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
 import WebApi from '../../../steam/WebApi';
-import SteamWatchCommand from '../../structures/SteamWatchCommand';
-import SteamWatchClient from '../../structures/SteamWatchClient';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 

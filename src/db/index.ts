@@ -1,6 +1,6 @@
-import logger from '../logger';
 import config from './config';
 import env from '../env';
+import logger from '../logger';
 
 import Knex = require('knex');
 

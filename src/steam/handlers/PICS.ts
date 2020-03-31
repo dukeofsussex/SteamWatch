@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle */
-const { parse } = require('vdf');
 const Steam = require('steam');
+const { parse } = require('vdf');
 
 const { EMsg } = Steam;
 const schema = Steam.Internal;

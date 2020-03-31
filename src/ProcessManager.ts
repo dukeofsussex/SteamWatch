@@ -1,10 +1,10 @@
 import { Shard, ShardingManager } from 'discord.js';
 import { join } from 'path';
-import env from './env';
-import WatcherManager from './watcher';
-import logger from './logger';
 import db from './db';
+import env from './env';
+import logger from './logger';
 import { existsAsync } from './utils/fsAsync';
+import WatcherManager from './watcher';
 
 export default class ProcessManager {
   private shardingManager?: ShardingManager;
