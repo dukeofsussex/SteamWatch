@@ -2,8 +2,8 @@
 import { oneLine, stripIndents } from 'common-tags';
 import { RichEmbed } from 'discord.js';
 import { CommandMessage, util } from 'discord.js-commando';
-import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import SteamWatchClient from '../../structures/SteamWatchClient';
+import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 
@@ -11,7 +11,7 @@ export default class HelpCommand extends SteamWatchCommand {
   constructor(client: SteamWatchClient) {
     super(client, {
       name: 'help',
-      group: 'util',
+      group: 'utils',
       memberName: 'help',
       aliases: ['commands'],
       description: 'Display a list of available commands, or detailed information for a specified command.',

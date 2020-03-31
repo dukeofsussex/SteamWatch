@@ -1,7 +1,7 @@
 import { stripIndents } from 'common-tags';
 import { CommandMessage, GuildExtension } from 'discord.js-commando';
-import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import SteamWatchClient from '../../structures/SteamWatchClient';
+import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 
@@ -9,9 +9,9 @@ export default class PrefixCommand extends SteamWatchCommand {
   constructor(client: SteamWatchClient) {
     super(client, {
       name: 'prefix',
-      group: 'util',
+      group: 'utils',
       memberName: 'prefix',
-      description: 'Show or set the command prefix.',
+      description: 'Display or set the command prefix.',
       format: '[prefix | "default" | "none"]',
       details: stripIndents`
         If no prefix is provided, the current prefix will be shown.
@@ -22,7 +22,7 @@ export default class PrefixCommand extends SteamWatchCommand {
       examples: [
         'prefix',
         'prefix -',
-        'prefix omg!',
+        'prefix gaben!',
         'prefix default',
         'prefix none',
       ],
@@ -51,7 +51,7 @@ export default class PrefixCommand extends SteamWatchCommand {
       return msg.embed({
         color: EMBED_COLOURS.DEFAULT,
         description: stripIndents`
-          ${prefix ? `The command prefix is \`${usedPrefix}\`.` : 'There is no command prefix.'}
+          ${usedPrefix ? `The command prefix is \`${usedPrefix}\`.` : 'There is no command prefix.'}
           To run commands, use ${msg.anyUsage('command')}.
         `,
       });
@@ -73,10 +73,10 @@ export default class PrefixCommand extends SteamWatchCommand {
     }
 
     // Save the prefix
-    const lowercase = prefix.toLowerCase();
-    const usedPrefix = lowercase === 'none' ? '' : prefix;
+    const lowercasePrefix = prefix.toLowerCase();
+    const usedPrefix = lowercasePrefix === 'none' ? '' : prefix;
     let response;
-    if (lowercase === 'default') {
+    if (lowercasePrefix === 'default') {
       if (msg.guild) {
         // @ts-ignore Incorrect typing
         // eslint-disable-next-line no-param-reassign

@@ -1,8 +1,8 @@
 import { CommandMessage } from 'discord.js-commando';
+import SteamWatchClient from '../../structures/SteamWatchClient';
+import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
 import env from '../../../env';
-import SteamWatchCommand from '../../structures/SteamWatchCommand';
-import SteamWatchClient from '../../structures/SteamWatchClient';
 import { EMBED_COLOURS } from '../../../utils/constants';
 
 const { version } = require('../../../../package.json');
@@ -23,7 +23,7 @@ export default class InfoCommand extends SteamWatchCommand {
   constructor(client: SteamWatchClient) {
     super(client, {
       name: 'info',
-      group: 'util',
+      group: 'utils',
       memberName: 'info',
       aliases: ['stats'],
       description: 'Display information about the bot.',
@@ -40,6 +40,7 @@ export default class InfoCommand extends SteamWatchCommand {
 
     const guildCount = await countQuery.clone()
       .from('guild')
+      .whereNot('id', 0)
       .then((res: any) => res.count);
     const appCount = await countQuery.clone()
       .from('app')

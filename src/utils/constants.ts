@@ -14,11 +14,11 @@ const EMOJIS: {
   ALERT: '\uD83D\uDEA8',
   DM: '\uD83D\uDCEC',
   ERROR: '\u274C',
-  EYES: '\uD83D\uDC40',
   PING_PONG: '\uD83C\uDFD3',
   PRICE_DOWN: '\uD83D\uDCC9',
   PRICE_UP: '\uD83D\uDCC8',
   SUCCESS: '\u2705',
+  TADA: '\uD83C\uDF89',
 };
 
 export {

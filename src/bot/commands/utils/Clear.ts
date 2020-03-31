@@ -1,14 +1,14 @@
 import { CommandMessage } from 'discord.js-commando';
-import env from '../../../env';
-import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import SteamWatchClient from '../../structures/SteamWatchClient';
+import SteamWatchCommand from '../../structures/SteamWatchCommand';
+import env from '../../../env';
 import { insertEmoji } from '../../../utils/templateTags';
 
 export default class ClearCommand extends SteamWatchCommand {
   constructor(client: SteamWatchClient) {
     super(client, {
       name: 'clear',
-      group: 'util',
+      group: 'utils',
       memberName: 'clear',
       description: 'Tidy up this mess!',
       guildOnly: true,

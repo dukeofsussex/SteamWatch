@@ -1,8 +1,8 @@
 import { oneLine } from 'common-tags';
 import { Message } from 'discord.js';
 import { CommandMessage } from 'discord.js-commando';
-import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import SteamWatchClient from '../../structures/SteamWatchClient';
+import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 
@@ -10,9 +10,9 @@ export default class PingCommand extends SteamWatchCommand {
   constructor(client: SteamWatchClient) {
     super(client, {
       name: 'ping',
-      group: 'util',
+      group: 'utils',
       memberName: 'ping',
-      description: 'Check the bot\'s ping to the Discord server.',
+      description: 'Check the bot\'s ping to the Discord gateway.',
       throttling: {
         duration: 5,
         usages: 1,
