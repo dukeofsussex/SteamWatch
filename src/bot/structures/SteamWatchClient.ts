@@ -14,7 +14,7 @@ export default class SteamWatchClient extends CommandoClient {
   }
 
   login(token: string) {
-    this.steam.init();
+    this.steam.initAsync();
     return super.login(token);
   }
 

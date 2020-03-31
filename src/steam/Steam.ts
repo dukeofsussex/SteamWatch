@@ -1,9 +1,8 @@
-import fs from 'fs';
-
 import SteamPICS from './handlers/PICS';
 import SteamUser from './SteamUser';
-import logger from '../logger';
 import env from '../env';
+import logger from '../logger';
+import { existsAsync, readFileAsync, writeFileAsync } from '../utils/fsAsync';
 
 const NodeSteam = require('steam');
 
@@ -28,6 +27,8 @@ export default class Steam {
 
   private pics: SteamPICS;
 
+  private listeners: Map<string, Function>;
+
   private user: SteamUser;
 
   constructor() {
@@ -35,11 +36,12 @@ export default class Steam {
     this.pics = new SteamPICS(this.client);
     // @ts-ignore Missing typings
     this.user = new SteamUser(this.client);
+    this.listeners = new Map();
   }
 
-  async getAppInfoAsync(appid: number): Promise<AppInfo | undefined> {
+  async getAppInfoAsync(appId: number): Promise<AppInfo | undefined> {
     return new Promise((resolve) => {
-      this.pics.getProductInfo([{ appid, only_public: true }], (result: any) => {
+      this.pics.getProductInfo([{ appId, only_public: true }], (result: any) => {
         resolve(result.apps[0] || undefined);
       });
     });
@@ -49,21 +51,56 @@ export default class Steam {
     return this.client.loggedOn;
   }
 
-  init() {
-    if (fs.existsSync('servers.json')) {
-      NodeSteam.servers = JSON.parse(fs.readFileSync('servers.json').toString());
+  async initAsync() {
+    if (await existsAsync('servers.json')) {
+      NodeSteam.servers = JSON.parse((await readFileAsync('servers.json')).toString());
     }
 
-    this.client.on('connected', () => {
+    this.listeners.set('connected', () => {
       logger.info({
         group: 'Steam',
         message: 'Connected',
       });
       this.user.logOnAnon();
-    });
+    })
+      .set('error', (err: Error) => {
+        logger.error({
+          group: 'Steam',
+          message: err,
+        });
+
+        if (!this.client.loggedOn) {
+          logger.info({
+            group: 'Steam',
+            message: 'Reconnecting',
+          });
+
+          setTimeout(() => this.client.connect(), 15000);
+        }
+      })
+      .set('logOnResponse', (res: any) => {
+        if (res.eresult !== NodeSteam.EResult.OK) {
+          logger.error({
+            group: 'Steam',
+            message: `Failed to log in:\n${JSON.stringify(res, null, 2)}`,
+          });
+        } else {
+          logger.info({
+            group: 'Steam',
+            message: 'Logged in',
+          });
+        }
+      })
+      .set('loggedOff', () => {
+        logger.info({
+          group: 'Steam',
+          message: 'Logged out',
+        });
+      })
+      .set('servers', (servers: object) => writeFileAsync('servers.json', JSON.stringify(servers)));
 
     if (env.debug) {
-      this.client.on('debug', (message: string) => {
+      this.listeners.set('debug', (message: string) => {
         logger.debug({
           group: 'Steam',
           message,
@@ -71,51 +108,12 @@ export default class Steam {
       });
     }
 
-    this.client.on('error', (err: Error) => {
-      logger.error({
-        group: 'Steam',
-        message: err,
-      });
-
-      if (!this.client.loggedOn) {
-        logger.info({
-          group: 'Steam',
-          message: 'Reconnecting',
-        });
-
-        setTimeout(() => this.client.connect(), 15000);
-      }
-    });
-
-    this.client.on('logOnResponse', (res: any) => {
-      if (res.eresult !== NodeSteam.EResult.OK) {
-        logger.error({
-          group: 'Steam',
-          message: `Failed to log in:\n${JSON.stringify(res, null, 2)}`,
-        });
-      } else {
-        logger.info({
-          group: 'Steam',
-          message: 'Logged in',
-        });
-      }
-    });
-
-    this.client.on('loggedOff', () => {
-      logger.info({
-        group: 'Steam',
-        message: 'Logged out',
-      });
-    });
-
-    this.client.on('servers', (servers: object) => {
-      fs.writeFileSync('servers.json', JSON.stringify(servers));
-    });
-
+    this.listeners.forEach((listener, event) => this.client.on(event, listener));
     this.client.connect();
   }
 
   quit() {
     this.client.disconnect();
+    this.listeners.forEach((listener, event) => this.client.removeListener(event, listener));
   }
 }
