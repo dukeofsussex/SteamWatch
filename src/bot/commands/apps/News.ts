@@ -29,9 +29,9 @@ export default class NewsCommand extends SteamWatchCommand {
   // eslint-disable-next-line class-methods-use-this
   async run(message: CommandMessage, { appId }: { appId: number }) {
     const news = await db.select(
+      'app.id',
       'name',
       'icon',
-      'app_id',
       'title',
       'markdown',
       'thumbnail',
@@ -39,7 +39,7 @@ export default class NewsCommand extends SteamWatchCommand {
       'created_at',
     ).from('app_news')
       .innerJoin('app', 'app.id', 'app_news.app_id')
-      .where('app_id', appId)
+      .where('app.id', appId)
       .orderBy('created_at', 'desc')
       .first();
 
