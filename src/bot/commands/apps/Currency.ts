@@ -136,7 +136,11 @@ export default class CurrencyCommand extends SteamWatchCommand {
           appId: app.id,
           currencyId: currency.id,
           price: steamApp.data.price_overview.initial,
-          discountedPrice: steamApp.data.price_overview.initial,
+          formattedPrice: steamApp.data.price_overview.initial_formatted
+            || steamApp.data.price_overview.final_formatted,
+          discountedPrice: steamApp.data.price_overview.final,
+          formattedDiscountedPrice: steamApp.data.price_overview.final_formatted,
+          discount: steamApp.data.price_overview.discount_percent,
         });
       }
     }

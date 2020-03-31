@@ -120,7 +120,8 @@ export default class PriceWatcher extends Watcher {
   private async processChangesAsync(app: AppPrice, priceOverview: SteamPriceOverview) {
     await db('app_price').update({
       price: priceOverview.initial,
-      formattedPrice: priceOverview.initial_formatted,
+      formattedPrice: priceOverview.initial_formatted
+        || priceOverview.final_formatted,
       discountedPrice: priceOverview.final,
       formattedDiscountedPrice: priceOverview.final_formatted,
       discount: priceOverview.discount_percent,

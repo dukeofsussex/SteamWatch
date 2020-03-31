@@ -270,7 +270,8 @@ export default class WatchCommand extends SteamWatchCommand {
         appId: app.id,
         currencyId: appPrice.currencyId,
         price: priceOverview[app.id].data.price_overview.initial,
-        formattedPrice: priceOverview[app.id].data.price_overview.initial_formatted,
+        formattedPrice: priceOverview[app.id].data.price_overview.initial_formatted
+          || priceOverview[app.id].data.price_overview.final_formatted,
         discountedPrice: priceOverview[app.id].data.price_overview.final,
         formattedDiscountedPrice: priceOverview[app.id].data.price_overview.final_formatted,
         discount: priceOverview[app.id].data.price_overview.discount_percent,
