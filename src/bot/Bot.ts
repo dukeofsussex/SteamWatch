@@ -71,14 +71,6 @@ export default class Bot {
       group: 'Discord',
       message: `Limit of ${info.limit} for ${info.method} ${info.path}`,
     }));
-    this.client.on('reconnecting', () => logger.info({
-      group: 'Discord',
-      message: 'Reconnecting',
-    }));
-    this.client.on('resume', (replayed: number) => logger.info({
-      group: 'Discord',
-      message: `Resuming, replayed ${replayed} events`,
-    }));
 
     const eventFiles = (await readdirAsync(join(__dirname, 'events')))
       .filter((file) => !file.endsWith('.map'));
