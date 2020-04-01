@@ -1,8 +1,7 @@
 import { CommandMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
-
-const { homepage } = require('../../../../package.json');
+import env from '../../../env';
 
 export default class GitHubCommand extends SteamWatchCommand {
   constructor(client: SteamWatchClient) {
@@ -16,6 +15,6 @@ export default class GitHubCommand extends SteamWatchCommand {
 
   // eslint-disable-next-line class-methods-use-this
   async run(message: CommandMessage) {
-    return message.say(homepage.split('#')[0]);
+    return message.say(env.repoUrl);
   }
 }

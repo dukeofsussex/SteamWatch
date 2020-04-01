@@ -1,5 +1,7 @@
 import { config } from 'dotenv';
 
+const { homepage } = require('../package.json');
+
 const result = config();
 
 if (result.error) {
@@ -31,4 +33,6 @@ export default {
   },
   debug: process.env.DEBUG === 'true',
   dev: process.env.NODE_ENV === 'development',
+  repoUrl: homepage.split('#')[0],
+  websiteUrl: 'https://steam.watch',
 };
