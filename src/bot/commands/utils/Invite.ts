@@ -24,7 +24,7 @@ export default class InviteCommand extends SteamWatchCommand {
         :TADA:
         ${oneLineTrim`
           [Invite to your guild]
-          (https://discordapp.com/oauth2/authorize?client_id=${this.client.user.id}&scope=bot)
+          (${this.client.inviteUrl})
         `}
       `,
     });

@@ -53,7 +53,7 @@ export default class InfoCommand extends SteamWatchCommand {
     ]);
     const uptime = msToTime(this.client.uptime);
     const links = [
-      `[Invite Bot](https://discordapp.com/oauth2/authorize?client_id=${this.client.user.id}&scope=bot)`,
+      `[Invite Bot](${this.client.inviteUrl})`,
       '[GitHub Repo](https://github.com/dukeofsussex/SteamWatch)',
       `[Support](${env.bot.invite})`,
       '[Website](https://steam.watch)',
