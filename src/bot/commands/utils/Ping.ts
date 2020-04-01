@@ -14,7 +14,7 @@ export default class PingCommand extends SteamWatchCommand {
       memberName: 'ping',
       description: 'Check the bot\'s ping to the Discord gateway.',
       throttling: {
-        duration: 5,
+        duration: 15,
         usages: 1,
       },
     });

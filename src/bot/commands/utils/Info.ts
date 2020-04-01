@@ -27,6 +27,8 @@ export default class InfoCommand extends SteamWatchCommand {
       memberName: 'info',
       aliases: ['stats'],
       description: 'Display information about the bot.',
+      // @ts-ignore Missing typings
+      clientPermissions: ['EMBED_LINKS'],
       throttling: {
         duration: 30,
         usages: 1,

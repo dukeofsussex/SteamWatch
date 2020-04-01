@@ -13,6 +13,8 @@ export default class InviteCommand extends SteamWatchCommand {
       group: 'utils',
       memberName: 'invite',
       description: 'Invite the bot to your guild.',
+      // @ts-ignore Missing typings
+      clientPermissions: ['EMBED_LINKS'],
     });
   }
 
