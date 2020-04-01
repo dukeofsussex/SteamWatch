@@ -3,4 +3,4 @@ import onShutdown from './utils/onShutdown';
 
 const processManager = new ProcessManager();
 processManager.startAsync();
-onShutdown(processManager.stopAsync);
+onShutdown(processManager.stopAsync.bind(processManager));
