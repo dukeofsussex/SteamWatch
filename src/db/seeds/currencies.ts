@@ -254,8 +254,8 @@ export async function seed(knex: Knex): Promise<any> {
   return knex.count('* AS count')
     .from('currency')
     .first()
-    .then((result: any) => {
-      if (result.count > 0) {
+    .then((res: any) => {
+      if (res.count > 0) {
         return null;
       }
 

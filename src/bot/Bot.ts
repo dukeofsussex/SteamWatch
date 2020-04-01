@@ -34,8 +34,7 @@ export default class Bot {
         dirname: join(__dirname, 'commando', 'types'),
         resolve: (a: { default: ArgumentType }) => a.default,
       })
-      .registerDefaultGroups()
-      .registerGroups([['apps', 'Apps']])
+      .registerGroups([['apps', 'Apps'], ['utils', 'Utils']])
       .registerCommandsIn({
         filter: /^([^.].*)\.(?:js|ts)$/,
         dirname: join(__dirname, 'commands'),

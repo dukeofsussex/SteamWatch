@@ -45,7 +45,7 @@ export default class PriceCommand extends SteamWatchCommand {
           .from('currency')
           .innerJoin('guild', 'guild.currency_id', 'currency.id')
           .first()
-          .then((result) => result.abbreviation);
+          .then((res: any) => res.abbreviation);
     }
 
     const app = await db.select(

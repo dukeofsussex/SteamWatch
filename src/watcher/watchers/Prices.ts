@@ -217,7 +217,7 @@ export default class PriceWatcher extends Watcher {
     const currencyId = await appBaseQuery
       .clone()
       .first()
-      .then((res) => res?.currencyId || 0);
+      .then((res: any) => res?.currencyId || 0);
 
     if (currencyId === 0) {
       return null;

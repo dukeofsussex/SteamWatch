@@ -24,7 +24,7 @@ export default async function guildCreate(guild: Guild) {
     .from('guild')
     .where('id', guild.id)
     .first()
-    .then((res) => !!res.id);
+    .then((res: any) => !!res.id);
 
   if (exists) {
     return;
@@ -34,7 +34,7 @@ export default async function guildCreate(guild: Guild) {
     .from('currency')
     .where('abbreviation', REGION_CURRENCY_MAPPING[guild.region] || 'USD')
     .first()
-    .then((res) => res.id);
+    .then((res: any) => res.id);
 
   await db.insert({
     id: guild.id,
