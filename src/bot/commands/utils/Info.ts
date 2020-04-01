@@ -38,16 +38,19 @@ export default class InfoCommand extends SteamWatchCommand {
     const countQuery = db.count('* AS count')
       .first();
 
-    const guildCount = await countQuery.clone()
-      .from('guild')
-      .whereNot('id', 0)
-      .then((res: any) => res.count);
-    const appCount = await countQuery.clone()
-      .from('app')
-      .then((res: any) => res.count);
-    const watcherCount = await countQuery.clone()
-      .from('app_watcher')
-      .then((res: any) => res.count);
+    const counts = await Promise.all([
+      countQuery.clone()
+        .from('guild')
+        .whereNot('id', 0)
+        .then((res: any) => res.count),
+      db.countDistinct('app_id AS count')
+        .from('app_watcher')
+        .first()
+        .then((res: any) => res.count),
+      countQuery.clone()
+        .from('app_watcher')
+        .then((res: any) => res.count),
+    ]);
     const uptime = msToTime(this.client.uptime);
     const links = [
       `[Invite Bot](https://discordapp.com/oauth2/authorize?client_id=${this.client.user.id}&scope=bot)`,
@@ -68,17 +71,17 @@ export default class InfoCommand extends SteamWatchCommand {
       fields: [
         {
           name: 'Guilds',
-          value: guildCount,
+          value: counts[0],
           inline: true,
         },
         {
           name: 'Apps',
-          value: appCount,
+          value: counts[1],
           inline: true,
         },
         {
           name: 'Watchers',
-          value: watcherCount,
+          value: counts[2],
           inline: true,
         },
         {
