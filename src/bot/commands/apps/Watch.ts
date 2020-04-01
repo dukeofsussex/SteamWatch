@@ -77,7 +77,7 @@ export default class WatchCommand extends SteamWatchCommand {
     if (!(channel instanceof TextChannel)) {
       return message.embed({
         color: EMBED_COLOURS.ERROR,
-        description: insertEmoji`:ERROR: ${channel} isn't a text channel!`,
+        description: insertEmoji`:ERROR: **${channel}** isn't a text channel!`,
       });
     }
 
@@ -90,7 +90,7 @@ export default class WatchCommand extends SteamWatchCommand {
       .from('app_watcher')
       .where('guild_id', message.guild.id)
       .first()
-      .then((result: any) => result.count);
+      .then((res: any) => res.count);
 
     if (watchedCount >= env.settings.maxWatchersPerGuild) {
       return message.embed({
@@ -113,25 +113,32 @@ export default class WatchCommand extends SteamWatchCommand {
       });
     }
 
-    const appInfo = await this.client.steam.getAppInfoAsync(appId);
+    let app = await db.select('*')
+      .from('app')
+      .where('id', appId)
+      .first();
 
-    // App doesn't exist
-    if (!appInfo) {
-      return message.embed({
-        color: EMBED_COLOURS.ERROR,
-        description: insertEmoji(stripIndents)`
-          :ERROR: Unable to find an app with the id **${appId}**!
-          Make sure the id doesn't belong to a package or bundle.
-        `,
-      });
+    if (!app) {
+      const appInfo = await this.client.steam.getAppInfoAsync(appId);
+
+      // App doesn't exist
+      if (!appInfo) {
+        return message.embed({
+          color: EMBED_COLOURS.ERROR,
+          description: insertEmoji(stripIndents)`
+            :ERROR: Unable to find an app with the id **${appId}**!
+            Make sure the id doesn't belong to a package or bundle.
+          `,
+        });
+      }
+
+      app = {
+        id: appInfo.appid,
+        name: appInfo.details.name,
+        icon: appInfo.details.icon,
+        type: appInfo.details.type,
+      };
     }
-
-    const app = {
-      id: appInfo.appid,
-      name: appInfo.details.name,
-      icon: appInfo.details.clienticon,
-      type: appInfo.details.type,
-    };
 
     // Ensure the app <> type combination is valid
     for (let i = 0; i < types.length; i += 1) {
@@ -147,21 +154,16 @@ export default class WatchCommand extends SteamWatchCommand {
       }
     }
 
-    await db.insert(app)
-      .into('app');
-
-    if (types.includes(WATCHER_TYPE.PRICE)) {
-      const error = await WatchCommand.setAppPrice(app, message.guild.id);
-
-      if (error) {
-        return message.embed({
-          color: EMBED_COLOURS.ERROR,
-          description: error,
-        });
-      }
+    if (app.lastCheckedNews === undefined) {
+      await db.insert(app)
+        .into('app');
     }
 
-    const error = await this.setWebhook(channel);
+    let error = await this.setWebhookAsync(channel);
+
+    if (!error && types.includes(WATCHER_TYPE.PRICE)) {
+      error = await WatchCommand.setAppPriceAsync(app, message.guild.id);
+    }
 
     if (error) {
       return message.embed({
@@ -184,13 +186,13 @@ export default class WatchCommand extends SteamWatchCommand {
         :SUCCESS: Added watcher for **${app.name} (${app.type})** to ${channel}.
       `,
       thumbnail: {
-        url: WebApi.GetIconUrl(app.id, app.icon),
+        url: WebApi.getIconUrl(app.id, app.icon),
       },
     });
   }
 
-  private async setWebhook(channel: TextChannel) {
-    const dbWebhook = db.select('id')
+  private async setWebhookAsync(channel: TextChannel) {
+    const dbWebhook = await db.select('id')
       .from('channel_webhook')
       .where('id', channel.id)
       .first();
@@ -224,7 +226,7 @@ export default class WatchCommand extends SteamWatchCommand {
     return null;
   }
 
-  private static async setAppPrice(app: any, guildId: string) {
+  private static async setAppPriceAsync(app: any, guildId: string) {
     const appPrice = await db.select(
       'app_price.id',
       { currencyId: 'currency.id' },
@@ -241,7 +243,7 @@ export default class WatchCommand extends SteamWatchCommand {
 
     // Don't have the app <> currency combination in the db
     if (!appPrice.id) {
-      const priceOverview = await WebApi.GetAppPricesAsync(
+      const priceOverview = await WebApi.getAppPricesAsync(
         [app.id],
         appPrice.countryCode,
       );
@@ -262,7 +264,7 @@ export default class WatchCommand extends SteamWatchCommand {
           ${oneLine`
             :ERROR: Unable to watch app prices for **${app.name} (${app.type})**
             in **${appPrice.currencyAbbr}**!`}
-          App is either free or doesn'\t have a (regional) price assigned.
+          App is either free or doesn't have a (regional) price assigned.
         `;
       }
 
