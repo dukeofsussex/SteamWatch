@@ -3,7 +3,7 @@ import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
 import { EMBED_COLOURS } from '../../../utils/constants';
-import { insertEmoji, capitalize } from '../../../utils/templateTags';
+import { insertEmoji } from '../../../utils/templateTags';
 
 export default class UnwatchCommand extends SteamWatchCommand {
   constructor(client: SteamWatchClient) {
@@ -14,10 +14,8 @@ export default class UnwatchCommand extends SteamWatchCommand {
       description: 'Remove a watcher.',
       examples: [
         'unwatch 1',
-        'unwatch 1 price',
-        'unwatch 1 news',
       ],
-      format: '<watcher id> <"all" | "price" | "news">',
+      format: '<watcher id>',
       guildOnly: true,
       // @ts-ignore Missing typings
       userPermissions: ['MANAGE_CHANNELS'],
@@ -27,13 +25,6 @@ export default class UnwatchCommand extends SteamWatchCommand {
           key: 'watcherId',
           prompt: 'Watcher id',
           type: 'integer',
-        },
-        {
-          key: 'option',
-          prompt: 'Option',
-          type: 'string',
-          // @ts-ignore Missing typings
-          oneOf: ['all', 'price', 'news'],
         },
       ],
       throttling: {
@@ -46,9 +37,9 @@ export default class UnwatchCommand extends SteamWatchCommand {
   // eslint-disable-next-line class-methods-use-this
   async run(
     message: CommandMessage,
-    { watcherId, option }: { watcherId: number, option: 'all' | 'price' | 'news' },
+    { watcherId }: { watcherId: number },
   ) {
-    const watcher = await db.select('app_watcher.watchNews', 'app_watcher.watchPrice', 'app.name')
+    const watcher = await db.select('app_watcher.id', 'app.name', 'channel_id')
       .from('app_watcher')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')
       .where({
@@ -64,28 +55,13 @@ export default class UnwatchCommand extends SteamWatchCommand {
       });
     }
 
-    if (option === 'all'
-        || (option === 'price' && !watcher.watchNews)
-        || (option === 'news' && !watcher.watchPrice)) {
-      await db.delete()
-        .from('app_watcher')
-        .where('id', watcherId);
-
-      return message.embed({
-        color: EMBED_COLOURS.SUCCESS,
-        description: insertEmoji`:SUCCESS: Watcher removed for **${watcher.name}**!`,
-      });
-    }
-
-    await db('app_watcher').update({
-      watchNews: !(option === 'news'),
-      watchPrice: !(option === 'price'),
-    })
-      .where('id', watcherId);
+    await db.delete()
+      .from('app_watcher')
+      .where('id', watcher.id);
 
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
-      description: insertEmoji`:SUCCESS: ${capitalize(option)} watcher removed for **${watcher.name}**!`,
+      description: insertEmoji`:SUCCESS: Removed watcher for **${watcher.name}** in <#${watcher.channelId}>!`,
     });
   }
 }
