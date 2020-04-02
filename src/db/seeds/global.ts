@@ -1,7 +1,7 @@
 import Knex = require('knex');
 
 // eslint-disable-next-line import/prefer-default-export
-export async function seed(knex: Knex): Promise<any> {
+export function seed(knex: Knex) {
   return knex.select('id')
     .from('guild')
     .where('id', 0)

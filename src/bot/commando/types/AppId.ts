@@ -7,7 +7,7 @@ export default class AppIdType extends ArgumentType {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async validate(val: string) {
+  validate(val: string) {
     const appId = Number.parseInt(val, 10);
     if (!Number.isNaN(appId) && Number.isFinite(appId)) {
       return appId > 0;

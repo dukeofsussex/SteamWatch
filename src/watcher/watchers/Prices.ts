@@ -166,7 +166,7 @@ export default class PriceWatcher extends Watcher {
       timestamp: new Date(),
     });
 
-    this.enqueueAsync(app.id, embed, 'watchPrice');
+    await this.enqueueAsync(app.id, embed, 'watchPrice');
   }
 
   private static async fetchNextAppPricesAsync() {

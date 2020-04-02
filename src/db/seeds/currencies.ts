@@ -250,7 +250,7 @@ const CURRENCIES = [
 ];
 
 // eslint-disable-next-line import/prefer-default-export
-export async function seed(knex: Knex): Promise<any> {
+export function seed(knex: Knex) {
   return knex.count('* AS count')
     .from('currency')
     .first()

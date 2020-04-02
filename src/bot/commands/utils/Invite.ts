@@ -19,7 +19,7 @@ export default class InviteCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage) {
+  run(message: CommandMessage) {
     return message.embed({
       color: EMBED_COLOURS.DEFAULT,
       description: insertEmoji(oneLine)`

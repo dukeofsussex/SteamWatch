@@ -14,7 +14,7 @@ export default class SupportCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage) {
+  run(message: CommandMessage) {
     return message.say(env.bot.invite);
   }
 }

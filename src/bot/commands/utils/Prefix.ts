@@ -43,7 +43,7 @@ export default class PrefixCommand extends SteamWatchCommand {
     });
   }
 
-  async run(msg: CommandMessage, { prefix }: { prefix: string }) {
+  run(msg: CommandMessage, { prefix }: { prefix: string }) {
     if (!prefix) {
       const usedPrefix = msg.guild
         ? (msg.guild as GuildExtension).commandPrefix
