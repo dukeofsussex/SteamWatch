@@ -41,7 +41,7 @@ export default class Steam {
 
   async getAppInfoAsync(appId: number): Promise<AppInfo | undefined> {
     return new Promise((resolve) => {
-      this.pics.getProductInfo([{ appId, only_public: true }], (result: any) => {
+      this.pics.getProductInfo([{ appid: appId, only_public: true }], (result: any) => {
         resolve(result.apps[0] || undefined);
       });
     });
