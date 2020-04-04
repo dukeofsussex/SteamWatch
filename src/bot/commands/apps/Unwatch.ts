@@ -1,4 +1,5 @@
 import { CommandMessage } from 'discord.js-commando';
+import { Webhook } from 'discord.js';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
@@ -46,8 +47,11 @@ export default class UnwatchCommand extends SteamWatchCommand {
       'app.name',
       'icon',
       'channel_id',
+      'webhook_id',
+      'webhook_token',
     ).from('app_watcher')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'app_watcher.channel_id')
       .where({
         'app_watcher.id': watcherId,
         'app_watcher.guild_id': message.guild.id,
@@ -64,6 +68,20 @@ export default class UnwatchCommand extends SteamWatchCommand {
     await db.delete()
       .from('app_watcher')
       .where('id', watcher.id);
+
+    const count = await db.count('* AS count')
+      .from('app_watcher')
+      .where('channel_id', watcher.channelId)
+      .first()
+      .then((res: any) => parseInt(res.count, 10));
+
+    if (count === 0) {
+      await db.delete()
+        .from('channel_webhook')
+        .where('id', watcher.channelId);
+      const webhook = new Webhook(this.client, { id: watcher.webhookId, token: watcher.webhookToken }, '');
+      await webhook.delete();
+    }
 
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
