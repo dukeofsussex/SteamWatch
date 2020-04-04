@@ -2,6 +2,7 @@ import { CommandMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
+import WebApi from '../../../steam/WebApi';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 
@@ -39,12 +40,17 @@ export default class UnwatchCommand extends SteamWatchCommand {
     message: CommandMessage,
     { watcherId }: { watcherId: number },
   ) {
-    const watcher = await db.select('app_watcher.id', 'app.name', 'channel_id')
-      .from('app_watcher')
+    const watcher = await db.select(
+      'app_watcher.id',
+      'app_watcher.app_id',
+      'app.name',
+      'icon',
+      'channel_id',
+    ).from('app_watcher')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')
       .where({
         'app_watcher.id': watcherId,
-        guildId: message.guild.id,
+        'app_watcher.guild_id': message.guild.id,
       })
       .first();
 
@@ -61,7 +67,10 @@ export default class UnwatchCommand extends SteamWatchCommand {
 
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
-      description: insertEmoji`:SUCCESS: Removed watcher for **${watcher.name}** in <#${watcher.channelId}>!`,
+      description: insertEmoji`:SUCCESS: Removed watcher for **${watcher.name}** from <#${watcher.channelId}>!`,
+      thumbnail: {
+        url: WebApi.getIconUrl(watcher.appId, watcher.icon),
+      },
     });
   }
 }

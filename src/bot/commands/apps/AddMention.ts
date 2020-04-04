@@ -5,6 +5,7 @@ import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
 import env from '../../../env';
+import WebApi from '../../../steam/WebApi';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 
@@ -50,7 +51,7 @@ export default class AddMentionCommand extends SteamWatchCommand {
     // Filter out duplicates
     let filteredMentions = [...new Set(mentions)];
 
-    const dbMentions = await db.select('app_watcher_mention.entity_id', 'app.name')
+    const dbMentions = await db.select('app_watcher_mention.entity_id', 'app.id', 'app.name', 'app.icon')
       .from('app_watcher')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')
       .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
@@ -107,6 +108,9 @@ export default class AddMentionCommand extends SteamWatchCommand {
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
       description: insertEmoji`:SUCCESS: Added mentions to **${dbMentions[0].name}**.`,
+      thumbnail: {
+        url: WebApi.getIconUrl(dbMentions[0].id, dbMentions[0].icon),
+      },
       fields: [{
         name: 'Roles',
         value: filteredMentions.filter((mention) => mention instanceof Role)

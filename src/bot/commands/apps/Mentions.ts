@@ -2,6 +2,7 @@ import { CommandMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
+import WebApi from '../../../steam/WebApi';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 
@@ -31,7 +32,7 @@ export default class MentionsCommand extends SteamWatchCommand {
 
   // eslint-disable-next-line class-methods-use-this
   async run(message: CommandMessage, { watcherId }: { watcherId: number }) {
-    const mentions = await db.select('app_watcher_mention.entity_id', 'app_watcher_mention.type', 'app.name')
+    const mentions = await db.select('app_watcher_mention.entity_id', 'app_watcher_mention.type', 'app.id', 'app.name', 'app.icon')
       .from('app_watcher')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')
       .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
@@ -69,6 +70,10 @@ export default class MentionsCommand extends SteamWatchCommand {
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
       title: mentions[0].name,
+      thumbnail: {
+        url: WebApi.getIconUrl(mentions[0].id, mentions[0].icon),
+      },
+      url: WebApi.getStoreUrl(mentions[0].id),
       fields: [{
         name: 'Roles',
         value: roles.join('\n') || 'None',

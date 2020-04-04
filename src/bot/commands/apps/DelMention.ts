@@ -4,6 +4,7 @@ import { CommandMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
+import WebApi from '../../../steam/WebApi';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 
@@ -46,7 +47,7 @@ export default class DelMentionCommand extends SteamWatchCommand {
     message: CommandMessage,
     { watcherId, mentions }: { watcherId: number, mentions: (Role | GuildMember)[] },
   ) {
-    const dbWatcher = await db.select('app.name')
+    const dbWatcher = await db.select('app.id', 'app.name', 'app.icon')
       .from('app_watcher')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')
       .where({
@@ -79,6 +80,9 @@ export default class DelMentionCommand extends SteamWatchCommand {
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
       description: insertEmoji`:SUCCESS: Removed ${removed} mention(s) from **${dbWatcher.name}**.`,
+      thumbnail: {
+        url: WebApi.getIconUrl(dbWatcher.id, dbWatcher.icon),
+      },
     });
   }
 }
