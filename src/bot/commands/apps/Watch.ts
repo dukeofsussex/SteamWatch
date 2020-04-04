@@ -90,7 +90,7 @@ export default class WatchCommand extends SteamWatchCommand {
       .from('app_watcher')
       .where('guild_id', message.guild.id)
       .first()
-      .then((res: any) => res.count);
+      .then((res: any) => parseInt(res.count, 10));
 
     if (watchedCount >= env.settings.maxWatchersPerGuild) {
       return message.embed({

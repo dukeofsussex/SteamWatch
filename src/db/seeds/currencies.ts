@@ -255,7 +255,7 @@ export function seed(knex: Knex) {
     .from('currency')
     .first()
     .then((res: any) => {
-      if (res.count > 0) {
+      if (parseInt(res.count, 10) > 0) {
         return null;
       }
 
