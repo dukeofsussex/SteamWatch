@@ -48,7 +48,7 @@ export default class CurrencyCommand extends SteamWatchCommand {
         color: EMBED_COLOURS.DEFAULT,
         description: oneLine`
           ${dbCurrency.flag}
-          Current currency is **${dbCurrency.abbreviation}**
+          Currency is set to **${dbCurrency.abbreviation}**
           (${dbCurrency.name}).
         `,
       });

@@ -25,7 +25,7 @@ export default class InviteCommand extends SteamWatchCommand {
       description: insertEmoji(oneLine)`
         :TADA:
         ${oneLineTrim`
-          [Invite to your guild]
+          [Invite me to your guild]
           (${this.client.inviteUrl})
         `}
       `,
