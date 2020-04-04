@@ -52,7 +52,7 @@ export default class Bot {
     });
 
     if (this.client.shard.id === 0) {
-      this.client.setInterval(() => this.setActivityAsync(), 300000);
+      this.client.setInterval(() => this.setActivityAsync(), 800000);
     }
 
     if (env.debug) {
