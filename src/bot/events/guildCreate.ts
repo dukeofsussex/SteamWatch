@@ -24,7 +24,7 @@ export default async function guildCreate(guild: Guild) {
     .from('guild')
     .where('id', guild.id)
     .first()
-    .then((res: any) => !!res.id);
+    .then((res: any) => !!res);
 
   if (exists) {
     return;
