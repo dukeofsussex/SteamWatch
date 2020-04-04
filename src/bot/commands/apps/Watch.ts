@@ -7,7 +7,7 @@ import db from '../../../db';
 import env from '../../../env';
 import WebApi from '../../../steam/WebApi';
 import { EMBED_COLOURS } from '../../../utils/constants';
-import { insertEmoji, capitalize } from '../../../utils/templateTags';
+import { capitalize, insertEmoji } from '../../../utils/templateTags';
 
 const WATCHER_TYPE = {
   ALL: 'all',
@@ -136,7 +136,7 @@ export default class WatchCommand extends SteamWatchCommand {
         id: appInfo.appid,
         name: appInfo.details.name,
         icon: appInfo.details.icon,
-        type: appInfo.details.type,
+        type: capitalize(appInfo.details.type),
       };
     }
 
