@@ -1,6 +1,6 @@
 const SIGNALS: NodeJS.Signals[] = ['SIGHUP', 'SIGINT', 'SIGTERM', 'SIGUSR2'];
 
-process.on('unhandledRejection', (err) => {
+process.on('unhandledRejection', (err: any) => {
   throw err;
 });
 
