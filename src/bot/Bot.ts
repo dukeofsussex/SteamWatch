@@ -1,6 +1,7 @@
 import { oneLine } from 'common-tags';
 import { RateLimitInfo } from 'discord.js';
 import { ArgumentType } from 'discord.js-commando';
+import fetch from 'node-fetch';
 import { join } from 'path';
 import MariaDBProvider from './commando/providers/MariaDB';
 import SteamWatchClient from './structures/SteamWatchClient';
@@ -40,21 +41,17 @@ export default class Bot {
         dirname: join(__dirname, 'commands'),
       });
 
-    this.client.once('ready', () => {
-      logger.info({
-        group: 'Discord',
-        message: `Logged in as '${this.client.user.tag}'`,
-      });
+    this.registerEventsAsync();
 
-      if (this.client.shard.id === 0) {
-        this.setActivityAsync();
-      }
-    });
+    this.client.login(env.bot.token);
+  }
 
-    if (this.client.shard.id === 0) {
-      this.client.setInterval(() => this.setActivityAsync(), 900000);
-    }
+  async stopAsync() {
+    await this.client.destroy();
+    db.destroy();
+  }
 
+  private async registerEventsAsync() {
     if (env.debug) {
       this.client.on('debug', (message) => logger.debug({ group: 'Discord', message }));
     }
@@ -71,6 +68,18 @@ export default class Bot {
       message: `Limit of ${info.limit} for ${info.method} ${info.path}`,
     }));
 
+    this.client.once('ready', () => {
+      logger.info({
+        group: 'Discord',
+        message: `Logged in as '${this.client.user.tag}'`,
+      });
+
+      if (this.client.shard.id === 0) {
+        this.updateStatusAsync();
+        this.client.setInterval(() => this.updateStatusAsync(), 900000);
+      }
+    });
+
     const eventFiles = (await readdirAsync(join(__dirname, 'events')))
       .filter((file) => !file.endsWith('.map'));
     const eventHandlers = await Promise
@@ -78,16 +87,9 @@ export default class Bot {
     eventFiles.forEach((file, i) => {
       this.client.on(file.split('.')[0], eventHandlers[i].default);
     });
-
-    this.client.login(env.bot.token);
   }
 
-  async stopAsync() {
-    await this.client.destroy();
-    db.destroy();
-  }
-
-  private async setActivityAsync() {
+  private async updateStatusAsync() {
     const counts = await Promise.all([
       db.countDistinct('app_id AS count')
         .from('app_watcher')
