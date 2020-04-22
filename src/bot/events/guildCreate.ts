@@ -1,5 +1,6 @@
 import { Guild } from 'discord.js';
 import db from '../../db';
+import logger from '../../logger';
 
 const REGION_CURRENCY_MAPPING: {
   [key: string]: string;
@@ -43,4 +44,9 @@ export default async function guildCreate(guild: Guild) {
     memberCount: guild.memberCount,
     currencyId,
   }).into('guild');
+
+  logger.info({
+    group: 'Bot',
+    message: `Joined guild ${guild.name} (${guild.memberCount} members)`,
+  });
 }
