@@ -109,5 +109,29 @@ export default class Bot {
       `,
       { type: 'WATCHING' },
     );
+
+    if (process.env.TOPGG_TOKEN) {
+      fetch('https://top.gg/api/bots/stats', {
+        headers: {
+          authorization: process.env.TOPGG_TOKEN,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          server_count: counts[1],
+          shard_id: this.client.shard.id,
+          shard_count: this.client.shard.count,
+        }),
+        method: 'POST',
+      }).then((res) => res.json())
+        .then((res) => logger.log({
+          group: 'Top.gg',
+          message: res.error || 'Status updated',
+          level: res.error ? 'error' : 'debug',
+        }))
+        .catch((err) => logger.error({
+          group: 'Top.gg',
+          message: err,
+        }));
+    }
   }
 }
