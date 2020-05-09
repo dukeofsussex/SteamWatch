@@ -115,11 +115,13 @@ export default class NewsWatcher extends Watcher {
         .as('watchers'), 'app.id', 'watchers.app_id')
       .leftJoin(
         db.select(
-          'app_id',
-          { articleId: 'id' },
-          db.raw('MAX(created_at) AS mca'),
+          'app_news.app_id',
+          { articleId: 'app_news.id' },
         ).from('app_news')
-          .groupBy('id')
+          .leftJoin({ appNewsLeft: 'app_news' }, function newsTimestampLeftJoin() {
+            this.on('app_news_left.app_id', '=', 'app_news.app_id').andOn('app_news_left.created_at', '>', 'app_news.created_at');
+          })
+          .whereNull('app_news_left.id')
           .as('news'), 'app.id', 'news.app_id',
       )
       .whereRaw('last_checked_news <= DATE_SUB(NOW(), INTERVAL ? HOUR)', [NEWS_FREQUEUNCY])
