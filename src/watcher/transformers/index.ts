@@ -29,6 +29,8 @@ export default function transformArticle(
       openTag: '<',
       closeTag: '>',
     };
+  } else {
+    decodedContent = decodedContent.replace(/\[\/\*\]/g, '');
   }
 
   const onImage = (tag: TagNode) => {
