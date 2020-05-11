@@ -1,4 +1,4 @@
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import { DMChannel } from 'discord.js';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
@@ -35,7 +35,7 @@ export default class PriceCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage, { appId, currency }: { appId: number, currency: string }) {
+  async run(message: CommandoMessage, { appId, currency }: { appId: number, currency: string }) {
     let selectedCurrency = currency.toUpperCase();
 
     if (!currency) {

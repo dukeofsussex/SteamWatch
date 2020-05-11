@@ -1,5 +1,5 @@
 import { oneLine, oneLineTrim } from 'common-tags';
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import { EMBED_COLOURS } from '../../../utils/constants';
@@ -13,13 +13,12 @@ export default class InviteCommand extends SteamWatchCommand {
       group: 'utils',
       memberName: 'invite',
       description: 'Invite the bot to your guild.',
-      // @ts-ignore Missing typings
       clientPermissions: ['EMBED_LINKS'],
     });
   }
 
   // eslint-disable-next-line class-methods-use-this
-  run(message: CommandMessage) {
+  run(message: CommandoMessage) {
     return message.embed({
       color: EMBED_COLOURS.DEFAULT,
       description: insertEmoji(oneLine)`

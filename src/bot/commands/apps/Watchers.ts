@@ -1,5 +1,5 @@
 import { GuildChannel, TextChannel } from 'discord.js';
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
@@ -22,7 +22,6 @@ export default class WatchersCommand extends SteamWatchCommand {
       ],
       format: '[app id | channel]',
       guildOnly: true,
-      // @ts-ignore Missing typings
       userPermissions: ['MANAGE_CHANNELS'],
       argsPromptLimit: 0,
       args: [
@@ -37,7 +36,7 @@ export default class WatchersCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage, { identifier }: { identifier: number | GuildChannel }) {
+  async run(message: CommandoMessage, { identifier }: { identifier: number | GuildChannel }) {
     let notFoundCategory = 'for this guild';
     let query = db.select('app.name', 'app_watcher.*')
       .from('app')
@@ -74,7 +73,7 @@ export default class WatchersCommand extends SteamWatchCommand {
         w.id,
         w.appId,
         w.name,
-        `#${message.guild.channels.get(w.channelId)?.name}`,
+        `#${message.guild.channels.resolve(w.channelId)?.name}`,
         [w.watchNews ? 'News' : '', w.watchPrice ? 'Price' : ''].filter((type) => type).join(','),
       ]),
     ]));

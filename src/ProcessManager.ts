@@ -1,9 +1,8 @@
 import { Shard, ShardingManager } from 'discord.js';
-import { join } from 'path';
+import { extname, join } from 'path';
 import db from './db';
 import env from './env';
 import logger from './logger';
-import { existsAsync } from './utils/fsAsync';
 import WatcherManager from './watcher';
 
 export default class ProcessManager {
@@ -50,16 +49,12 @@ export default class ProcessManager {
   }
 
   private async shardAsync() {
-    let botFilePath = join(__dirname, 'bot', 'index.js');
-    if (!(await existsAsync(botFilePath))) {
-      botFilePath = join(__dirname, 'bot', 'index.ts');
-    }
-
-    this.shardingManager = new ShardingManager(botFilePath, {
+    this.shardingManager = new ShardingManager(join(__dirname, 'bot', `index${extname(__filename)}`), {
       token: env.bot.token,
+      execArgv: process.execArgv,
     });
 
-    this.shardingManager.on('launch', (shard: Shard) => {
+    this.shardingManager.on('shardCreate', (shard: Shard) => {
       logger.info({
         group: 'Shard',
         message: `#${shard.id} launched`,

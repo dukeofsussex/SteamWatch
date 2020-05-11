@@ -1,6 +1,6 @@
 import { oneLine } from 'common-tags';
 import { GuildMember, Role } from 'discord.js';
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
@@ -24,7 +24,6 @@ export default class DelMentionCommand extends SteamWatchCommand {
         'delmention 1 JustTheRoleName,@Me,209752756708311041',
       ],
       guildOnly: true,
-      // @ts-ignore Missing typings
       userPermissions: ['MANAGE_CHANNELS'],
       argsPromptLimit: 0,
       args: [
@@ -44,7 +43,7 @@ export default class DelMentionCommand extends SteamWatchCommand {
 
   // eslint-disable-next-line class-methods-use-this
   async run(
-    message: CommandMessage,
+    message: CommandoMessage,
     { watcherId, mentions }: { watcherId: number, mentions: (Role | GuildMember)[] },
   ) {
     const dbWatcher = await db.select('app.id', 'app.name', 'app.icon')

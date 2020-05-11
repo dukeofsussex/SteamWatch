@@ -1,5 +1,5 @@
 import { oneLine, stripIndents } from 'common-tags';
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
@@ -21,7 +21,6 @@ export default class CurrencyCommand extends SteamWatchCommand {
         'currency CIS-USD',
       ],
       guildOnly: true,
-      // @ts-ignore Missing typings
       userPermissions: ['MANAGE_CHANNELS'],
       argsPromptLimit: 0,
       args: [
@@ -36,7 +35,7 @@ export default class CurrencyCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage, { currency }: { currency: string }) {
+  async run(message: CommandoMessage, { currency }: { currency: string }) {
     if (!currency) {
       const dbCurrency = await db.select('currency.*')
         .from('guild')

@@ -1,4 +1,4 @@
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
@@ -27,7 +27,6 @@ export default class InfoCommand extends SteamWatchCommand {
       memberName: 'info',
       aliases: ['stats'],
       description: 'Display information about the bot.',
-      // @ts-ignore Missing typings
       clientPermissions: ['EMBED_LINKS'],
       throttling: {
         duration: 30,
@@ -36,7 +35,7 @@ export default class InfoCommand extends SteamWatchCommand {
     });
   }
 
-  async run(message: CommandMessage) {
+  async run(message: CommandoMessage) {
     const countQuery = db.count('* AS count')
       .first();
 
@@ -53,7 +52,7 @@ export default class InfoCommand extends SteamWatchCommand {
         .from('app_watcher')
         .then((res: any) => res.count),
     ]);
-    const uptime = msToTime(this.client.uptime);
+    const uptime = msToTime(this.client.uptime!);
     const links = [
       `[Invite Bot](${this.client.inviteUrl})`,
       `[GitHub Repo](${env.repoUrl})`,
@@ -67,7 +66,7 @@ export default class InfoCommand extends SteamWatchCommand {
       color: EMBED_COLOURS.DEFAULT,
       timestamp: new Date(),
       footer: {
-        icon_url: this.client.user.avatarURL,
+        icon_url: this.client.user!.displayAvatarURL(),
         text: `SteamWatch v${version}`,
       },
       fields: [

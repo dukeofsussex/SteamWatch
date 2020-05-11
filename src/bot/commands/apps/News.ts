@@ -1,4 +1,4 @@
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
@@ -27,7 +27,7 @@ export default class NewsCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage, { appId }: { appId: number }) {
+  async run(message: CommandoMessage, { appId }: { appId: number }) {
     const news = await db.select(
       'app.id',
       'name',

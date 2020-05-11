@@ -1,6 +1,6 @@
 import { oneLine, stripIndents } from 'common-tags';
 import { GuildChannel, TextChannel } from 'discord.js';
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
@@ -38,9 +38,7 @@ export default class WatchCommand extends SteamWatchCommand {
       ],
       format: '<"all" | "price" | "news"> <app id> [channel]',
       guildOnly: true,
-      // @ts-ignore Missing typings
       clientPermissions: ['MANAGE_WEBHOOKS'],
-      // @ts-ignore Missing typings
       userPermissions: ['MANAGE_CHANNELS'],
       argsPromptLimit: 0,
       args: [
@@ -48,7 +46,6 @@ export default class WatchCommand extends SteamWatchCommand {
           key: 'watcherType',
           prompt: 'Watcher type',
           type: 'string',
-          // @ts-ignore Missing typings
           oneOf: Object.values(WATCHER_TYPE),
         },
         {
@@ -60,7 +57,7 @@ export default class WatchCommand extends SteamWatchCommand {
           key: 'channel',
           prompt: 'Channel',
           type: 'channel',
-          default: (msg: CommandMessage) => msg.channel,
+          default: (msg: CommandoMessage) => msg.channel,
         },
       ],
       throttling: {
@@ -71,7 +68,7 @@ export default class WatchCommand extends SteamWatchCommand {
   }
 
   async run(
-    message: CommandMessage,
+    message: CommandoMessage,
     { watcherType, appId, channel }: { watcherType: string, appId: number, channel: GuildChannel },
   ) {
     if (!(channel instanceof TextChannel)) {
@@ -159,7 +156,7 @@ export default class WatchCommand extends SteamWatchCommand {
         .into('app');
     }
 
-    let error = await this.setWebhookAsync(channel);
+    let error = await WatchCommand.setWebhookAsync(channel);
 
     if (!error && types.includes(WATCHER_TYPE.PRICE)) {
       error = await WatchCommand.setAppPriceAsync(app, message.guild.id);
@@ -191,7 +188,7 @@ export default class WatchCommand extends SteamWatchCommand {
     });
   }
 
-  private async setWebhookAsync(channel: TextChannel) {
+  private static async setWebhookAsync(channel: TextChannel) {
     const dbWebhook = await db.select('id')
       .from('channel_webhook')
       .where('id', channel.id)
@@ -211,9 +208,11 @@ export default class WatchCommand extends SteamWatchCommand {
     }
 
     const webhook = await channel.createWebhook(
-      this.client.user.username,
-      this.client.user.avatarURL,
-      'Required by SteamWatch',
+      channel.client.user!.username,
+      {
+        avatar: channel.client.user!.displayAvatarURL(),
+        reason: 'Required by SteamWatch',
+      },
     );
 
     await db.insert({

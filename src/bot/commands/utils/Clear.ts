@@ -1,4 +1,4 @@
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import env from '../../../env';
@@ -17,7 +17,7 @@ export default class ClearCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage) {
+  async run(message: CommandoMessage) {
     if (!env.dev) {
       return message.say(insertEmoji`:ERROR: Only available in dev mode!`);
     }

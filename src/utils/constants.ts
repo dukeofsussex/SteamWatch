@@ -1,4 +1,3 @@
-// @ts-ignore Missing typings
 import { Constants } from 'discord.js';
 
 const EMBED_COLOURS = {

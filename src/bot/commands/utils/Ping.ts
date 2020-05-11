@@ -1,6 +1,6 @@
 import { oneLine } from 'common-tags';
 import { Message } from 'discord.js';
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import { EMBED_COLOURS } from '../../../utils/constants';
@@ -20,7 +20,7 @@ export default class PingCommand extends SteamWatchCommand {
     });
   }
 
-  async run(msg: CommandMessage) {
+  async run(msg: CommandoMessage) {
     const pingMsg = await (msg.embed({
       color: EMBED_COLOURS.PENDING,
       description: 'Pinging...',
@@ -33,7 +33,7 @@ export default class PingCommand extends SteamWatchCommand {
           :PING_PONG: Pong! Message round-trip took
           \`${(pingMsg.editedTimestamp || pingMsg.createdTimestamp)
             - (msg.editedTimestamp || msg.createdTimestamp)}ms\`.
-          Heartbeat ping is \`${Math.round(this.client.ping)}ms\`.
+          Heartbeat ping is \`${Math.round(this.client.ws.ping)}ms\`.
         `,
       },
     });

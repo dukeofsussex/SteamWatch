@@ -1,4 +1,4 @@
-import { RichEmbed, RichEmbedOptions } from 'discord.js';
+import { MessageEmbed, MessageEmbedOptions } from 'discord.js';
 import MessageQueue from '../MessageQueue';
 import db from '../../db';
 import WebApi from '../../steam/WebApi';
@@ -34,7 +34,7 @@ export default abstract class Watcher {
     }
   }
 
-  protected async enqueueAsync(appId: number, embed: RichEmbed, watcherType: 'watchPrice' | 'watchNews') {
+  protected async enqueueAsync(appId: number, embed: MessageEmbed, watcherType: 'watchPrice' | 'watchNews') {
     const watchers = await db.select(
       'app_watcher.id',
       'entity_id',
@@ -90,9 +90,9 @@ export default abstract class Watcher {
     app: App,
     {
       title, description, url, timestamp,
-    }: RichEmbedOptions,
+    }: MessageEmbedOptions,
   ) {
-    return new RichEmbed({
+    return new MessageEmbed({
       color: EMBED_COLOURS.DEFAULT,
       title: `**${title}**`,
       description,

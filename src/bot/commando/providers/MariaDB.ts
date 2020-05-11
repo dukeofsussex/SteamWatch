@@ -1,6 +1,5 @@
 /* eslint-disable no-underscore-dangle */
-// @ts-nocheck
-import { GuildExtension, SettingProvider } from 'discord.js-commando';
+import { CommandoGuild, SettingProvider } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import db from '../../../db';
 import logger from '../../../logger';
@@ -13,13 +12,13 @@ import logger from '../../../logger';
  */
 export default class MariaDBProvider extends SettingProvider {
   // Client that the provider is for.
-  private client: SteamWatchClient;
+  private client!: SteamWatchClient;
 
   // Settings cached in memory, mapped by guild ID (or 'global').
   private prefixes: Map<string, string>;
 
   // Listeners on the Client, mapped by the event name.
-  private listeners: Map<string, Function>;
+  private listeners: Map<string, (...args: any[]) => void>;
 
   constructor() {
     super();
@@ -40,20 +39,20 @@ export default class MariaDBProvider extends SettingProvider {
       const guild = row.id !== '0' ? row.id : 'global';
       this.prefixes.set(guild, row.commandoPrefix);
 
-      if (guild === 'global' || client.guilds.has(row.id)) {
+      if (guild === 'global' || client.guilds.cache.has(row.id)) {
         this.setupGuildPrefix(guild, row.commandoPrefix);
       }
     }
 
     // Listen for changes
     this.listeners
-      .set('commandPrefixChange', (guild: GuildExtension | string, prefix: string) => this.set(guild, 'prefix', prefix))
-      .set('guildCreate', (guild: GuildExtension) => {
+      .set('commandPrefixChange', (guild: CommandoGuild | string, prefix: string) => this.set(guild, 'prefix', prefix))
+      .set('guildCreate', (guild: CommandoGuild) => {
         if (!this.prefixes.has(guild.id)) {
           return;
         }
 
-        this.setupGuildPrefix(guild.id, this.prefixes.get(guild.id));
+        this.setupGuildPrefix(guild.id, this.prefixes.get(guild.id)!);
       });
 
     this.listeners.forEach((listener, event) => client.on(event, listener));
@@ -64,7 +63,7 @@ export default class MariaDBProvider extends SettingProvider {
     this.listeners.forEach((listener, event) => this.client.removeListener(event, listener));
   }
 
-  get(guild: GuildExtension | string, key: string, defVal: any) {
+  get(guild: CommandoGuild | string, key: string, defVal: any) {
     if (key !== 'prefix') {
       logger.error({
         group: 'Provider',
@@ -77,7 +76,7 @@ export default class MariaDBProvider extends SettingProvider {
     return this.prefixes.get(MariaDBProvider.getGuildID(guild)) || defVal;
   }
 
-  async set(guild: GuildExtension | string, key: string, val: any) {
+  async set(guild: CommandoGuild | string, key: string, val: any) {
     if (key !== 'prefix') {
       logger.error({
         group: 'Provider',
@@ -97,7 +96,7 @@ export default class MariaDBProvider extends SettingProvider {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async remove(guild: GuildExtension | string, key: string) {
+  async remove(guild: CommandoGuild | string, key: string) {
     logger.warn({
       group: 'Provider',
       message: `MariaDB.remove() called for ${guild} ${key}`,
@@ -107,7 +106,7 @@ export default class MariaDBProvider extends SettingProvider {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async clear(guild: GuildExtension | string) {
+  async clear(guild: CommandoGuild | string) {
     logger.warn({
       group: 'Provider',
       message: `MariaDB.clear() called for ${guild}`,
@@ -120,11 +119,13 @@ export default class MariaDBProvider extends SettingProvider {
     }
 
     if (guild === 'global') {
+      // @ts-ignore Bad
       this.client._commandPrefix = prefix;
       return;
     }
 
-    const fetchedGuild = this.client.guilds.get(guild) as GuildExtension;
+    const fetchedGuild = this.client.guilds.cache.get(guild)!;
+    // @ts-ignore Bad
     fetchedGuild._commandPrefix = prefix;
   }
 }

@@ -1,5 +1,5 @@
 import { oneLine } from 'common-tags';
-import { RateLimitInfo } from 'discord.js';
+import { RateLimitData } from 'discord.js';
 import { ArgumentType } from 'discord.js-commando';
 import fetch from 'node-fetch';
 import { join } from 'path';
@@ -21,7 +21,6 @@ export default class Bot {
       messageCacheMaxSize: 1,
       owner: env.bot.owners,
       steam: new Steam(),
-      unknownCommandResponse: false,
     });
   }
 
@@ -47,7 +46,7 @@ export default class Bot {
   }
 
   async stopAsync() {
-    await this.client.destroy();
+    this.client.destroy();
     db.destroy();
   }
 
@@ -60,24 +59,21 @@ export default class Bot {
       group: 'Commando',
       message: `${message.content} : ${err}\n${err.stack}`,
     }));
-    this.client.on('disconnect', () => logger.info({ group: 'Discord', message: 'Disconnected' }));
     this.client.on('error', (err) => logger.error({ group: 'Discord', message: err }));
     this.client.on('warn', (message) => logger.warn({ group: 'Discord', message }));
-    this.client.on('rateLimit', (info: RateLimitInfo) => logger.warn({
+    this.client.on('rateLimit', (data: RateLimitData) => logger.warn({
       group: 'Discord',
-      message: `Limit of ${info.limit} for ${info.method} ${info.path}`,
+      message: `Limit of ${data.limit} for ${data.method} ${data.path}`,
     }));
 
     this.client.once('ready', () => {
       logger.info({
         group: 'Discord',
-        message: `Logged in as '${this.client.user.tag}'`,
+        message: `Logged in as '${this.client.user?.tag}'`,
       });
 
-      if (this.client.shard.id === 0) {
-        this.updateStatusAsync();
-        this.client.setInterval(() => this.updateStatusAsync(), 900000);
-      }
+      this.updateStatusAsync();
+      this.client.setInterval(() => this.updateStatusAsync(), 900000);
     });
 
     const eventFiles = (await readdirAsync(join(__dirname, 'events')))
@@ -102,7 +98,7 @@ export default class Bot {
         .then((res: any) => res.count),
     ]);
 
-    this.client.user.setActivity(
+    this.client.user?.setActivity(
       oneLine`
         ${counts[0]} apps for ${counts[1]} guilds
         | ${this.client.commandPrefix}${this.client.commandPrefix.length > 1 ? ' ' : ''}help
@@ -110,7 +106,7 @@ export default class Bot {
       { type: 'WATCHING' },
     );
 
-    if (process.env.TOPGG_TOKEN) {
+    if (this.client.shard?.ids.includes(0) && process.env.TOPGG_TOKEN) {
       fetch('https://top.gg/api/bots/stats', {
         headers: {
           authorization: process.env.TOPGG_TOKEN,
@@ -118,7 +114,7 @@ export default class Bot {
         },
         body: JSON.stringify({
           server_count: counts[1],
-          shard_id: this.client.shard.id,
+          shard_id: 0,
           shard_count: this.client.shard.count,
         }),
         method: 'POST',

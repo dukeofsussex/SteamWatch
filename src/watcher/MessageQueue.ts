@@ -1,5 +1,4 @@
-// @ts-ignore Missing typings
-import { Constants, RichEmbed } from 'discord.js';
+import { Constants, MessageEmbed } from 'discord.js';
 import fetch from 'node-fetch';
 import db from '../db';
 import logger from '../logger';
@@ -11,7 +10,7 @@ const QUEUE_DELAY = 250; // 0.25s
 interface QueuedItem {
   id: string;
   token: string;
-  message: { content: string, embeds: RichEmbed[] }
+  message: { content: string, embeds: MessageEmbed[] }
 }
 
 export default class MessageQueue {
@@ -31,7 +30,7 @@ export default class MessageQueue {
     this.queueTail = 0;
   }
 
-  push(id: string, token: string, message: { content: string, embeds: RichEmbed[] }) {
+  push(id: string, token: string, message: { content: string, embeds: MessageEmbed[] }) {
     this.enQueue({ id, token, message });
 
     if (!this.queueTimeout) {

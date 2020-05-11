@@ -1,7 +1,7 @@
-// @ts-nocheck Too many missing typings
+// @ts-nocheck Too many incorrect typings
 import { oneLine, stripIndents } from 'common-tags';
-import { RichEmbed } from 'discord.js';
-import { CommandMessage, util } from 'discord.js-commando';
+import { MessageEmbed } from 'discord.js';
+import { CommandoMessage, util } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import { EMBED_COLOURS } from '../../../utils/constants';
@@ -33,9 +33,9 @@ export default class HelpCommand extends SteamWatchCommand {
     });
   }
 
-  async run(msg: CommandMessage, { command }: { command: string }) {
+  async run(message: CommandoMessage, { command }: { command: string }) {
     const { groups } = this.client.registry;
-    const commands = this.client.registry.findCommands(command, false, msg);
+    const commands = this.client.registry.findCommands(command, false, message);
     const showAll = command && command.toLowerCase() === 'all';
 
     let helpEmbed;
@@ -43,31 +43,31 @@ export default class HelpCommand extends SteamWatchCommand {
 
     if (command && !showAll) {
       if (commands.length === 0) {
-        return msg.embed({
+        return message.embed({
           color: EMBED_COLOURS.ERROR,
-          description: insertEmoji`:ERROR: Unable to identify command. Use ${msg.usage(
+          description: insertEmoji`:ERROR: Unable to identify command. Use ${message.usage(
             null,
-            msg.channel.type === 'dm' ? null : undefined,
-            msg.channel.type === 'dm' ? null : undefined,
+            message.channel.type === 'dm' ? null : undefined,
+            message.channel.type === 'dm' ? null : undefined,
           )} to view the list of all commands.`,
         });
       }
 
       if (commands.length > 15) {
-        return msg.embed({
+        return message.embed({
           color: EMBED_COLOURS.DEFAULT,
           description: 'Multiple commands found. Please be more specific.',
         });
       }
 
       if (commands.length > 1) {
-        return msg.embed({
+        return message.embed({
           color: EMBED_COLOURS.DEFAULT,
           description: util.disambiguation(commands, 'commands'),
         });
       }
 
-      helpEmbed = new RichEmbed({
+      helpEmbed = new MessageEmbed({
         color: EMBED_COLOURS.DEFAULT,
         title: `Command: ${commands[0].name}${commands[0].nsfw ? ' (NSFW)' : ''}`,
         description: stripIndents`
@@ -76,7 +76,7 @@ export default class HelpCommand extends SteamWatchCommand {
         `,
       });
 
-      helpEmbed.addField('Format', msg.anyUsage(oneLine`
+      helpEmbed.addField('Format', message.anyUsage(oneLine`
         ${commands[0].name}
         ${(commands[0].format ? ` ${commands[0].format}` : '')}
       `));
@@ -102,15 +102,15 @@ export default class HelpCommand extends SteamWatchCommand {
         helpEmbed.addField('Examples', commands[0].examples.join('\n'));
       }
     } else {
-      helpEmbed = new RichEmbed({
+      helpEmbed = new MessageEmbed({
         color: EMBED_COLOURS.DEFAULT,
-        title: `${showAll ? 'All commands' : `Available commands in ${msg.guild || 'this DM'}`}`,
+        title: `${showAll ? 'All commands' : `Available commands in ${message.guild || 'this DM'}`}`,
         description: stripIndents`
           ${oneLine`
-            To run a command in ${msg.guild ? msg.guild.name : 'any server'}, use
-            ${SteamWatchCommand.usage('command', msg.guild ? msg.guild.commandPrefix : null, this.client.user)}.
+            To run a command in ${message.guild ? message.guild.name : 'any server'}, use
+            ${SteamWatchCommand.usage('command', message.guild ? message.guild.commandPrefix : null, this.client.user)}.
             For example,
-            ${SteamWatchCommand.usage('prefix', msg.guild ? msg.guild.commandPrefix : null, this.client.user)}.
+            ${SteamWatchCommand.usage('prefix', message.guild ? message.guild.commandPrefix : null, this.client.user)}.
           `}
           To run a command in this DM, simply use ${SteamWatchCommand.usage('command', null, null)} with no prefix.
           Use ${this.usage('<command>', null, null)} to view detailed information about a specific command.
@@ -118,10 +118,10 @@ export default class HelpCommand extends SteamWatchCommand {
         `,
         fields: groups
           .filter((grp) => grp.commands
-            .some((cmd) => !cmd.hidden && (showAll || cmd.isUsable(msg))))
+            .some((cmd) => !cmd.hidden && (showAll || cmd.isUsable(message))))
           .map((grp) => ({
             name: grp.name,
-            value: grp.commands.filter((cmd) => !cmd.hidden && (showAll || cmd.isUsable(msg)))
+            value: grp.commands.filter((cmd) => !cmd.hidden && (showAll || cmd.isUsable(message)))
               .map((cmd) => `**${cmd.name}:** ${cmd.nsfw ? ' (NSFW) ' : ''}${cmd.description}`)
               .join('\n'),
           })),
@@ -129,15 +129,15 @@ export default class HelpCommand extends SteamWatchCommand {
     }
 
     try {
-      messages.push(await msg.direct(helpEmbed));
-      if (msg.channel.type !== 'dm') {
-        messages.push(await msg.embed({
+      messages.push(await message.direct(helpEmbed));
+      if (message.channel.type !== 'dm') {
+        messages.push(await message.embed({
           color: EMBED_COLOURS.SUCCESS,
           description: insertEmoji`:DM: Sent you a DM with information.`,
         }));
       }
     } catch (err) {
-      messages.push(await msg.embed({
+      messages.push(await message.embed({
         color: EMBED_COLOURS.SUCCESS,
         description: insertEmoji(oneLine)`
           :ERROR:

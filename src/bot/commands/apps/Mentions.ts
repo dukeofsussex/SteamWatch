@@ -1,4 +1,4 @@
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import db from '../../../db';
@@ -17,7 +17,6 @@ export default class MentionsCommand extends SteamWatchCommand {
         'mentions 1',
       ],
       guildOnly: true,
-      // @ts-ignore Missing typings
       userPermissions: ['MANAGE_CHANNELS'],
       argsPromptLimit: 0,
       args: [
@@ -31,7 +30,7 @@ export default class MentionsCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async run(message: CommandMessage, { watcherId }: { watcherId: number }) {
+  async run(message: CommandoMessage, { watcherId }: { watcherId: number }) {
     const mentions = await db.select('app_watcher_mention.entity_id', 'app_watcher_mention.type', 'app.id', 'app.name', 'app.icon')
       .from('app_watcher')
       .innerJoin('app', 'app.id', 'app_watcher.app_id')

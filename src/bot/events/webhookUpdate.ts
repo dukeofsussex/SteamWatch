@@ -30,9 +30,11 @@ export default async function webhookUpdate(channel: TextChannel) {
   webhookQueue[channel.id] = true;
 
   const webhook = await channel.createWebhook(
-    channel.client.user.username,
-    channel.client.user.avatarURL,
-    'Required by SteamWatch',
+    channel.client.user!.username,
+    {
+      avatar: channel.client.user!.displayAvatarURL(),
+      reason: 'Required by SteamWatch',
+    },
   );
 
   await db('channel_webhook').update({ webhookId: webhook.id, webhookToken: webhook.token })

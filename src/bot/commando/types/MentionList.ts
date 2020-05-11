@@ -1,5 +1,5 @@
 import { GuildMember, Role } from 'discord.js';
-import { Argument, ArgumentType, CommandMessage } from 'discord.js-commando';
+import { Argument, ArgumentType, CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 
 export default class MentionListType extends ArgumentType {
@@ -14,7 +14,7 @@ export default class MentionListType extends ArgumentType {
     ];
   }
 
-  async validate(val: string, msg: CommandMessage, arg: Argument) {
+  async validate(val: string, msg: CommandoMessage, arg: Argument) {
     const mentions = val.split(',');
 
     let results: (string | boolean | Promise<string | boolean>)[] = [];
@@ -40,7 +40,7 @@ export default class MentionListType extends ArgumentType {
     return false;
   }
 
-  parse(val: string, msg: CommandMessage, arg: Argument) {
+  parse(val: string, msg: CommandoMessage, arg: Argument) {
     const mentions = val.split(',');
 
     let results: (null | Role | GuildMember | Promise<Role | GuildMember>)[] = [];

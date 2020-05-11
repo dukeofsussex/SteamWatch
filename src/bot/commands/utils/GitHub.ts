@@ -1,4 +1,4 @@
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import env from '../../../env';
@@ -14,7 +14,7 @@ export default class GitHubCommand extends SteamWatchCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  run(message: CommandMessage) {
+  run(message: CommandoMessage) {
     return message.say(env.repoUrl);
   }
 }

@@ -9,11 +9,8 @@ const NodeSteam = require('steam');
 // Irrelevant properties omitted
 interface AppInfo {
   appid: number;
-  // eslint-disable-next-line camelcase
   change_number: number;
-  // eslint-disable-next-line camelcase
   missing_token: boolean;
-  // eslint-disable-next-line camelcase
   only_public: boolean;
   details: {
     name: string;

@@ -1,4 +1,4 @@
-import { CommandMessage } from 'discord.js-commando';
+import { CommandoMessage } from 'discord.js-commando';
 import { Webhook } from 'discord.js';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
@@ -19,7 +19,6 @@ export default class UnwatchCommand extends SteamWatchCommand {
       ],
       format: '<watcher id>',
       guildOnly: true,
-      // @ts-ignore Missing typings
       userPermissions: ['MANAGE_CHANNELS'],
       argsPromptLimit: 0,
       args: [
@@ -38,7 +37,7 @@ export default class UnwatchCommand extends SteamWatchCommand {
 
   // eslint-disable-next-line class-methods-use-this
   async run(
-    message: CommandMessage,
+    message: CommandoMessage,
     { watcherId }: { watcherId: number },
   ) {
     const watcher = await db.select(
@@ -79,7 +78,10 @@ export default class UnwatchCommand extends SteamWatchCommand {
       await db.delete()
         .from('channel_webhook')
         .where('id', watcher.channelId);
-      const webhook = new Webhook(this.client, { id: watcher.webhookId, token: watcher.webhookToken }, '');
+      const webhook = new Webhook(this.client, {
+        id: watcher.webhookId,
+        token: watcher.webhookToken,
+      });
       await webhook.delete();
     }
 
