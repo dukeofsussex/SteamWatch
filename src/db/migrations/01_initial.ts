@@ -43,8 +43,7 @@ exports.up = (knex: Knex) => knex.schema
     table.dateTime('last_checked_news');
   })
   .createTable('app_news', (table) => {
-    table.bigInteger('id').unsigned()
-      .primary();
+    table.bigInteger('id').unsigned();
     table.integer('app_id').unsigned()
       .notNullable();
     table.string('title', 128).notNullable();
@@ -52,6 +51,7 @@ exports.up = (knex: Knex) => knex.schema
     table.string('thumbnail', 256);
     table.string('url', 256).notNullable();
     table.dateTime('created_at').notNullable();
+    table.primary(['id', 'app_id']);
     table.foreign('app_id').references('id')
       .inTable('app')
       .onUpdate('CASCADE')
