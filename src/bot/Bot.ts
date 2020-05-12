@@ -21,6 +21,16 @@ export default class Bot {
       messageCacheMaxSize: 1,
       owner: env.bot.owners,
       steam: new Steam(),
+      ws: {
+        intents: [
+          'DIRECT_MESSAGES',
+          'GUILDS',
+          'GUILD_BANS',
+          'GUILD_MEMBERS',
+          'GUILD_MESSAGES',
+          'GUILD_WEBHOOKS',
+        ],
+      },
     });
   }
 
