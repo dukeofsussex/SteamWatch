@@ -1,4 +1,4 @@
-import { Guild } from 'discord.js';
+import { CommandoGuild } from 'discord.js-commando';
 import db from '../../db';
 import logger from '../../logger';
 
@@ -20,7 +20,7 @@ const REGION_CURRENCY_MAPPING: {
   'us-west': 'USD',
 };
 
-export default async function guildCreate(guild: Guild) {
+export default async function guildCreate(guild: CommandoGuild) {
   const exists = await db.select('id')
     .from('guild')
     .where('id', guild.id)
@@ -44,6 +44,11 @@ export default async function guildCreate(guild: Guild) {
     memberCount: guild.memberCount,
     currencyId,
   }).into('guild');
+
+  if (guild.id === '264445053596991498') {
+    // eslint-disable-next-line no-param-reassign
+    guild.commandPrefix = '';
+  }
 
   logger.info({
     group: 'Bot',
