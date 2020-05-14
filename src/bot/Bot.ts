@@ -79,7 +79,7 @@ export default class Bot {
     this.client.once('ready', () => {
       logger.info({
         group: 'Discord',
-        message: `Logged in as '${this.client.user?.tag}'`,
+        message: `Logged in as '${this.client.user!.tag}'`,
       });
 
       this.updateStatusAsync();
@@ -108,7 +108,7 @@ export default class Bot {
         .then((res: any) => res.count),
     ]);
 
-    this.client.user?.setActivity(
+    this.client.user!.setActivity(
       oneLine`
         ${counts[0]} apps for ${counts[1]} guilds
         | ${this.client.commandPrefix}${this.client.commandPrefix.length > 1 ? ' ' : ''}help
