@@ -13,7 +13,6 @@ const NEWS_FREQUEUNCY = 6; // 6h
 const NEWS_RATE_LIMIT = 2000; // 2s
 
 interface AppNewsItem {
-  articleId: string;
   icon: string;
   id: number;
   name: string;
@@ -46,7 +45,21 @@ export default class NewsWatcher extends Watcher {
     await db('app').update({ lastCheckedNews: new Date() })
       .where('id', newsItem.id);
 
-    if (!news || news.gid === newsItem.articleId) {
+    if (!news) {
+      this.next();
+      return;
+    }
+
+    const articleExists = await db.select('id')
+      .from('app_news')
+      .where({
+        id: news.gid,
+        appId: newsItem.id,
+      })
+      .first()
+      .then((res: any) => !!res);
+
+    if (articleExists) {
       this.next();
       return;
     }
@@ -99,7 +112,6 @@ export default class NewsWatcher extends Watcher {
       'app.id',
       'app.name',
       'app.icon',
-      'article_id',
       db.raw(
         oneLine`
         watcher_count
@@ -113,17 +125,6 @@ export default class NewsWatcher extends Watcher {
         .where('app_watcher.watch_news', true)
         .groupBy('app_id')
         .as('watchers'), 'app.id', 'watchers.app_id')
-      .leftJoin(
-        db.select(
-          'app_news.app_id',
-          { articleId: 'app_news.id' },
-        ).from('app_news')
-          .leftJoin({ appNewsLeft: 'app_news' }, function newsTimestampLeftJoin() {
-            this.on('app_news_left.app_id', '=', 'app_news.app_id').andOn('app_news_left.created_at', '>', 'app_news.created_at');
-          })
-          .whereNull('app_news_left.id')
-          .as('news'), 'app.id', 'news.app_id',
-      )
       .whereRaw('last_checked_news <= DATE_SUB(NOW(), INTERVAL ? HOUR)', [NEWS_FREQUEUNCY])
       .orWhereNull('last_checked_news')
       .orderBy('priority', 'desc')
