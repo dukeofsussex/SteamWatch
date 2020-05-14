@@ -45,7 +45,7 @@ export default class PrefixCommand extends SteamWatchCommand {
 
   run(message: CommandoMessage, { prefix }: { prefix: string }) {
     if (!prefix) {
-      const usedPrefix = message.guild.commandPrefix || this.client.commandPrefix;
+      const usedPrefix = message.guild ? message.guild.commandPrefix : this.client.commandPrefix;
       return message.embed({
         color: EMBED_COLOURS.DEFAULT,
         description: stripIndents`
