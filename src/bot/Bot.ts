@@ -18,7 +18,9 @@ export default class Bot {
     this.client = new SteamWatchClient({
       commandPrefix: env.bot.prefix,
       invite: env.bot.invite,
+      messageCacheLifetime: 60,
       messageCacheMaxSize: 1,
+      messageSweepInterval: 60,
       owner: env.bot.owners,
       steam: new Steam(),
       ws: {
