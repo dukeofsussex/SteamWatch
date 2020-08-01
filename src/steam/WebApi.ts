@@ -36,7 +36,11 @@ export default class WebApi {
   static async getAppNewsAsync(appId: number): Promise<SteamNewsItem | undefined> {
     return fetch(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2?appid=${appId}&count=1`)
       .then((res) => res.json())
-      .then((res) => res.appnews.newsitems[0]);
+      .then((res) => res.appnews.newsitems[0])
+      .then((res: SteamNewsItem) => {
+        res.url = encodeURI(res.url);
+        return res;
+      });
   }
 
   static async getAppPricesAsync(appIds: number[], cc: string): Promise<SteamAppDetails> {
