@@ -41,6 +41,11 @@ export default class MessageQueue {
   async startAsync() {
     if (await existsAsync('queue.json')) {
       this.queue = JSON.parse((await readFileAsync('queue.json')).toString());
+      this.queueTail = Object.keys(this.queue).length;
+
+      if (this.queueTail > 0) {
+        this.queueTimeout = setTimeout(() => this.notifyAsync(), QUEUE_DELAY);
+      }
     }
 
     this.backupInterval = setInterval(() => this.backupQueue(), BACKUP_INTERVAL);
@@ -112,9 +117,7 @@ export default class MessageQueue {
   }
 
   private deQueue() {
-    const size = this.queueTail - this.queueHead;
-
-    if (size <= 0) {
+    if (this.queueSize() === 0) {
       return undefined;
     }
 
