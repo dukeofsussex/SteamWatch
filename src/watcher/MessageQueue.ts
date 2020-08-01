@@ -60,6 +60,7 @@ export default class MessageQueue {
 
     if (this.queueTimeout) {
       clearTimeout(this.queueTimeout);
+      this.queueTimeout = undefined;
     }
   }
 
@@ -108,6 +109,7 @@ export default class MessageQueue {
       this.queueTimeout = setTimeout(() => this.notifyAsync(), QUEUE_DELAY);
     } else if (this.queueTimeout) {
       clearTimeout(this.queueTimeout);
+      this.queueTimeout = undefined;
     }
   }
 
