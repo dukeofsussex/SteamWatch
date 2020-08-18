@@ -18,6 +18,7 @@ interface AppPrice {
   currencyId: number;
   currencyAbbr: string;
   currencyName: string;
+  currencyCC: string;
   price: number;
   discountedPrice: number;
   discount: number;
@@ -46,7 +47,7 @@ export default class PriceWatcher extends Watcher {
     try {
       prices = await WebApi.getAppPricesAsync(
         apps.map((app) => app.id),
-        apps[0].currencyAbbr,
+        apps[0].currencyCC,
       );
     } catch (err) {
       logger.error({
@@ -193,6 +194,7 @@ export default class PriceWatcher extends Watcher {
       'guild.currency_id',
       { currencyAbbr: 'currency.abbreviation' },
       { currencyName: 'currency.name' },
+      { currencyCC: 'currency.country_code' },
       'app_price.price',
       'app_price.discount',
       'app_price.discounted_price',
