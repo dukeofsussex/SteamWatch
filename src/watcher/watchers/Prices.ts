@@ -66,6 +66,11 @@ export default class PriceWatcher extends Watcher {
     for (let i = 0; i < apps.length; i += 1) {
       const app = apps[i];
 
+      if (!prices[app.id]) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
       if (!prices[app.id].success || Array.isArray(prices[app.id].data)) {
         const message = !prices[app.id].success
           ? `No longer available in **${app.currencyAbbr}**.`
