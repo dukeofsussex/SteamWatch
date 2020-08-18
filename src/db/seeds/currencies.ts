@@ -10,7 +10,7 @@ const CURRENCIES = [
   {
     abbreviation: 'ARS',
     name: 'Argentine Peso',
-    country_code: 'ae',
+    country_code: 'ar',
     flag: '\ud83c\udde6\ud83c\uddf7',
   },
   {
