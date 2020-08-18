@@ -143,12 +143,12 @@ export default class PriceWatcher extends Watcher {
     if (priceOverview.initial > app.price) {
       message = insertEmoji(oneLine)`
           :PRICE_UP: Base price increased to
-          **${priceOverview.initial_formatted}**!
+          **${priceOverview.initial_formatted || priceOverview.final_formatted}**!
         `;
     } else if (priceOverview.initial < app.price) {
       message = insertEmoji(oneLine)`
           :PRICE_DOWN: Base price dropped to
-          **${priceOverview.initial_formatted}**!
+          **${priceOverview.initial_formatted || priceOverview.final_formatted}**!
         `;
     } else if (priceOverview.discount_percent > app.discount) {
       message = insertEmoji(oneLine)`
