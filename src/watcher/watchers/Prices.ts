@@ -85,6 +85,8 @@ export default class PriceWatcher extends Watcher {
             Reason: ${message}
           `,
         );
+
+        removed.push(app);
       } else if (prices[app.id].data.price_overview.initial === app.price
           && prices[app.id].data.price_overview.discount_percent === app.discount
           && prices[app.id].data.price_overview.final === app.discountedPrice) {
