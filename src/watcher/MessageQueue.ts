@@ -5,7 +5,7 @@ import logger from '../logger';
 import { existsAsync, readFileAsync, writeFileAsync } from '../utils/fsAsync';
 
 const BACKUP_INTERVAL = 60000; // 1m
-const QUEUE_DELAY = 250; // 0.25s
+const DEFAULT_QUEUE_DELAY = 250; // 0.25s
 
 interface QueuedItem {
   id: string;
@@ -15,6 +15,8 @@ interface QueuedItem {
 
 export default class MessageQueue {
   private queue: { [index: number]: QueuedItem };
+
+  private queueDelay: number;
 
   private queueHead: number;
 
@@ -26,6 +28,7 @@ export default class MessageQueue {
 
   constructor() {
     this.queue = {};
+    this.queueDelay = DEFAULT_QUEUE_DELAY;
     this.queueHead = 0;
     this.queueTail = 0;
   }
@@ -34,7 +37,7 @@ export default class MessageQueue {
     this.enQueue({ id, token, message });
 
     if (!this.queueTimeout) {
-      this.queueTimeout = setTimeout(() => this.notifyAsync(), QUEUE_DELAY);
+      this.queueTimeout = setTimeout(() => this.notifyAsync(), this.queueDelay);
     }
   }
 
@@ -44,7 +47,7 @@ export default class MessageQueue {
       this.queueTail = Object.keys(this.queue).length;
 
       if (this.queueTail > 0) {
-        this.queueTimeout = setTimeout(() => this.notifyAsync(), QUEUE_DELAY);
+        this.queueTimeout = setTimeout(() => this.notifyAsync(), this.queueDelay);
       }
     }
 
@@ -95,18 +98,28 @@ export default class MessageQueue {
       this.enQueue({ id, message, token });
     }
 
-    if (result && !result.ok) {
-      const json = await result.json();
+    if (result) {
+      if (!result.ok) {
+        const json = await result.json();
 
-      if (json.code === Constants.APIErrors.UNKNOWN_WEBHOOK) {
-        await MessageQueue.purgeWebhookAsync(id);
+        if (json.code === Constants.APIErrors.UNKNOWN_WEBHOOK) {
+          await MessageQueue.purgeWebhookAsync(id);
+        } else {
+          throw new Error(json.message);
+        }
+      }
+
+      if (result.headers.has('x-ratelimit-remaining') && parseInt(result.headers.get('x-ratelimit-remaining')!, 10) > 0) {
+        this.queueDelay = DEFAULT_QUEUE_DELAY;
+      } else if (result.headers.has('x-ratelimit-reset')) {
+        this.queueDelay = parseInt(result.headers.get('x-ratelimit-reset')!, 10) * 1000 - new Date().getTime();
       } else {
-        throw new Error(json.message);
+        this.queueDelay = 2500; // In case we don't receive any rate limit headers from Discord
       }
     }
 
     if (this.queueSize() > 0) {
-      this.queueTimeout = setTimeout(() => this.notifyAsync(), QUEUE_DELAY);
+      this.queueTimeout = setTimeout(() => this.notifyAsync(), this.queueDelay);
     } else if (this.queueTimeout) {
       clearTimeout(this.queueTimeout);
       this.queueTimeout = undefined;
