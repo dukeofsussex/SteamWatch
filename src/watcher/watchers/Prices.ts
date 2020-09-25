@@ -114,7 +114,7 @@ export default class PriceWatcher extends Watcher {
         .whereIn('app_id', ids)
         .andWhere('watch_price', true);
 
-      await db.delete()
+      await db('app_watcher').delete()
         .whereIn('app_id', ids)
         .andWhere({
           watchNews: false,
