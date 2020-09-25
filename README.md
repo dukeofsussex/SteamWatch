@@ -7,7 +7,7 @@
     A Discord bot for keeping track of Steam apps.
     <br />
     <br />
-    <a href="https://discord.gg/Sch9ak3"><img src="https://discordapp.com/api/guilds/196820438398140417/embed.png" alt="Discord server" /></a>
+    <a href="https://discord.gg/Sch9ak3"><img src="https://discord.com/api/guilds/196820438398140417/embed.png" alt="Discord server" /></a>
     <a href="https://www.npmjs.com/package/discord.js"><img src="https://img.shields.io/github/package-json/dependency-version/dukeofsussex/SteamWatch/discord.js" alt="Discord.js version"/></a>
     <a href="https://david-dm.org/dukeofsussex/SteamWatch"><img src="https://img.shields.io/david/dukeofsussex/SteamWatch" alt="Dependencies"/></a>
     <a href="https://github.com/dukeofsussex/SteamWatch/blob/master/LICENSE"><img src="https://img.shields.io/github/license/dukeofsussex/SteamWatch" alt="License"/></a>
@@ -21,7 +21,7 @@ To get a local copy up and running follow these simple steps:
 
 ### Prerequisites
 
-* [Discord bot token](https://discordapp.com/developers/applications)
+* [Discord bot token](https://discord.com/developers/applications)
 * [NodeJS](https://nodejs.org/en/)
 * [MariaDB](https://mariadb.org/) (or [MySQL](https://www.mysql.com/))
 

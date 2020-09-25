@@ -74,14 +74,14 @@ export default class MessageQueue {
     const body = {
       content: message.content,
       username: 'SteamWatch',
-      avatar_url: 'https://cdn.discordapp.com/avatars/661531246417149952/af98c26218e92227800aa827c8876039.png',
+      avatar_url: 'https://cdn.discord.com/avatars/661531246417149952/af98c26218e92227800aa827c8876039.png',
       embeds: message.embeds,
     };
 
     let result;
 
     try {
-      result = await fetch(`https://discordapp.com/api/webhooks/${id}/${token}`, {
+      result = await fetch(`https://discord.com/api/webhooks/${id}/${token}`, {
         method: 'post',
         body: JSON.stringify(body),
         headers: { 'Content-Type': 'application/json' },

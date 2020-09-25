@@ -24,7 +24,7 @@ export default class SteamWatchClient extends CommandoClient {
     ]).bitfield;
 
     return oneLineTrim`
-      https://discordapp.com/oauth2/authorize
+      https://discord.com/oauth2/authorize
       ?client_id=${this.user!.id}
       &permissions=${perms}
       &scope=bot
