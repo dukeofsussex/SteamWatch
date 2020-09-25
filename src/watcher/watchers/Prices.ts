@@ -9,7 +9,7 @@ import { insertEmoji } from '../../utils/templateTags';
 import Knex = require('knex');
 
 const PRICE_FREQUENCY = 12; // 12h
-const PRICE_RATE_LIMIT = 5000; // 5s
+const PRICE_RATE_LIMIT = 10000; // 10s
 
 interface AppPrice {
   icon: string;

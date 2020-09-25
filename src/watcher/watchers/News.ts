@@ -10,7 +10,7 @@ import WebApi from '../../steam/WebApi';
 import Knex = require('knex');
 
 const NEWS_FREQUEUNCY = 6; // 6h
-const NEWS_RATE_LIMIT = 2000; // 2s
+const NEWS_RATE_LIMIT = 10000; // 10s
 
 interface AppNewsItem {
   icon: string;
