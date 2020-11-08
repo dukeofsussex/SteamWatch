@@ -56,7 +56,7 @@ export default class PrefixCommand extends SteamWatchCommand {
     }
 
     // Check the user's permission before changing anything
-    if (message.guild && (!message.member.hasPermission('ADMINISTRATOR') || !this.client.isOwner(message.author))) {
+    if (message.guild && !message.member.hasPermission('ADMINISTRATOR')) {
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji`:ERROR: Only administrators may change the command prefix!`,
