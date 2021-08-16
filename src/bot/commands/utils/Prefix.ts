@@ -1,5 +1,5 @@
 import { stripIndents } from 'common-tags';
-import { CommandoMessage } from 'discord.js-commando';
+import { CommandoGuild, CommandoMessage } from 'discord.js-commando';
 import SteamWatchClient from '../../structures/SteamWatchClient';
 import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import { EMBED_COLOURS } from '../../../utils/constants';
@@ -45,7 +45,11 @@ export default class PrefixCommand extends SteamWatchCommand {
 
   run(message: CommandoMessage, { prefix }: { prefix: string }) {
     if (!prefix) {
-      const usedPrefix = message.guild ? message.guild.commandPrefix : this.client.commandPrefix;
+      const usedPrefix = message.guild
+        ? (message.guild as CommandoGuild).commandPrefix
+        : this.client.commandPrefix;
+
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.DEFAULT,
         description: stripIndents`
@@ -56,7 +60,8 @@ export default class PrefixCommand extends SteamWatchCommand {
     }
 
     // Check the user's permission before changing anything
-    if (message.guild && !message.member.hasPermission('ADMINISTRATOR')) {
+    if (message.guild && !message.member!.hasPermission('ADMINISTRATOR')) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji`:ERROR: Only administrators may change the command prefix!`,
@@ -64,6 +69,7 @@ export default class PrefixCommand extends SteamWatchCommand {
     }
 
     if (!message.guild && !this.client.isOwner(message.author)) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji`:ERROR: Only the bot owner(s) may change the global command prefix!`,
@@ -89,13 +95,14 @@ export default class PrefixCommand extends SteamWatchCommand {
     } else {
       if (message.guild) {
         // eslint-disable-next-line no-param-reassign
-        message.guild.commandPrefix = usedPrefix;
+        (message.guild as CommandoGuild).commandPrefix = usedPrefix;
       } else {
         this.client.commandPrefix = usedPrefix;
       }
       response = usedPrefix ? `Set the command prefix to \`${prefix}\`.` : 'Removed the command prefix entirely.';
     }
 
+    // @ts-ignore
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
       description: insertEmoji`:SUCCESS: ${response}\nTo run commands, use ${message.anyUsage('command')}.`,

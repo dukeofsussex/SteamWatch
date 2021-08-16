@@ -7,6 +7,7 @@ import env from '../../env';
 import logger from '../../logger';
 import WebApi from '../../steam/WebApi';
 
+// eslint-disable-next-line import/order
 import Knex = require('knex');
 
 const NEWS_FREQUEUNCY = 6; // 6h

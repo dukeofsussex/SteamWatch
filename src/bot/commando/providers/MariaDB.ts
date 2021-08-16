@@ -55,7 +55,7 @@ export default class MariaDBProvider extends SettingProvider {
         this.setupGuildPrefix(guild.id, this.prefixes.get(guild.id)!);
       });
 
-    this.listeners.forEach((listener, event) => client.on(event, listener));
+    this.listeners.forEach((listener, event: any) => client.on(event, listener));
   }
 
   async destroy() {

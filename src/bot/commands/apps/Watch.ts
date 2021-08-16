@@ -72,6 +72,7 @@ export default class WatchCommand extends SteamWatchCommand {
     { watcherType, appId, channel }: { watcherType: string, appId: number, channel: GuildChannel },
   ) {
     if (!(channel instanceof TextChannel)) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji`:ERROR: **${channel}** isn't a text channel!`,
@@ -85,11 +86,12 @@ export default class WatchCommand extends SteamWatchCommand {
     // Check whether the guild has reached the max amount of watchers
     const watchedCount = await db.count('* AS count')
       .from('app_watcher')
-      .where('guild_id', message.guild.id)
+      .where('guild_id', message.guild!.id)
       .first()
       .then((res: any) => parseInt(res.count, 10));
 
     if (watchedCount >= env.settings.maxWatchersPerGuild) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji(oneLine)`
@@ -101,6 +103,7 @@ export default class WatchCommand extends SteamWatchCommand {
 
     // Ensure we're connected to Steam
     if (!this.client.steam.isAvailable) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji(stripIndents)`
@@ -120,6 +123,7 @@ export default class WatchCommand extends SteamWatchCommand {
 
       // App doesn't exist
       if (!appInfo) {
+        // @ts-ignore
         return message.embed({
           color: EMBED_COLOURS.ERROR,
           description: insertEmoji(stripIndents)`
@@ -141,6 +145,7 @@ export default class WatchCommand extends SteamWatchCommand {
     for (let i = 0; i < types.length; i += 1) {
       const type = types[i];
       if (!PERMITTED_APP_TYPES[type].includes(app.type.toLowerCase())) {
+        // @ts-ignore
         return message.embed({
           color: EMBED_COLOURS.ERROR,
           description: insertEmoji(oneLine)`
@@ -159,10 +164,11 @@ export default class WatchCommand extends SteamWatchCommand {
     let error = await WatchCommand.setWebhookAsync(channel);
 
     if (!error && types.includes(WATCHER_TYPE.PRICE)) {
-      error = await WatchCommand.setAppPriceAsync(app, message.guild.id);
+      error = await WatchCommand.setAppPriceAsync(app, message.guild!.id);
     }
 
     if (error) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: error,
@@ -172,11 +178,12 @@ export default class WatchCommand extends SteamWatchCommand {
     await db.insert({
       appId,
       channelId: channel.id,
-      guildId: message.guild.id,
+      guildId: message.guild!.id,
       watchNews: types.includes(WATCHER_TYPE.NEWS),
       watchPrice: types.includes(WATCHER_TYPE.PRICE),
     }).into('app_watcher');
 
+    // @ts-ignore
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
       description: insertEmoji(oneLine)`

@@ -2,6 +2,7 @@ import config from './config';
 import env from '../env';
 import logger from '../logger';
 
+// eslint-disable-next-line import/order
 import Knex = require('knex');
 
 const convertCamelToSnake = (value: string) => value.replace(/[A-Z]/g, (char: string) => `_${char.toLowerCase()}`);

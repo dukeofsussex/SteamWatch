@@ -53,11 +53,12 @@ export default class UnwatchCommand extends SteamWatchCommand {
       .innerJoin('channel_webhook', 'channel_webhook.id', 'app_watcher.channel_id')
       .where({
         'app_watcher.id': watcherId,
-        'app_watcher.guild_id': message.guild.id,
+        'app_watcher.guild_id': message.guild!.id,
       })
       .first();
 
     if (!watcher) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji`:ERROR: Unable to find a watcher with the identifier **${watcherId}**!`,
@@ -85,6 +86,7 @@ export default class UnwatchCommand extends SteamWatchCommand {
       await webhook.delete();
     }
 
+    // @ts-ignore
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
       description: insertEmoji`:SUCCESS: Removed watcher for **${watcher.name}** from <#${watcher.channelId}>!`,

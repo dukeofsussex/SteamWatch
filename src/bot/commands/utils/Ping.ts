@@ -21,6 +21,7 @@ export default class PingCommand extends SteamWatchCommand {
   }
 
   async run(msg: CommandoMessage) {
+    // @ts-ignore
     const pingMsg = await (msg.embed({
       color: EMBED_COLOURS.PENDING,
       description: 'Pinging...',

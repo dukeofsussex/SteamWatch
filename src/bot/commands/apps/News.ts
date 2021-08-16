@@ -44,6 +44,7 @@ export default class NewsCommand extends SteamWatchCommand {
       .first();
 
     if (!news) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.DEFAULT,
         description: 'No cached news found!',
@@ -58,7 +59,9 @@ export default class NewsCommand extends SteamWatchCommand {
         text: news.name,
       },
       url: news.url,
+      // @ts-ignore
       timestamp: new Date(),
+      // @ts-ignore
       image: news.thumbnail
         ? {
           url: WebApi.getNewsImage(news.thumbnail),

@@ -64,8 +64,10 @@ export default class InfoCommand extends SteamWatchCommand {
       title: 'SteamWatch Statistics',
       url: 'https://steam.watch',
       color: EMBED_COLOURS.DEFAULT,
+      // @ts-ignore
       timestamp: new Date(),
       footer: {
+        // @ts-ignore
         icon_url: this.client.user!.displayAvatarURL(),
         text: `SteamWatch v${version}`,
       },
@@ -88,10 +90,12 @@ export default class InfoCommand extends SteamWatchCommand {
         {
           name: 'Uptime',
           value: uptime,
+          inline: false,
         },
         {
           name: 'Links',
           value: links.join(' | '),
+          inline: false,
         },
       ],
     });

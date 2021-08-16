@@ -67,10 +67,10 @@ export default class Bot {
       this.client.on('debug', (message) => logger.debug({ group: 'Discord', message }));
     }
 
-    this.client.on('commandError', (_, err, message) => logger.error({
-      group: 'Commando',
-      message: `${message.content} : ${err}\n${err.stack}`,
-    }));
+    // this.client.on('commandError', (_, err, message) => logger.error({
+    //   group: 'Commando',
+    //   message: `${message.content} : ${err}\n${err.stack}`,
+    // }));
     this.client.on('error', (err) => logger.error({ group: 'Discord', message: err }));
     this.client.on('warn', (message) => logger.warn({ group: 'Discord', message }));
     this.client.on('rateLimit', (data: RateLimitData) => logger.warn({
@@ -92,7 +92,7 @@ export default class Bot {
       .filter((file) => !file.endsWith('.map'));
     const eventHandlers = await Promise
       .all(eventFiles.map((file) => import(join(__dirname, 'events', file))));
-    eventFiles.forEach((file, i) => {
+    eventFiles.forEach((file: any, i) => {
       this.client.on(file.split('.')[0], eventHandlers[i].default);
     });
   }

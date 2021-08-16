@@ -5,7 +5,6 @@ import SteamWatchCommand from '../../structures/SteamWatchCommand';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import { insertEmoji } from '../../../utils/templateTags';
 
-
 export default class InviteCommand extends SteamWatchCommand {
   constructor(client: SteamWatchClient) {
     super(client, {
@@ -19,6 +18,7 @@ export default class InviteCommand extends SteamWatchCommand {
 
   // eslint-disable-next-line class-methods-use-this
   run(message: CommandoMessage) {
+    // @ts-ignore
     return message.embed({
       color: EMBED_COLOURS.DEFAULT,
       description: insertEmoji(oneLine)`

@@ -51,11 +51,12 @@ export default class DelMentionCommand extends SteamWatchCommand {
       .innerJoin('app', 'app.id', 'app_watcher.app_id')
       .where({
         'app_watcher.id': watcherId,
-        guildId: message.guild.id,
+        guildId: message.guild!.id,
       })
       .first();
 
     if (!dbWatcher) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji(oneLine)`
@@ -70,12 +71,14 @@ export default class DelMentionCommand extends SteamWatchCommand {
       .andWhere('watcher_id', watcherId);
 
     if (removed === 0) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji`:ERROR: None of the provided mentions can be removed!`,
       });
     }
 
+    // @ts-ignore
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
       description: insertEmoji`:SUCCESS: Removed ${removed} mention(s) from **${dbWatcher.name}**.`,

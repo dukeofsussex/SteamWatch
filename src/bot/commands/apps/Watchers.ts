@@ -41,13 +41,14 @@ export default class WatchersCommand extends SteamWatchCommand {
     let query = db.select('app.name', 'app_watcher.*')
       .from('app')
       .innerJoin('app_watcher', 'app.id', 'app_watcher.app_id')
-      .where('guild_id', message.guild.id);
+      .where('guild_id', message.guild!.id);
 
     if (typeof identifier === 'number' && identifier !== -1) {
       notFoundCategory = `for **${identifier}**`;
       query = query.andWhere('app_id', identifier);
     } else if (identifier instanceof GuildChannel) {
       if (!(identifier instanceof TextChannel)) {
+        // @ts-ignore
         return message.embed({
           color: EMBED_COLOURS.ERROR,
           description: insertEmoji`:ERROR: **${identifier}** isn't a text channel!`,
@@ -61,6 +62,7 @@ export default class WatchersCommand extends SteamWatchCommand {
     const watchers = await query.orderBy('name', 'asc');
 
     if (watchers.length === 0) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji`:ERROR: No watchers configured ${notFoundCategory}!`,
@@ -73,7 +75,7 @@ export default class WatchersCommand extends SteamWatchCommand {
         w.id,
         w.appId,
         w.name,
-        `#${message.guild.channels.resolve(w.channelId)?.name}`,
+        `#${message.guild!.channels.resolve(w.channelId)?.name}`,
         [w.watchNews ? 'News' : '', w.watchPrice ? 'Price' : ''].filter((type) => type).join(','),
       ]),
     ]));

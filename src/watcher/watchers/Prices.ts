@@ -6,6 +6,7 @@ import logger from '../../logger';
 import WebApi, { SteamPriceOverview } from '../../steam/WebApi';
 import { insertEmoji } from '../../utils/templateTags';
 
+// eslint-disable-next-line import/order
 import Knex = require('knex');
 
 const PRICE_FREQUENCY = 12; // 12h
@@ -25,6 +26,7 @@ interface AppPrice {
   lastChecked: Date;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface AppPriceOverview extends AppPrice {
   overview: SteamPriceOverview;
 }

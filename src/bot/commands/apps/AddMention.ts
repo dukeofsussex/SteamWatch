@@ -56,10 +56,11 @@ export default class AddMentionCommand extends SteamWatchCommand {
       .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
       .where({
         'app_watcher.id': watcherId,
-        guildId: message.guild.id,
+        guildId: message.guild!.id,
       });
 
     if (dbMentions.length === 0) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji`:ERROR: Unable to find a watcher with the identifier **${watcherId}**!`,
@@ -67,6 +68,7 @@ export default class AddMentionCommand extends SteamWatchCommand {
     }
 
     if (dbMentions.length >= env.settings.maxMentionsPerWatcher) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji(oneLine)`
@@ -88,6 +90,7 @@ export default class AddMentionCommand extends SteamWatchCommand {
       }
 
       if (filteredMentions.length === 0) {
+        // @ts-ignore
         return message.embed({
           color: EMBED_COLOURS.ERROR,
           description: insertEmoji(stripIndents)`
@@ -104,6 +107,7 @@ export default class AddMentionCommand extends SteamWatchCommand {
       type: mention instanceof Role ? 'role' : 'member',
     }))).into('app_watcher_mention');
 
+    // @ts-ignore
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
       description: insertEmoji`:SUCCESS: Added mentions to **${dbMentions[0].name}**.`,

@@ -18,6 +18,7 @@ export default class UnknownCommandCommand extends SteamWatchCommand {
 
   // eslint-disable-next-line class-methods-use-this
   run(message: CommandoMessage) {
+    // @ts-ignore
     return message.embed({
       color: EMBED_COLOURS.ERROR,
       description: oneLine`Unknown command. Use ${message.anyUsage(

@@ -66,6 +66,7 @@ export default class PriceCommand extends SteamWatchCommand {
       .first();
 
     if (!app) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.DEFAULT,
         description: 'No cached price found!',
@@ -76,6 +77,7 @@ export default class PriceCommand extends SteamWatchCommand {
       color: EMBED_COLOURS.DEFAULT,
       title: `**${app.name}**`,
       url: WebApi.getStoreUrl(app.id),
+      // @ts-ignore
       timestamp: new Date(),
       thumbnail: {
         url: WebApi.getIconUrl(app.id, app.icon),

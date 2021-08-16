@@ -37,16 +37,18 @@ export default class MentionsCommand extends SteamWatchCommand {
       .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
       .where({
         watcherId,
-        guildId: message.guild.id,
+        guildId: message.guild!.id,
       });
 
     if (mentions.length === 0) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji`:ERROR: Unable to find a watcher with the identifier **${watcherId}**!`,
       });
     }
     if (mentions.length === 1 && !mentions[0].entityId) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.DEFAULT,
         description: 'No mentions configured!',
@@ -66,6 +68,7 @@ export default class MentionsCommand extends SteamWatchCommand {
       }
     }
 
+    // @ts-ignore
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
       title: mentions[0].name,

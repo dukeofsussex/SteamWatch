@@ -40,9 +40,10 @@ export default class CurrencyCommand extends SteamWatchCommand {
       const dbCurrency = await db.select('currency.*')
         .from('guild')
         .innerJoin('currency', 'currency.id', 'guild.currency_id')
-        .where('guild.id', message.guild.id)
+        .where('guild.id', message.guild!.id)
         .first();
 
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.DEFAULT,
         description: oneLine`
@@ -59,6 +60,7 @@ export default class CurrencyCommand extends SteamWatchCommand {
       .first();
 
     if (!dbCurrency) {
+      // @ts-ignore
       return message.embed({
         color: EMBED_COLOURS.ERROR,
         description: insertEmoji`:ERROR: Unknown currency **${currency}**!`,
@@ -66,13 +68,14 @@ export default class CurrencyCommand extends SteamWatchCommand {
     }
 
     // Fetch all apps that aren't already being tracked in the new currency
-    const apps = await CurrencyCommand.fetchAppsAsync(dbCurrency.id, message.guild.id);
+    const apps = await CurrencyCommand.fetchAppsAsync(dbCurrency.id, message.guild!.id);
 
     // Process missing app prices for new currency
     if (apps.length > 0) {
       const invalidApps = await CurrencyCommand.processAppPricesAsync(apps, dbCurrency);
 
       if (invalidApps.length > 0) {
+        // @ts-ignore
         return message.embed({
           color: EMBED_COLOURS.ERROR,
           description: insertEmoji(stripIndents)`
@@ -84,8 +87,9 @@ export default class CurrencyCommand extends SteamWatchCommand {
     }
 
     await db('guild').update('currency_id', dbCurrency.id)
-      .where('id', message.guild.id);
+      .where('id', message.guild!.id);
 
+    // @ts-ignore
     return message.embed({
       color: EMBED_COLOURS.SUCCESS,
       description: insertEmoji`
