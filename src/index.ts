@@ -1,6 +1,12 @@
 import ProcessManager from './ProcessManager';
-import onShutdown from './utils/onShutdown';
+import logger from './utils/logger';
+import Util from './utils/Util';
 
 const processManager = new ProcessManager();
-processManager.startAsync();
-onShutdown(processManager.stopAsync.bind(processManager));
+processManager.start();
+Util.onShutdown(processManager.stop.bind(processManager));
+
+process.on('unhandledRejection', (err: any) => {
+  logger.error(err);
+  throw err;
+});

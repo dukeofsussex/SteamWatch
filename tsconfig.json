@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "esModuleInterop": true,
-    "target": "ES2018",
+    "target": "ES2021",
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "moduleResolution": "node",
@@ -10,7 +10,8 @@
     "outDir": "dist",
     "baseUrl": ".",
     "strict": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
   },
   "include": [
     "src/**/*"

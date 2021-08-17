@@ -1,5 +1,5 @@
 import { join } from 'path';
-import env from '../env';
+import env from '../utils/env';
 
 export default {
   client: 'mysql',
@@ -8,7 +8,7 @@ export default {
     bigNumberStrings: true,
     charset: 'utf8mb4',
     supportBigNumbers: true,
-    timezone: 'Z',
+    timezone: 'utc',
   },
   migrations: {
     directory: join(__dirname, 'migrations'),

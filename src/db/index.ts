@@ -1,9 +1,7 @@
+import { knex } from 'knex';
 import config from './config';
-import env from '../env';
-import logger from '../logger';
-
-// eslint-disable-next-line import/order
-import Knex = require('knex');
+import env from '../utils/env';
+import logger from '../utils/logger';
 
 const convertCamelToSnake = (value: string) => value.replace(/[A-Z]/g, (char: string) => `_${char.toLowerCase()}`);
 
@@ -20,26 +18,26 @@ const postProcessRow = (row: any): any => {
   }), {});
 };
 
-export default Knex({
+export default knex({
   ...config,
   asyncStackTraces: env.dev,
   debug: env.debug,
   log: {
     debug(message: string) {
       return logger.debug({
-        group: 'Knex',
+        group: 'Database',
         message,
       });
     },
     error(message: string) {
       return logger.error({
-        group: 'Knex',
+        group: 'Database',
         message,
       });
     },
     warn(message: string) {
       return logger.warn({
-        group: 'Knex',
+        group: 'Database',
         message,
       });
     },

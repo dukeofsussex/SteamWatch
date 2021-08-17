@@ -1,9 +1,6 @@
 # Queue backup
 queue.json
 
-# Steam servers
-servers.json
-
 # Logs
 logs
 *.log

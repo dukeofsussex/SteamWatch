@@ -1,3 +1,7 @@
+// @ts-ignore Missing typings
+import { isStringNode, isTagNode } from '@bbob/plugin-helper';
+// @ts-ignore Missing typings
+import { createPreset } from '@bbob/preset';
 import {
   ListTagNode,
   TagNode,
@@ -5,16 +9,13 @@ import {
   TagNodeContent,
 } from './BBob';
 
-const { isStringNode, isTagNode } = require('@bbob/plugin-helper');
-const { createPreset } = require('@bbob/preset');
-
 const SPECIAL_SPACE = '\u00A0';
 
 const isListTagNode = (node: ListTagNode) => node.tag === 'list'
-    || node.tag === 'ol'
-    || node.tag === 'ul';
+  || node.tag === 'ol'
+  || node.tag === 'ul';
 const isNewlineNode = (node: TagNodeContentNode) => ((typeof node === 'string' && node === '\n')
- || (typeof node === 'object' && (node.tag === 'br' || node.tag === 'br/')));
+  || (typeof node === 'object' && (node.tag === 'br' || node.tag === 'br/')));
 const needsTrimming = (node: TagNodeContentNode) => (typeof node === 'string' && node === ' ')
   || isNewlineNode(node);
 const trimContent = (content: TagNodeContent): TagNodeContent => {

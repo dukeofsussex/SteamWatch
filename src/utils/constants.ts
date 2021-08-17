@@ -1,15 +1,22 @@
-import { Constants } from 'discord.js';
+import { oneLineTrim } from 'common-tags';
+import { Permissions } from 'slash-create';
+import env from './env';
+import { homepage } from '../../package.json';
 
-const EMBED_COLOURS = {
-  DEFAULT: 0x00ADEE,
-  ERROR: Constants.Colors.RED,
-  PENDING: Constants.Colors.ORANGE,
-  SUCCESS: Constants.Colors.GREEN,
+export const DISCORD_ERROR_CODES = {
+  UNKNOWN_CHANNEL: 10003,
+  UNKNOWN_WEBHOOK_CODE: 10015,
+  MISSING_ACCESS: 50001,
 };
 
-const EMOJIS: {
-  [key:string]: string;
-} = {
+export const EMBED_COLOURS = {
+  DEFAULT: 0x00ADEE,
+  ERROR: 0xed4245,
+  PENDING: 0xe67e22,
+  SUCCESS: 0x57f287,
+};
+
+export const EMOJIS = {
   ALERT: '\uD83D\uDEA8',
   DM: '\uD83D\uDCEC',
   ERROR: '\u274C',
@@ -20,7 +27,30 @@ const EMOJIS: {
   TADA: '\uD83C\uDF89',
 };
 
-export {
-  EMBED_COLOURS,
-  EMOJIS,
+const perms = new Permissions([
+  Permissions.FLAGS.MANAGE_WEBHOOKS,
+]).bitfield;
+
+export const INVITE_URL = oneLineTrim`
+  https://discord.com/oauth2/authorize
+  ?client_id=${env.discord.clientId}
+  &permissions=${perms}
+  &scope=applications.commands%20bot
+`;
+
+export const MAX_OPTIONS = 25;
+
+export enum WatcherType {
+  ALL = 'all',
+  NEWS = 'news',
+  PRICE = 'price',
+}
+
+export const PERMITTED_APP_TYPES: { [key: string]: string[]; } = {
+  [WatcherType.NEWS]: ['application', 'game'],
+  [WatcherType.PRICE]: ['application', 'dlc', 'game', 'music', 'video'],
 };
+
+export const REPO_URL = homepage.split('#')[0];
+
+export const WEBSITE_URL = 'https://steam.watch';

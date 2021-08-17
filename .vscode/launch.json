@@ -8,6 +8,7 @@
           "type": "node",
           "request": "launch",
           "name": "Launch Bot",
+          "outputCapture": "std",
           "runtimeArgs": [
               "-r",
               "ts-node/register"

@@ -1,16 +1,30 @@
-import { Shard, ShardingManager } from 'discord.js';
-import { extname, join } from 'path';
 import db from './db';
-import env from './env';
-import logger from './logger';
-import WatcherManager from './watcher';
+import InteractionsManager from './interactions/InteractionsManager';
+import { Manager } from './types';
+import env from './utils/env';
+import logger from './utils/logger';
+import WatcherManager from './watcher/WatcherManager';
+import GuildWorker from './workers/GuildWorker';
+import TopGGWorker from './workers/TopGGWorker';
 
-export default class ProcessManager {
-  private shardingManager?: ShardingManager;
+export default class ProcessManager implements Manager {
+  private processes: Manager[];
 
-  private watcherManager?: WatcherManager;
+  constructor() {
+    this.processes = [
+      new GuildWorker(),
+      new InteractionsManager(),
+      new TopGGWorker(),
+      new WatcherManager(),
+    ];
+  }
 
-  async startAsync() {
+  async start() {
+    logger.info({
+      group: 'Process',
+      message: 'Initializing...',
+    });
+
     if (!env.dev) {
       await db.migrate.latest();
       await db.seed.run();
@@ -25,63 +39,37 @@ export default class ProcessManager {
       message: 'Ready',
     });
 
-    if (!process.argv.includes('--no-bot')) {
-      this.shardAsync();
-    }
+    for (let i = 0; i < this.processes.length; i += 1) {
+      const process = this.processes[i];
 
-    if (!process.argv.includes('--no-watcher')) {
-      this.watch();
+      logger.info({
+        group: 'Process',
+        message: `Starting ${process.constructor.name}...`,
+      });
+
+      // eslint-disable-next-line no-await-in-loop
+      await process.start();
     }
   }
 
-  async stopAsync() {
+  async stop() {
     logger.info({
       group: 'Process',
-      message: 'Shutting down',
+      message: 'Shutting down...',
     });
-    await this.watcherManager?.stopAsync();
+
+    for (let i = 0; i < this.processes.length; i += 1) {
+      const process = this.processes[i];
+
+      // eslint-disable-next-line no-await-in-loop
+      await process.stop();
+    }
+
     setTimeout(() => {
       db.destroy();
       logger.end(() => {
         process.exit(0);
       });
     }, 5000);
-  }
-
-  private async shardAsync() {
-    this.shardingManager = new ShardingManager(join(__dirname, 'bot', `index${extname(__filename)}`), {
-      token: env.bot.token,
-      execArgv: process.execArgv,
-    });
-
-    this.shardingManager.on('shardCreate', (shard: Shard) => {
-      logger.info({
-        group: 'Shard',
-        message: `#${shard.id} launched`,
-      });
-      shard.on('death', () => logger.warn({
-        group: 'Shard',
-        message: `#${shard.id} died`,
-      }))
-        .on('ready', () => () => logger.info({
-          group: 'Shard',
-          message: `#${shard.id} ready`,
-        }))
-        .on('disconnect', () => logger.info({
-          group: 'Shard',
-          message: `#${shard.id} disconnected`,
-        }))
-        .on('reconnecting', () => logger.info({
-          group: 'Shard',
-          message: `#${shard.id} reconnecting`,
-        }));
-    });
-
-    this.shardingManager.spawn();
-  }
-
-  private watch() {
-    this.watcherManager = new WatcherManager();
-    this.watcherManager.startAsync();
   }
 }

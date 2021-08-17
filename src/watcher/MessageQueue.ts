@@ -1,60 +1,75 @@
-import { Constants, MessageEmbed } from 'discord.js';
-import fetch from 'node-fetch';
+import { stripIndents } from 'common-tags';
+import { DiscordAPIError } from '@discordjs/rest';
+import { RESTPostAPIWebhookWithTokenResult, Routes } from 'discord-api-types/v9';
+import { R_OK, W_OK } from 'node:constants';
+import { access, readFile, writeFile } from 'node:fs/promises';
+import { MessageEmbedOptions, MessageOptions } from 'slash-create';
 import db from '../db';
-import logger from '../logger';
-import { existsAsync, readFileAsync, writeFileAsync } from '../utils/fsAsync';
+import { Manager } from '../types';
+import { DISCORD_ERROR_CODES } from '../utils/constants';
+import DiscordAPI, { DiscordUser } from '../utils/DiscordAPI';
+import logger from '../utils/logger';
 
-const BACKUP_INTERVAL = 60000; // 1m
-const DEFAULT_QUEUE_DELAY = 250; // 0.25s
+const FILENAME = 'queue.json';
 
 interface QueuedItem {
   id: string;
   token: string;
-  message: { content: string, embeds: MessageEmbed[] }
+  message: MessageOptions;
 }
 
-export default class MessageQueue {
-  private queue: { [index: number]: QueuedItem };
+export default class MessageQueue implements Manager {
+  private backupInterval?: NodeJS.Timeout;
+
+  private offset: number;
+
+  private queue: QueuedItem[];
 
   private queueDelay: number;
 
-  private queueHead: number;
-
-  private queueTail: number;
-
-  private backupInterval?: NodeJS.Timeout;
-
   private queueTimeout?: NodeJS.Timeout;
 
+  private user?: DiscordUser;
+
   constructor() {
-    this.queue = {};
-    this.queueDelay = DEFAULT_QUEUE_DELAY;
-    this.queueHead = 0;
-    this.queueTail = 0;
+    this.offset = 0;
+    this.queue = [];
+    this.queueDelay = 250; // 0.25s
+    this.user = undefined;
   }
 
-  push(id: string, token: string, message: { content: string, embeds: MessageEmbed[] }) {
-    this.enQueue({ id, token, message });
+  enqueue(id: string, token: string, message: { content: string, embeds: MessageEmbedOptions[] }) {
+    this.queue.push({ id, token, message });
 
     if (!this.queueTimeout) {
-      this.queueTimeout = setTimeout(() => this.notifyAsync(), this.queueDelay);
+      this.queueTimeout = setTimeout(() => this.notify(), this.queueDelay);
     }
   }
 
-  async startAsync() {
-    if (await existsAsync('queue.json')) {
-      this.queue = JSON.parse((await readFileAsync('queue.json')).toString());
-      this.queueTail = Object.keys(this.queue).length;
+  async start() {
+    this.user = await DiscordAPI.getCurrentUser();
 
-      if (this.queueTail > 0) {
-        this.queueTimeout = setTimeout(() => this.notifyAsync(), this.queueDelay);
+    try {
+      // eslint-disable-next-line no-bitwise
+      await access(FILENAME, R_OK | W_OK);
+      const { offset, queue } = JSON.parse((await readFile(FILENAME)).toString());
+      this.offset = offset;
+      this.queue = queue;
+
+      if (this.queueSize()) {
+        this.queueTimeout = setTimeout(() => this.notify(), this.queueDelay);
       }
+    } catch {
+      logger.debug({
+        group: 'MessageQueue',
+        message: 'No queue file found',
+      });
     }
 
-    this.backupInterval = setInterval(() => this.backupQueue(), BACKUP_INTERVAL);
+    this.backupInterval = setInterval(() => this.backupQueue(), 60000); // 1m
   }
 
-  async stopAsync() {
+  async stop() {
     await this.backupQueue();
 
     if (this.backupInterval) {
@@ -68,96 +83,77 @@ export default class MessageQueue {
   }
 
   private backupQueue() {
-    return writeFileAsync('queue.json', JSON.stringify(this.queue));
+    return writeFile(FILENAME, JSON.stringify({
+      offset: this.offset,
+      queue: this.queue,
+    }));
   }
 
-  private async notifyAsync() {
-    const { id, message, token } = this.deQueue()!;
+  private dequeue() {
+    if (this.queueSize() === 0) {
+      return null;
+    }
 
-    const body = {
-      content: message.content,
-      username: 'SteamWatch',
-      avatar_url: 'https://cdn.discord.com/avatars/661531246417149952/af98c26218e92227800aa827c8876039.png',
-      embeds: message.embeds,
-    };
+    const item = this.queue[this.offset];
+    this.offset += 1;
 
-    let result;
+    if (this.offset * 2 >= this.queue.length) {
+      this.queue = this.queue.slice(this.offset);
+      this.offset = 0;
+    }
+
+    return item;
+  }
+
+  private async notify() {
+    const { id, message, token } = this.dequeue()!;
 
     try {
-      result = await fetch(`https://discord.com/api/webhooks/${id}/${token}`, {
-        method: 'post',
-        body: JSON.stringify(body),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      await DiscordAPI.post(Routes.webhook(id, token), {
+        body: {
+          content: message.content,
+          username: this.user!.username,
+          avatar_url: this.user!.avatarUrl,
+          embeds: message.embeds,
+        },
+      }) as RESTPostAPIWebhookWithTokenResult;
     } catch (err) {
-      logger.error({
-        group: 'MessageQueue',
-        message: err,
-      });
-
-      this.enQueue({ id, message, token });
-    }
-
-    if (result) {
-      if (!result.ok) {
-        const json = await result.json();
-
-        if (json.code === Constants.APIErrors.UNKNOWN_WEBHOOK) {
-          await MessageQueue.purgeWebhookAsync(id);
-        } else {
-          throw new Error(json.message);
-        }
-      }
-
-      if (result.headers.has('x-ratelimit-remaining') && parseInt(result.headers.get('x-ratelimit-remaining')!, 10) > 0) {
-        this.queueDelay = DEFAULT_QUEUE_DELAY;
-      } else if (result.headers.has('x-ratelimit-reset')) {
-        this.queueDelay = parseInt(result.headers.get('x-ratelimit-reset')!, 10) * 1000 - new Date().getTime();
+      if ((err as DiscordAPIError).code === DISCORD_ERROR_CODES.UNKNOWN_WEBHOOK_CODE) {
+        await MessageQueue.purgeWebhook(id);
       } else {
-        this.queueDelay = 2500; // In case we don't receive any rate limit headers from Discord
+        logger.error({
+          group: 'MessageQueue',
+          message: stripIndents`
+            Unable to send webhook request with ${id}/${token}!
+            ${err}
+          `,
+          meta: {
+            message,
+          },
+        });
+        this.queue.push({ id, message, token });
       }
     }
 
-    if (this.queueSize() > 0) {
-      this.queueTimeout = setTimeout(() => this.notifyAsync(), this.queueDelay);
+    if (this.queueSize()) {
+      this.queueTimeout = setTimeout(() => this.notify(), this.queueDelay);
     } else if (this.queueTimeout) {
       clearTimeout(this.queueTimeout);
       this.queueTimeout = undefined;
     }
   }
 
-  private enQueue(item: any) {
-    this.queue[this.queueTail] = item;
-    this.queueTail += 1;
-  }
-
-  private deQueue() {
-    if (this.queueSize() === 0) {
-      return undefined;
-    }
-
-    const item = this.queue[this.queueHead];
-
-    delete this.queue[this.queueHead];
-
-    this.queueHead += 1;
-
-    // Reset the counter
-    if (this.queueHead === this.queueTail) {
-      this.queueHead = 0;
-      this.queueTail = 0;
-    }
-
-    return item;
-  }
-
   private queueSize() {
-    return this.queueTail - this.queueHead;
+    return this.queue.length - this.offset;
   }
 
-  private static async purgeWebhookAsync(id: string) {
+  private static async purgeWebhook(id: string) {
+    logger.info({
+      group: 'MessageQueue',
+      message: `Purging webhook ${id}!`,
+    });
     return db.delete()
       .from('channel_webhook')
-      .where('id', id);
+      .where('webhookId', id);
   }
 }

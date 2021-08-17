@@ -4,6 +4,7 @@
     "node": true
   },
   "extends": [
+    "airbnb-base",
     "airbnb-typescript/base",
     "plugin:import/typescript"
   ],

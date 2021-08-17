@@ -1,55 +1,35 @@
-import { MessageEmbed, MessageEmbedOptions } from 'discord.js';
+import { MessageEmbedOptions } from 'slash-create';
 import MessageQueue from '../MessageQueue';
-import db from '../../db';
-import WebApi from '../../steam/WebApi';
+import {
+  App,
+  AppWatcher,
+  AppWatcherMention,
+  ChannelWebhook,
+} from '../../db/knex';
+import { SteamUtil } from '../../steam/SteamUtil';
 import { EMBED_COLOURS } from '../../utils/constants';
+import Worker from '../../workers/Worker';
 
-const RETRY_DELAY = 900000; // 15m
+type WebhookedMentions = Pick<ChannelWebhook, 'webhookId' | 'webhookToken'>
+& { mentions: string[] };
 
-interface App {
-  icon: string;
-  id: number;
-  name: string;
-}
+type WebhookWatcher = Pick<AppWatcher, 'id'>
+& Pick<AppWatcherMention, 'entityId' | 'type'>
+& Pick<ChannelWebhook, 'webhookId' | 'webhookToken'>;
 
-export default abstract class Watcher {
+export default abstract class Watcher extends Worker {
   private readonly queue: MessageQueue;
 
-  private readonly rateLimit: number;
-
-  private timeout?: NodeJS.Timeout;
-
-  constructor(queue: MessageQueue, rateLimit: number) {
+  constructor(queue: MessageQueue, breakMs: number) {
+    super(breakMs);
     this.queue = queue;
-    this.rateLimit = rateLimit;
   }
 
-  start() {
-    this.watchAsync();
-  }
-
-  stop() {
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
-  }
-
-  protected async enqueueAsync(appId: number, embed: MessageEmbed, watcherType: 'watchPrice' | 'watchNews') {
-    const watchers = await db.select(
-      'app_watcher.id',
-      'entity_id',
-      'type',
-      'webhook_id',
-      'webhook_token',
-    ).from('app_watcher')
-      .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
-      .innerJoin('channel_webhook', 'channel_webhook.id', 'app_watcher.channel_id')
-      .where({
-        appId,
-        [watcherType]: true,
-      });
-
-    const groupedWatchers = watchers.reduce((group, watcher) => {
+  protected async enqueue(watchers: WebhookWatcher[], embed: MessageEmbedOptions) {
+    const groupedWatchers = watchers.reduce((
+      group: { [index: string]: WebhookedMentions },
+      watcher,
+    ) => {
       // eslint-disable-next-line no-param-reassign
       group[watcher.id] = group[watcher.id] || {
         webhookId: watcher.webhookId,
@@ -69,41 +49,39 @@ export default abstract class Watcher {
 
     for (let i = 0; i < keys.length; i += 1) {
       const watcher = groupedWatchers[keys[i]];
-      this.queue.push(watcher.webhookId, watcher.webhookToken, {
+      this.queue.enqueue(watcher.webhookId, watcher.webhookToken, {
         content: watcher.mentions.join(' ') || '',
         embeds: [embed],
       });
     }
   }
 
-  protected next() {
-    this.timeout = setTimeout(() => this.watchAsync(), this.rateLimit);
+  protected pause() {
+    this.timeout = setTimeout(() => this.work(), 900000); // 15m
   }
-
-  protected retry() {
-    this.timeout = setTimeout(() => this.watchAsync(), RETRY_DELAY);
-  }
-
-  protected abstract watchAsync(): Promise<void>;
 
   protected static getEmbed(
-    app: App,
+    app: Pick<App, 'icon' | 'id' | 'name'>,
     {
-      title, description, url, timestamp,
-    }: MessageEmbedOptions,
-  ) {
-    return new MessageEmbed({
+      description,
+      timestamp,
+      title,
+      url,
+    }: Pick<MessageEmbedOptions, 'description' | 'timestamp' | 'title' | 'url'>,
+  ): MessageEmbedOptions {
+    return {
       color: EMBED_COLOURS.DEFAULT,
       title: `**${title}**`,
       description,
       footer: {
+        icon_url: SteamUtil.getIconUrl(app.id, app.icon),
         text: app.name,
       },
       url,
       timestamp,
       thumbnail: {
-        url: WebApi.getIconUrl(app.id, app.icon),
+        url: SteamUtil.getIconUrl(app.id, app.icon),
       },
-    });
+    };
   }
 }

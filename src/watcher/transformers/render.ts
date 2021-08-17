@@ -71,7 +71,7 @@ export default function createRender(maxLength: number, maxNewlines: number) {
   };
 
   return (nodes: TagNodeContent) => ({
-    markdown: renderNodes(nodes).trim(),
+    markdown: `${renderNodes(nodes).trim()}${exceeded ? '...' : ''}`,
     exceedsMaxlength: exceeded,
   });
 }

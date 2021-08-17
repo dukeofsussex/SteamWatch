@@ -1,10 +1,9 @@
 // @ts-ignore Missing typings
-import core from '@bbob/core';
+import bbob from '@bbob/core';
+import { decode } from 'html-entities';
 import { TagNode } from './BBob';
 import createPreset from './preset';
 import createRender from './render';
-
-const { AllHtmlEntities } = require('html-entities');
 
 interface TransformedArticle {
   exceedsMaxlength: boolean;
@@ -23,7 +22,7 @@ export default function transformArticle(
 
   if (/<\/?p>|<br\/?>/i.test(content)) {
     // Respect html tags.
-    decodedContent = AllHtmlEntities.decode(decodedContent.replace(/\n/g, ''));
+    decodedContent = decode(decodedContent.replace(/\n/g, ''));
     options = {
       ...options,
       openTag: '<',
@@ -41,7 +40,7 @@ export default function transformArticle(
     thumbnail = tag.attrs.src || tag.content.filter((t): t is string => typeof t === 'string')[0];
   };
 
-  const render = core(createPreset(onImage)())
+  const render = bbob(createPreset(onImage)())
     .process(decodedContent, options)
     .html;
 
