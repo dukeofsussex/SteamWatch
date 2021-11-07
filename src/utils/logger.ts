@@ -1,4 +1,5 @@
 import { oneLine, stripIndents } from 'common-tags';
+import { inspect } from 'node:util';
 import { createLogger, format, transports } from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import env from './env';
@@ -26,7 +27,7 @@ const logFormat = combine(
   }) => stripIndents`
     ${oneLine`
       ${ts} [${level}]: ${(group ? `[${group}] ` : '')}
-    `} ${message} ${Object.keys(meta).length ? `\n${JSON.stringify(meta)}` : ''} ${stack ? `\n${stack}` : ''}
+    `} ${message} ${Object.keys(meta).length ? `\n${inspect(meta)}` : ''} ${stack ? `\n${stack}` : ''}
   `),
 );
 
