@@ -1,10 +1,5 @@
 import { oneLine, stripIndents } from 'common-tags';
-import {
-  ButtonStyle,
-  CommandContext,
-  ComponentButtonLink,
-  ComponentType,
-} from 'slash-create';
+import { ButtonStyle, CommandContext, ComponentType } from 'slash-create';
 import SteamID from 'steamid';
 import SteamAPI from './SteamAPI';
 import db from '../db';
@@ -193,17 +188,18 @@ export class SteamUtil {
           },
         ],
       }],
-      components: [{
+      components: (details.website ? [{
         type: ComponentType.ACTION_ROW,
         components: [
-          ...(details.website ? [{
+          {
             type: ComponentType.BUTTON,
             label: 'View Website',
             style: ButtonStyle.LINK,
             url: details.website,
-          }] : []) as ComponentButtonLink[],
+          },
         ],
-      }],
+      },
+      ] : []),
     };
   }
 
