@@ -53,7 +53,7 @@ export default class InteractionsManager implements Manager {
       message: `[RUN] "${command.commandName}"`,
     }));
 
-    this.creator.on('error', (err) => logger.error({ group: 'Interaction', message: err }));
+    this.creator.on('error', (err) => logger.error({ group: 'Interaction', message: err.message, meta: { err } }));
 
     this.creator.on('ping', () => logger.info({ group: 'Interaction', message: '[PING] Ponged' }));
 
@@ -62,8 +62,8 @@ export default class InteractionsManager implements Manager {
       message: '[SYNC] Done',
     }));
 
-    this.creator.on('unverifiedRequest', (req) => logger.error({ group: 'Interaction', message: req }));
+    this.creator.on('unverifiedRequest', (req) => logger.error({ group: 'Interaction', message: 'Unverified request', meta: { req } }));
 
-    this.creator.on('warn', (err) => logger.warn({ group: 'Interaction', message: err }));
+    this.creator.on('warn', (err) => logger.warn({ group: 'Interaction', message: typeof err === 'string' ? err : err.message, meta: { err } }));
   }
 }

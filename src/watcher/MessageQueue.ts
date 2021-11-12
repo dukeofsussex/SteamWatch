@@ -1,4 +1,3 @@
-import { stripIndents } from 'common-tags';
 import { DiscordAPIError } from '@discordjs/rest';
 import { RESTPostAPIWebhookWithTokenResult, Routes } from 'discord-api-types/v9';
 import { R_OK, W_OK } from 'node:constants';
@@ -123,11 +122,9 @@ export default class MessageQueue implements Manager {
       } else {
         logger.error({
           group: 'MessageQueue',
-          message: stripIndents`
-            Unable to send webhook request with ${id}/${token}!
-            ${err}
-          `,
+          message: `Unable to send webhook request with ${id}/${token}!`,
           meta: {
+            err,
             message,
           },
         });

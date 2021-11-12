@@ -1,4 +1,4 @@
-import { oneLine, stripIndents } from 'common-tags';
+import { oneLine } from 'common-tags';
 import { Knex } from 'knex';
 import { MessageEmbedOptions } from 'slash-create';
 import Watcher from './Watcher';
@@ -32,10 +32,10 @@ export default class NewsWatcher extends Watcher {
     } catch (err) {
       logger.error({
         group: 'Watcher',
-        message: stripIndents`
-          Unable to fetch app news for ${newsItem.id}!
-          ${err}
-        `,
+        message: `Unable to fetch app news for ${newsItem.id}!`,
+        meta: {
+          err,
+        },
       });
     }
 

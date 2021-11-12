@@ -1,4 +1,3 @@
-import { stripIndents } from 'common-tags';
 import fetch from 'node-fetch';
 import Worker from './Worker';
 import db from '../db';
@@ -48,10 +47,10 @@ export default class TopGGWorker extends Worker {
     } catch (err) {
       logger.error({
         group: 'Worker',
-        message: stripIndents`
-          Unable to post bot stats to Top.gg!
-          ${err}
-        `,
+        message: 'Unable to post bot stats to Top.gg!',
+        meta: {
+          err,
+        },
       });
     }
 
