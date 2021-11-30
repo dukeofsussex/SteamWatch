@@ -48,9 +48,7 @@ export default class TopGGWorker extends Worker {
       logger.error({
         group: 'Worker',
         message: 'Unable to post bot stats to Top.gg!',
-        meta: {
-          err,
-        },
+        err,
       });
     }
 

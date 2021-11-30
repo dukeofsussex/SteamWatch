@@ -24,16 +24,14 @@ steamUser.on('disconnected', (_, msg) => {
 steamUser.on('error', (err) => logger.error({
   group: 'Steam',
   message: err.message,
-  meta: { err },
+  err,
 }));
 steamUser.on('loggedOn', (details) => {
   if (details.eresult !== EResult.OK) {
     logger.error({
       group: 'Steam',
       message: 'Failed to log in!',
-      meta: {
-        details,
-      },
+      details,
     });
   } else {
     logger.info({

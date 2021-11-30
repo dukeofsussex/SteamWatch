@@ -39,9 +39,7 @@ export default class PriceWatcher extends Watcher {
       logger.error({
         group: 'Watcher',
         message: `Unable to fetch app prices for [${apps.join(', ')}] in ${apps[0].currencyName}!`,
-        meta: {
-          err,
-        },
+        err,
       });
     }
 

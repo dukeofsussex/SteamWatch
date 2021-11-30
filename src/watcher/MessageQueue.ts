@@ -123,10 +123,8 @@ export default class MessageQueue implements Manager {
         logger.error({
           group: 'MessageQueue',
           message: `Unable to send webhook request with ${id}/${token}!`,
-          meta: {
-            err,
-            message,
-          },
+          discordMessage: message,
+          err,
         });
         this.queue.push({ id, message, token });
       }

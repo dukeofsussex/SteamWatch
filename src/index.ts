@@ -6,7 +6,11 @@ const processManager = new ProcessManager();
 processManager.start();
 Util.onShutdown(processManager.stop.bind(processManager));
 
-process.on('unhandledRejection', (err: any) => {
-  logger.error(err);
+process.on('unhandledRejection', (err: Error) => {
+  logger.error({
+    group: 'Process',
+    message: err.message,
+    err,
+  });
   throw err;
 });

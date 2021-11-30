@@ -33,9 +33,7 @@ export default class NewsWatcher extends Watcher {
       logger.error({
         group: 'Watcher',
         message: `Unable to fetch app news for ${newsItem.id}!`,
-        meta: {
-          err,
-        },
+        err,
       });
     }
 
