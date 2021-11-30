@@ -33,7 +33,7 @@ const perms = new Permissions([
 
 export const INVITE_URL = oneLineTrim`
   https://discord.com/oauth2/authorize
-  ?client_id=${env.discord.clientId}
+  ?client_id=${env.discord.appId}
   &permissions=${perms}
   &scope=applications.commands%20bot
 `;
