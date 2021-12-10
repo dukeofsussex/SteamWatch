@@ -2,7 +2,7 @@ import { oneLine, stripIndents } from 'common-tags';
 import { CommandContext, CommandOptionType, SlashCreator } from 'slash-create';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 import db from '../../../db';
-import { SteamUtil } from '../../../steam/SteamUtil';
+import SteamUtil from '../../../steam/SteamUtil';
 import { EMBED_COLOURS, EMOJIS } from '../../../utils/constants';
 import env from '../../../utils/env';
 
@@ -15,16 +15,15 @@ interface MentionModification {
   user?: string;
 }
 
-type AddArguments = WatcherArgument & MentionModification;
-type RemoveArguments = AddArguments;
+type EditArguments = WatcherArgument & MentionModification;
 
 interface CommandArguments {
-  add?: AddArguments;
+  add?: EditArguments;
   list?: WatcherArgument;
-  remove?: RemoveArguments;
+  remove?: EditArguments;
 }
 
-export default class AddMentionCommand extends GuildOnlyCommand {
+export default class MentionsCommand extends GuildOnlyCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'mentions',
@@ -87,6 +86,7 @@ export default class AddMentionCommand extends GuildOnlyCommand {
     this.filePath = __filename;
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async run(ctx: CommandContext) {
     try {
       await GuildOnlyCommand.setupGuild(ctx);
@@ -101,28 +101,23 @@ export default class AddMentionCommand extends GuildOnlyCommand {
     } = ctx.options as CommandArguments;
 
     if (add) {
-      return this.add(ctx, add);
+      return MentionsCommand.add(ctx, add);
     }
 
     if (list) {
-      return this.list(ctx, list.watcher_id);
+      return MentionsCommand.list(ctx, list.watcher_id);
     }
 
-    return this.remove(ctx, remove!);
+    return MentionsCommand.remove(ctx, remove!);
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  async add(ctx: CommandContext, { role, user, watcher_id: watcherId }: AddArguments) {
+  private static async add(
+    ctx: CommandContext,
+    { role, user, watcher_id: watcherId }: EditArguments,
+  ) {
     let mentions = [role, user].filter((m) => m);
 
-    const dbMentions = await db.select('app_watcher_mention.entity_id', 'app.id', 'app.name', 'app.icon')
-      .from('app_watcher')
-      .innerJoin('app', 'app.id', 'app_watcher.app_id')
-      .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
-      .where({
-        'app_watcher.id': watcherId,
-        guildId: ctx.guildID,
-      });
+    const dbMentions = await MentionsCommand.fetchMentions(ctx.guildID!, watcherId);
 
     if (dbMentions.length === 0) {
       return ctx.error(`Unable to find a watcher with the identifier **${watcherId}**!`);
@@ -158,21 +153,13 @@ export default class AddMentionCommand extends GuildOnlyCommand {
       watcherId,
       entityId: mention,
       type: mention === role ? 'role' : 'member',
-    }))).into('app_watcher_mention');
+    }))).into('watcher_mention');
 
     return this.list(ctx, watcherId, `${EMOJIS.SUCCESS} Added ${mentions.length} mention(s)`);
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  async list(ctx: CommandContext, watcherId: number, description?: string) {
-    const mentions = await db.select('app_watcher_mention.entity_id', 'app_watcher_mention.type', 'app.id', 'app.name', 'app.icon')
-      .from('app_watcher')
-      .innerJoin('app', 'app.id', 'app_watcher.app_id')
-      .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
-      .where({
-        'app_watcher.id': watcherId,
-        guildId: ctx.guildID,
-      });
+  private static async list(ctx: CommandContext, watcherId: number, description?: string) {
+    const mentions = await MentionsCommand.fetchMentions(ctx.guildID!, watcherId);
 
     if (mentions.length === 0) {
       return ctx.error(`Unable to find a watcher with the identifier **${watcherId}**!`);
@@ -186,22 +173,25 @@ export default class AddMentionCommand extends GuildOnlyCommand {
 
       if (mention.type === 'role') {
         roles.push(`<@&${mention.entityId}>`);
-      } else {
+      } else if (mention.type === 'member') {
         users.push(`<@${mention.entityId}>`);
       }
     }
 
     return ctx.embed({
       color: EMBED_COLOURS.SUCCESS,
-      title: mentions[0].name,
+      title: mentions[0].ugcName || mentions[0].appName,
       description,
       thumbnail: {
-        url: SteamUtil.getIconUrl(mentions[0].id, mentions[0].icon),
+        url: SteamUtil.URLS.Icon(mentions[0].id, mentions[0].icon),
       },
-      url: SteamUtil.getStoreUrl(mentions[0].id),
+      url: mentions[0].ugcId
+        ? SteamUtil.URLS.UGC(mentions[0].ugcId)
+        : SteamUtil.URLS.Store(mentions[0].id),
       timestamp: new Date(),
       footer: {
-        text: `Watcher Id: ${watcherId}`,
+        text: mentions[0].appName,
+        icon_url: SteamUtil.URLS.Icon(mentions[0].id, mentions[0].icon),
       },
       fields: [{
         name: 'Roles',
@@ -211,19 +201,27 @@ export default class AddMentionCommand extends GuildOnlyCommand {
         name: 'Users',
         value: users.join('\n') || 'None',
         inline: true,
+      }, {
+        name: 'Steam Client Link',
+        value: mentions[0].ugcId
+          ? SteamUtil.BP.UGC(mentions[0].ugcId)
+          : SteamUtil.BP.Store(mentions[0].id),
       }],
     });
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  async remove(ctx: CommandContext, { role, user, watcher_id: watcherId }: RemoveArguments) {
+  private static async remove(
+    ctx: CommandContext,
+    { role, user, watcher_id: watcherId }: EditArguments,
+  ) {
     const mentions = [role, user].filter((m) => m) as string[];
 
     const dbWatcher = await db.select('app.id', 'app.name', 'app.icon')
-      .from('app_watcher')
-      .innerJoin('app', 'app.id', 'app_watcher.app_id')
+      .from('watcher')
+      .innerJoin('app', 'app.id', 'watcher.app_id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .where({
-        'app_watcher.id': watcherId,
+        'watcher.id': watcherId,
         guildId: ctx.guildID,
       })
       .first();
@@ -233,7 +231,7 @@ export default class AddMentionCommand extends GuildOnlyCommand {
     }
 
     const removed = await db.delete()
-      .from('app_watcher_mention')
+      .from('watcher_mention')
       .whereIn('entity_id', mentions)
       .andWhere('watcher_id', watcherId);
 
@@ -242,5 +240,26 @@ export default class AddMentionCommand extends GuildOnlyCommand {
     }
 
     return this.list(ctx, watcherId, `${EMOJIS.SUCCESS} Removed ${removed} mention(s)`);
+  }
+
+  private static fetchMentions(guildId: string, watcherId: number) {
+    return db.select(
+      'watcher_mention.entity_id',
+      'watcher_mention.type',
+      'app.id',
+      { appName: 'app.name' },
+      'app.icon',
+      { ugcId: 'ugc.id' },
+      { ugcName: 'ugc.name' },
+    )
+      .from('watcher')
+      .innerJoin('app', 'app.id', 'watcher.app_id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
+      .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
+      .where({
+        'watcher.id': watcherId,
+        guildId,
+      });
   }
 }

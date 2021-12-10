@@ -6,9 +6,10 @@ import {
   SlashCommand,
   SlashCreator,
 } from 'slash-create';
+import { EPrivacyState } from 'steam-user';
 import SteamID from 'steamid';
-import SteamAPI, { CommunityVisibilityState } from '../../../steam/SteamAPI';
-import { SteamUtil } from '../../../steam/SteamUtil';
+import SteamAPI from '../../../steam/SteamAPI';
+import SteamUtil from '../../../steam/SteamUtil';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import env from '../../../utils/env';
 import Util from '../../../utils/Util';
@@ -17,7 +18,7 @@ interface CommandArguments {
   profile: string;
 }
 
-export default class SuggestCommand extends SlashCommand {
+export default class ProfileCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'profile',
@@ -73,7 +74,7 @@ export default class SuggestCommand extends SlashCommand {
       color: EMBED_COLOURS.DEFAULT,
       description: stripIndents`
         **Level**: ${level || 'N/A'}
-        **Profile Visibility:** ${CommunityVisibilityState[summary.communityvisibilitystate]}
+        **Profile Visibility:** ${EPrivacyState[summary.communityvisibilitystate]}
       `,
       timestamp: new Date(),
       fields: [{

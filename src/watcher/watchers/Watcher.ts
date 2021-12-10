@@ -1,21 +1,16 @@
 import { MessageEmbedOptions } from 'slash-create';
 import MessageQueue from '../MessageQueue';
-import {
-  App,
-  AppWatcher,
-  AppWatcherMention,
-  ChannelWebhook,
-} from '../../db/knex';
-import { SteamUtil } from '../../steam/SteamUtil';
+import { App, ChannelWebhook, WatcherMention } from '../../db/knex';
+import SteamUtil from '../../steam/SteamUtil';
 import { EMBED_COLOURS } from '../../utils/constants';
 import Worker from '../../workers/Worker';
 
 type WebhookedMentions = Pick<ChannelWebhook, 'webhookId' | 'webhookToken'>
 & { mentions: string[] };
 
-type WebhookWatcher = Pick<AppWatcher, 'id'>
-& Pick<AppWatcherMention, 'entityId' | 'type'>
-& Pick<ChannelWebhook, 'webhookId' | 'webhookToken'>;
+type WebhookWatcher = Pick<WatcherMention, 'entityId' | 'type'>
+& Pick<ChannelWebhook, 'webhookId' | 'webhookToken'>
+& { id: number };
 
 export default abstract class Watcher extends Worker {
   private readonly queue: MessageQueue;
@@ -74,13 +69,13 @@ export default abstract class Watcher extends Worker {
       title: `**${title}**`,
       description,
       footer: {
-        icon_url: SteamUtil.getIconUrl(app.id, app.icon),
+        icon_url: SteamUtil.URLS.Icon(app.id, app.icon),
         text: app.name,
       },
       url,
       timestamp,
       thumbnail: {
-        url: SteamUtil.getIconUrl(app.id, app.icon),
+        url: SteamUtil.URLS.Icon(app.id, app.icon),
       },
     };
   }

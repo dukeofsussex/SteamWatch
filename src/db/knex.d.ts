@@ -1,13 +1,20 @@
 // Required for type inferring
 import 'knex';
-import { CurrencyCode } from '../steam/SteamUtil';
+import { WatcherType } from '../types';
+
+type CurrencyCode = 'AED' | 'ARS' | 'AUD' | 'BRL' | 'CAD' | 'CHF'
+| 'CLP' | 'CNY' | 'COP' | 'CRC' | 'EUR' | 'GBP' | 'HKD' | 'ILS'
+| 'IDR' | 'INR' | 'JPY' | 'KRW' | 'KWD' | 'KZT' | 'MXN' | 'MYR'
+| 'NOK' | 'NZD' | 'PEN' | 'PHP' | 'PLN' | 'QAR' | 'RUB' | 'SAR'
+| 'SGD' | 'THB' | 'TRY' | 'TWD' | 'UAH' | 'USD' | 'UYU' | 'VND'
+| 'ZAR' | 'CIS-USD' | 'SASIA-USD';
 
 interface App {
   id: number;
   name: string;
   icon: string;
   type: string;
-  lastCheckedNews: Date | null | undefined;
+  lastCheckedNews: Date | null;
 }
 
 interface AppNews {
@@ -31,22 +38,6 @@ interface AppPrice {
   lastChecked: Date;
 }
 
-interface AppWatcher {
-  id: number;
-  appId: number;
-  channelId: string;
-  guildId: string;
-  watchNews: boolean;
-  watchPrice: boolean;
-}
-
-interface AppWatcherMention {
-  id: number;
-  watcherId: number;
-  entityId: string;
-  type: 'member' | 'role';
-}
-
 interface ChannelWebhook {
   id: number;
   guildId: string;
@@ -68,15 +59,39 @@ interface Guild {
   lastUpdate: Date;
 }
 
+interface UGC {
+  id: string;
+  appId: number;
+  name: string;
+  lastUpdate: Date;
+  lastChecked: Date | null;
+}
+
+interface Watcher {
+  id: number;
+  appId: number;
+  ugcId: string;
+  channelId: string;
+  type: WatcherType;
+}
+
+interface WatcherMention {
+  id: number;
+  watcherId: number;
+  entityId: string;
+  type: 'member' | 'role';
+}
+
 declare module 'knex/types/tables' {
   interface Tables {
     app: App;
     app_news: AppNews;
     app_price: AppPrice;
-    app_watcher: AppWatcher;
-    app_watcher_mention: AppWatcherMention;
     channel_webhook: ChannelWebhook;
     currency: Currency;
     guild: Guild;
+    ugc: UGC;
+    watcher: Watcher;
+    watcher_mention: WatcherMention;
   }
 }

@@ -1,12 +1,8 @@
-import fetch from 'node-fetch';
+import fetch, { RequestInit } from 'node-fetch';
+import { EPublishedFileVisibility, EResult } from 'steam-user';
+import { URLSearchParams } from 'url';
 import env from '../utils/env';
 import logger from '../utils/logger';
-
-export enum CommunityVisibilityState {
-  Private = 1,
-  'Friends Only' = 2,
-  Public = 3,
-}
 
 interface AppDetails {
   achievements?: Total;
@@ -128,6 +124,33 @@ interface Total {
   total: number;
 }
 
+interface UGC {
+  publishedfileid: string;
+  result: EResult;
+  creator: string;
+  consumer_app_id: number;
+  preview_url: string;
+  title: string;
+  description: string;
+  time_created: number;
+  time_updated: number;
+  visibility: EPublishedFileVisibility
+  banned: boolean;
+  ban_reason: string;
+  subscriptions: number;
+  favorited: number;
+  lifetime_subscriptions: number;
+  lifetime_favorited: number;
+  views: number;
+  tags: {
+    tag: string;
+  }[];
+}
+
+interface UGCResponse {
+  publishedfiledetails: UGC[];
+}
+
 interface VanityURLResolve {
   steamid?: string;
 }
@@ -176,6 +199,17 @@ export default class SteamAPI {
     return res?.response.players[0] || null;
   }
 
+  static async getPublishedFileDetails(ids: string[]) {
+    const res = await this.request<Response<UGCResponse>>('https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/', {
+      method: 'POST',
+      body: new URLSearchParams({
+        itemcount: ids.length.toString(),
+        ...ids.reduce((prev, id, i) => ({ ...prev, [`publishedfileids[${i}]`]: id.toString() }), {}),
+      }),
+    });
+    return res?.response.publishedfiledetails || null;
+  }
+
   static async getRandom() {
     const res = await fetch('http://store.steampowered.com/explore/random/', {
       method: 'HEAD',
@@ -201,9 +235,9 @@ export default class SteamAPI {
     return res?.total ? res.items[0].id : null;
   }
 
-  private static async request<T>(url: string): Promise<T | null> {
+  private static async request<T>(url: string, options?: RequestInit): Promise<T | null> {
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, options);
       return await res.json() as T;
     } catch (err) {
       logger.error({

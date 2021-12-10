@@ -1,8 +1,16 @@
 import { oneLine, stripIndents } from 'common-tags';
-import { ButtonStyle, CommandContext, ComponentType } from 'slash-create';
+import { ButtonStyle, ComponentType, MessageOptions } from 'slash-create';
 import SteamID from 'steamid';
+import { EResult } from 'steam-user';
 import SteamAPI from './SteamAPI';
+import steamUser from './SteamUser';
 import db from '../db';
+import {
+  App,
+  Currency,
+  CurrencyCode,
+  UGC,
+} from '../db/knex';
 import { EMBED_COLOURS } from '../utils/constants';
 import Util from '../utils/Util';
 
@@ -19,13 +27,6 @@ interface PriceDisplay {
   final: number;
   initial: number;
 }
-
-export type CurrencyCode = 'AED' | 'ARS' | 'AUD' | 'BRL' | 'CAD' | 'CHF'
-| 'CLP' | 'CNY' | 'COP' | 'CRC' | 'EUR' | 'GBP' | 'HKD' | 'ILS'
-| 'IDR' | 'INR' | 'JPY' | 'KRW' | 'KWD' | 'KZT' | 'MXN' | 'MYR'
-| 'NOK' | 'NZD' | 'PEN' | 'PHP' | 'PLN' | 'QAR' | 'RUB' | 'SAR'
-| 'SGD' | 'THB' | 'TRY' | 'TWD' | 'UAH' | 'USD' | 'UYU' | 'VND'
-| 'ZAR' | 'CIS-USD' | 'SASIA-USD';
 
 const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
   AED: { append: ' AED' },
@@ -72,9 +73,8 @@ const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
 };
 
 const DEFAULT_CURRENCY = { code: 'USD', countryCode: 'US' };
-const STEAMID_REGEX = /(STEAM_[0-5]:[01]:\d+)|(\[U:[10]:\d+\])|(\d{17})/i;
 
-export class SteamUtil {
+export default class SteamUtil {
   static readonly BP = {
     AppNews: (id: string) => SteamUtil.BP.Raw(`appnews/${id}`),
     Community: () => SteamUtil.BP.Raw('url/CommunityHome'),
@@ -82,17 +82,36 @@ export class SteamUtil {
     Profile: (id: string) => SteamUtil.BP.Raw(`url/SteamIDPage/${id}`),
     Raw: (path: string) => `steam://${path}`,
     Store: (id: number) => SteamUtil.BP.Raw(`store/${id}`),
+    UGC: (id: string) => SteamUtil.BP.Raw(`url/CommunityFilePage/${id}`),
     Workshop: (id: number) => SteamUtil.BP.Raw(`url/SteamWorkshopPage/${id}`),
-    WorkshopItem: (id: number) => SteamUtil.BP.Raw(`url/CommunityFilePage/${id}`),
   };
 
-  static async sendStoreEmbed(appId: number, ctx: CommandContext) {
-    let currency: { code: CurrencyCode, countryCode: string } = !ctx.guildID
+  static readonly REGEXPS = {
+    AppNews: /news\/app\/(\d+)/,
+    Community: /steamcommunity\.com/,
+    GameHub: /steamcommunity\.com\/app\/(\d+)/,
+    Profile: /steamcommunity\.com\/(?:profiles|id)\/(\d{17}|[\w-]{2,32})/,
+    SteamId: /(STEAM_[0-5]:[01]:\d+)|(\[U:[10]:\d+\])|(\d{17})/i,
+    Store: /steampowered\.com\/app\/(\d+)/,
+    UGC: /sharedfiles\/filedetails\/\?id=(\d+)/,
+    Workshop: /steamcommunity\.com\/app\/(\d+)\/workshop/,
+  };
+
+  static readonly URLS = {
+    Icon: (appId: number, icon: string) => `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.jpg`,
+    NewsImage: (imageUrl: string) => imageUrl.replace(/\{STEAM_CLAN(?:_LOC)?_IMAGE\}/, 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/clans'),
+    Profile: (steamId: string) => `https://steamcommunity.com/profiles/${steamId}`,
+    Store: (appId: number) => `https://store.steampowered.com/app/${appId}`,
+    UGC: (ugcId: string) => `https://steamcommunity.com/sharedfiles/filedetails/?id=${ugcId}`,
+  };
+
+  static async createStoreMessage(appId: number, guildId?: string): Promise<MessageOptions | null> {
+    let currency: Pick<Currency, 'code' | 'countryCode'> = !guildId
       ? DEFAULT_CURRENCY
       : await db.select('code', 'country_code')
         .from('currency')
         .innerJoin('guild', 'guild.currency_id', 'currency.id')
-        .where('guild.id', ctx.guildID)
+        .where('guild.id', guildId)
         .first();
     currency = currency || DEFAULT_CURRENCY;
 
@@ -104,19 +123,20 @@ export class SteamUtil {
     }
 
     if (!details) {
-      return ctx.error('Unable to fetch the application\'s details');
+      return null;
     }
 
-    let price = details.is_free ? '**Free**' : '';
-    if (!price) {
-      price = details.price_overview
-        ? SteamUtil.formatPriceDisplay({
-          currency: currency.code,
-          discount: details.price_overview.discount_percent,
-          final: details.price_overview.final,
-          initial: details.price_overview.initial,
-        })
-        : 'N/A';
+    let price = 'N/A';
+
+    if (details.is_free) {
+      price = '**Free**';
+    } else if (details.price_overview) {
+      price = SteamUtil.formatPriceDisplay({
+        currency: currency.code,
+        discount: details.price_overview.discount_percent,
+        final: details.price_overview.final,
+        initial: details.price_overview.initial,
+      });
     }
 
     return {
@@ -128,7 +148,7 @@ export class SteamUtil {
           url: details.header_image,
         },
         timestamp: new Date(),
-        url: SteamUtil.getStoreUrl(appId!),
+        url: SteamUtil.URLS.Store(appId!),
         fields: [
           {
             name: 'Price',
@@ -254,8 +274,12 @@ export class SteamUtil {
     return appId || await SteamAPI.searchStore(id);
   }
 
+  static findUGCId(id: string) {
+    return id.match(SteamUtil.REGEXPS.UGC)?.[1] ?? id.match(/\d+/)?.[0];
+  }
+
   static async findId(id: string) {
-    const match = id.match(STEAMID_REGEX);
+    const match = id.match(SteamUtil.REGEXPS.SteamId);
     if (match) {
       return new SteamID(match[0]);
     }
@@ -265,15 +289,58 @@ export class SteamUtil {
     return new SteamID(resolvedId!);
   }
 
-  static getIconUrl(appId: number, icon: string) {
-    return `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.jpg`;
+  static async persistApp(appId: number) {
+    const appInfo = (await steamUser.getProductInfo([appId], [], true))
+      .apps[appId]?.appinfo;
+
+    if (!appInfo) {
+      return null;
+    }
+
+    const app: App = {
+      id: appId,
+      name: appInfo.common.name,
+      icon: appInfo.common.icon || '',
+      type: Util.capitalize(appInfo.common.type),
+      lastCheckedNews: null,
+    };
+
+    await db.insert(app).into('app');
+
+    return app;
   }
 
-  static getNewsImage(image: string) {
-    return image.replace(/\{STEAM_CLAN(?:_LOC)?_IMAGE\}/, 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/clans');
-  }
+  static async persistUGC(ugcId: string) {
+    const file = (await SteamAPI.getPublishedFileDetails([ugcId]))?.[0];
 
-  static getStoreUrl(appId: number) {
-    return `https://store.steampowered.com/app/${appId}`;
+    if (!file) {
+      throw new Error(`Nothing found with the id **${ugcId}**`);
+    } else if (file.banned) {
+      throw new Error(`File banned! Reason: ${file.ban_reason || 'Unknown'}`);
+    } else if (file.result !== EResult.OK) {
+      throw new Error(`Invalid result: **${EResult[file.result]}**`);
+    }
+
+    const app = (await db.select('id')
+      .from('app')
+      .where('id', file.consumer_app_id)
+      .first())
+      || (await SteamUtil.persistApp(file.consumer_app_id));
+
+    if (!app) {
+      throw new Error(`App not found with the id **${file.consumer_app_id}**`);
+    }
+
+    const ugc: UGC = {
+      id: ugcId,
+      appId: file.consumer_app_id,
+      lastChecked: null,
+      lastUpdate: new Date(file.time_updated * 1000),
+      name: file.title,
+    };
+
+    await db.insert(ugc).into('ugc');
+
+    return ugc;
   }
 }

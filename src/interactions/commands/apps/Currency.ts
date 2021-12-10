@@ -11,6 +11,7 @@ import GuildOnlyCommand from '../../GuildOnlyCommand';
 import db from '../../../db';
 import { Currency } from '../../../db/knex';
 import SteamAPI from '../../../steam/SteamAPI';
+import { WatcherType } from '../../../types';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import env from '../../../utils/env';
 import Util from '../../../utils/Util';
@@ -134,18 +135,19 @@ export default class CurrencyCommand extends GuildOnlyCommand {
   private static fetchApps(currencyId: string, guildId: string) {
     return db.distinct('app.id', 'app.name')
       .from('guild')
-      .innerJoin('app_watcher', 'app_watcher.guild_id', 'guild.id')
-      .innerJoin('app', 'app.id', 'app_watcher.app_id')
+      .innerJoin('channel_webhook', 'channel_webhook.guild_id', 'guild.id')
+      .innerJoin('watcher', 'watcher.channel_id', 'channel_webhook.id')
+      .innerJoin('app', 'app.id', 'watcher.app_id')
       .innerJoin({ currentAppPrice: 'app_price' }, function appPriceInnerJoin() {
-        this.on('current_app_price.app_id', '=', 'app_watcher.app_id')
+        this.on('current_app_price.app_id', '=', 'watcher.app_id')
           .andOn('current_app_price.currency_id', '=', 'guild.currency_id');
       })
       .leftJoin({ newAppPrice: 'app_price' }, function appPriceLeftJoin() {
-        this.on('new_app_price.app_id', '=', 'app_watcher.app_id')
+        this.on('new_app_price.app_id', '=', 'watcher.app_id')
           .andOn('new_app_price.currency_id', '=', currencyId);
       })
       .whereNull('new_app_price.id')
-      .andWhere('app_watcher.watch_price', true)
+      .andWhere('watcher.type', WatcherType.PRICE)
       .andWhere('guild.id', guildId);
   }
 

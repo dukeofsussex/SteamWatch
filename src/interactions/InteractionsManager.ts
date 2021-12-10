@@ -45,7 +45,7 @@ export default class InteractionsManager implements Manager {
         group: 'Interaction',
         message: `[ERROR] "${command.commandName}" : ${err}\n${err.stack}`,
       });
-      ctx.error('Uh oh, something went wrong. Quick, sacrifice your wallet to a Steam sale, maybe that\'ll fix it!');
+      ctx.error(`Uh oh, something went wrong. Please report this bug on our [Discord](${env.discord.invite}) or sacrifice your wallet to a Steam sale, maybe that'll fix it!`);
     });
 
     this.creator.on('commandRun', (command) => logger.info({

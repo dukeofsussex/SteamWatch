@@ -5,7 +5,7 @@ import {
   SlashCreator,
 } from 'slash-create';
 import db from '../../../db';
-import { SteamUtil } from '../../../steam/SteamUtil';
+import SteamUtil from '../../../steam/SteamUtil';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import env from '../../../utils/env';
 
@@ -74,11 +74,11 @@ export default class NewsCommand extends SlashCommand {
       timestamp: new Date(),
       image: news.thumbnail
         ? {
-          url: SteamUtil.getNewsImage(news.thumbnail),
+          url: SteamUtil.URLS.NewsImage(news.thumbnail),
         }
         : undefined,
       thumbnail: {
-        url: SteamUtil.getIconUrl(news.id, news.icon),
+        url: SteamUtil.URLS.Icon(news.id, news.icon),
       },
     });
   }

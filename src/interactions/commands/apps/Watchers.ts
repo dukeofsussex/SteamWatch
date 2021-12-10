@@ -16,31 +16,37 @@ import {
 import { DiscordAPIError } from '@discordjs/rest';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 import db from '../../../db';
+import { UGC } from '../../../db/knex';
 import SteamAPI from '../../../steam/SteamAPI';
-import steamUser from '../../../steam/SteamUser';
-import { SteamUtil } from '../../../steam/SteamUtil';
-import {
-  DISCORD_ERROR_CODES,
-  EMBED_COLOURS,
-  PERMITTED_APP_TYPES,
-  WatcherType,
-} from '../../../utils/constants';
+import SteamUtil from '../../../steam/SteamUtil';
+import { WatcherType } from '../../../types';
+import { DISCORD_ERROR_CODES, EMBED_COLOURS, PERMITTED_APP_TYPES } from '../../../utils/constants';
 import DiscordAPI from '../../../utils/DiscordAPI';
 import env from '../../../utils/env';
 import Util from '../../../utils/Util';
 
 const markdownTable = require('markdown-table');
 
-interface AddArguments {
-  watcher_type: WatcherType;
-  query: string;
+interface BaseArguments {
   channel: string;
 }
 
-interface ListArguments {
-  query?: string;
-  channel?: string;
+interface BaseAddArguments extends BaseArguments {
+  query: string;
 }
+
+interface AddAppArguments extends BaseAddArguments {
+  watcher_type: WatcherType;
+}
+
+type AddUGCArguments = BaseAddArguments;
+
+interface AddArguments {
+  app: AddAppArguments;
+  ugc: AddUGCArguments;
+}
+
+type ListArguments = BaseArguments;
 
 interface RemoveArguments {
   watcher_id: number;
@@ -59,46 +65,59 @@ export default class WatchersCommand extends GuildOnlyCommand {
       description: 'Manage app watchers.',
       guildIDs: env.dev ? [env.devGuildId] : undefined,
       options: [{
-        type: CommandOptionType.SUB_COMMAND,
+        type: CommandOptionType.SUB_COMMAND_GROUP,
         name: 'add',
-        description: 'Add a watcher for a Steam app.',
+        description: 'Add a watcher for a Steam item.',
         options: [{
-          type: CommandOptionType.STRING,
-          name: 'watcher_type',
-          description: 'The application attribute(s) that should be watched for changes',
-          required: true,
-          choices: [{
-            name: 'All',
-            value: WatcherType.ALL,
-          },
-          {
-            name: 'News',
-            value: WatcherType.NEWS,
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'app',
+          description: 'Watch a Steam app (game, dlc, etc.)',
+          options: [{
+            type: CommandOptionType.STRING,
+            name: 'watcher_type',
+            description: 'The application attribute(s) that should be watched for changes',
+            required: true,
+            choices: [{
+              name: 'News',
+              value: WatcherType.NEWS,
+            }, {
+              name: 'Price',
+              value: WatcherType.PRICE,
+            }],
           }, {
-            name: 'Price',
-            value: WatcherType.PRICE,
+            type: CommandOptionType.STRING,
+            name: 'query',
+            description: 'Search term or app id',
+            required: true,
+          }, {
+            type: CommandOptionType.CHANNEL,
+            name: 'channel',
+            description: 'The channel notifications should be sent to',
+            required: true,
+            channel_types: [ChannelType.GUILD_TEXT],
           }],
         }, {
-          type: CommandOptionType.STRING,
-          name: 'query',
-          description: 'Search term or app id',
-          required: true,
-        }, {
-          type: CommandOptionType.CHANNEL,
-          name: 'channel',
-          description: 'The channel notifications should be sent to',
-          required: true,
-          channel_types: [ChannelType.GUILD_TEXT],
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'ugc',
+          description: 'Watch a workshop item/user-generated content',
+          options: [{
+            type: CommandOptionType.STRING,
+            name: 'query',
+            description: 'UGC url or item id',
+            required: true,
+          }, {
+            type: CommandOptionType.CHANNEL,
+            name: 'channel',
+            description: 'The channel notifications should be sent to',
+            required: true,
+            channel_types: [ChannelType.GUILD_TEXT],
+          }],
         }],
       }, {
         type: CommandOptionType.SUB_COMMAND,
         name: 'list',
         description: 'List app watchers.',
         options: [{
-          type: CommandOptionType.STRING,
-          name: 'query',
-          description: 'Search term or app id',
-        }, {
           type: CommandOptionType.CHANNEL,
           name: 'channel',
           description: 'The channel notifications are being sent to',
@@ -136,82 +155,61 @@ export default class WatchersCommand extends GuildOnlyCommand {
     const { add, list, remove } = ctx.options as CommandArguments;
 
     if (add) {
-      return this.add(ctx, add);
+      // Check whether the guild has reached the max amount of watchers
+      const watchedCount = await db.count('* AS count')
+        .from('watcher')
+        .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+        .where('guild_id', ctx.guildID!)
+        .first()
+        .then((res: any) => parseInt(res.count, 10));
+
+      if (watchedCount >= env.settings.maxWatchersPerGuild) {
+        return ctx.error(oneLine`
+          Reached the maximum amount of watchers
+          [${watchedCount}/${env.settings.maxWatchersPerGuild}]!
+        `);
+      }
+
+      if (add.app) {
+        return WatchersCommand.addApp(ctx, add.app);
+      }
+
+      if (add.ugc) {
+        return WatchersCommand.addUGC(ctx, add.ugc);
+      }
     }
 
     if (list) {
-      return this.list(ctx, list);
+      return WatchersCommand.list(ctx, list);
     }
 
-    return this.remove(ctx, remove!);
+    return WatchersCommand.remove(ctx, remove!);
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  async add(
+  private static async addApp(
     ctx: CommandContext,
-    { channel: channelId, query: name, watcher_type: watcherType }: AddArguments,
+    { channel: channelId, query: name, watcher_type: watcherType }: AddAppArguments,
   ) {
-    // Check whether the guild has reached the max amount of watchers
-    const watchedCount = await db.count('* AS count')
-      .from('app_watcher')
-      .where('guild_id', ctx.guildID)
-      .first()
-      .then((res: any) => parseInt(res.count, 10));
-
-    if (watchedCount >= env.settings.maxWatchersPerGuild) {
-      ctx.error(oneLine`
-        Reached the maximum amount of watchers
-        [${watchedCount}/${env.settings.maxWatchersPerGuild}]!
-      `);
-    }
-
     const appId = await SteamUtil.findAppId(name);
 
     if (!appId) {
       return ctx.error(`Unable to find an application with the id/name: ${name}`);
     }
 
-    let app = await db.select('*')
+    const app = (await db.select('*')
       .from('app')
       .where('id', appId)
-      .first();
+      .first()) || (await SteamUtil.persistApp(appId));
 
     if (!app) {
-      const appInfo = (await steamUser.getProductInfo([appId], [], true))
-        .apps[appId]?.appinfo;
-
-      // App doesn't exist
-      if (!appInfo) {
-        return ctx.error(stripIndents`
-          Unable to find an app with the id **${appId}**!
-          Make sure the id doesn't belong to a package or bundle.
-        `);
-      }
-
-      app = {
-        id: appId,
-        name: appInfo.common.name,
-        icon: appInfo.common.icon || '',
-        type: Util.capitalize(appInfo.common.type),
-        lastCheckedNews: undefined,
-      };
+      return ctx.error(stripIndents`
+        Unable to find an app with the id **${appId}**!
+        Make sure the id doesn't belong to a package or bundle.
+      `);
     }
 
-    const types = watcherType === WatcherType.ALL
-      ? Object.values(WatcherType).filter((wt) => wt !== WatcherType.ALL)
-      : [watcherType];
-
-    // Ensure the app <> type combination is valid
-    for (let i = 0; i < types.length; i += 1) {
-      const type = types[i];
-      if (!PERMITTED_APP_TYPES[type].includes(app.type.toLowerCase())) {
-        return ctx.error(`${Util.capitalize(type)} watchers aren't supported for apps of type **${app.type}**!`);
-      }
-    }
-
-    if (typeof app.lastCheckedNews === 'undefined') {
-      await db.insert(app)
-        .into('app');
+    if (!PERMITTED_APP_TYPES[watcherType].includes(app.type.toLowerCase())) {
+      return ctx.error(`${Util.capitalize(watcherType)} watchers aren't supported for apps of type **${app.type}**!`);
     }
 
     await ctx.editOriginal({
@@ -220,7 +218,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         description: `Would you like to add the watcher for **${app.name} (${app.type})** to ${ctx.channels.get(channelId)!.mention}?`,
         title: 'Confirmation',
         thumbnail: {
-          url: SteamUtil.getIconUrl(app.id, app.icon),
+          url: SteamUtil.URLS.Icon(app.id, app.icon),
         },
       }],
       components: [{
@@ -241,9 +239,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     ctx.registerComponent('cancel', () => ctx.error(`Cancelled watcher for **${app!.name} (${app!.type})** on ${ctx.channels.get(channelId)!.mention}.`, {
       thumbnail: {
-        url: SteamUtil.getIconUrl(app!.id, app!.icon),
+        url: SteamUtil.URLS.Icon(app!.id, app!.icon),
       },
     }));
+
     return ctx.registerComponent('confirm', async () => {
       let error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
 
@@ -251,7 +250,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         return ctx.error(error);
       }
 
-      if (types.includes(WatcherType.PRICE)) {
+      if (watcherType === WatcherType.PRICE) {
         error = await WatchersCommand.setAppPrice(app, ctx.guildID!);
       }
 
@@ -262,41 +261,110 @@ export default class WatchersCommand extends GuildOnlyCommand {
       const ids = await db.insert({
         appId,
         channelId,
-        guildId: ctx.guildID,
-        watchNews: types.includes(WatcherType.NEWS),
-        watchPrice: types.includes(WatcherType.PRICE),
-      }).into('app_watcher');
+        type: watcherType,
+      }).into('watcher');
 
       return ctx.success(`Added watcher (#${ids[0]}) for **${app!.name} (${app!.type})** to ${ctx.channels.get(channelId)!.mention}.`, {
         thumbnail: {
-          url: SteamUtil.getIconUrl(app!.id, app!.icon),
+          url: SteamUtil.URLS.Icon(app!.id, app!.icon),
         },
       });
     });
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  async list(ctx: CommandContext, { channel: channelId, query }: ListArguments) {
-    let dbQuery = db.select('app.name', 'app_watcher.*')
+  private static async addUGC(ctx: CommandContext, { channel: channelId, query }: AddUGCArguments) {
+    const ugcId = SteamUtil.findUGCId(query);
+
+    if (!ugcId) {
+      return ctx.error(`Unable to parse UGC identifier: ${query}`);
+    }
+
+    let ugc: UGC | undefined;
+
+    try {
+      ugc = (await db.select('*')
+        .from('ugc')
+        .where('id', ugcId)
+        .first()) || (await SteamUtil.persistUGC(ugcId));
+    } catch (err) {
+      return ctx.error(`Unable to add watcher for UGC! ${(err as Error).message}`);
+    }
+
+    if (!ugc) {
+      return ctx.error(`Unable to find UGC with the id **${ugcId}**!`);
+    }
+
+    const app = await db.select('*')
       .from('app')
-      .innerJoin('app_watcher', 'app.id', 'app_watcher.app_id')
-      .where('guild_id', ctx.guildID);
+      .where('id', ugc.appId)
+      .first();
 
-    if (query) {
-      const appId = await SteamUtil.findAppId(query);
+    await ctx.editOriginal({
+      embeds: [{
+        color: EMBED_COLOURS.PENDING,
+        description: `Would you like to add the watcher for **${ugc.name}** to ${ctx.channels.get(channelId)!.mention}?`,
+        title: 'Confirmation',
+        thumbnail: {
+          url: SteamUtil.URLS.Icon(app!.id, app!.icon),
+        },
+      }],
+      components: [{
+        type: ComponentType.ACTION_ROW,
+        components: [{
+          custom_id: 'cancel',
+          label: 'Cancel',
+          style: ButtonStyle.SECONDARY,
+          type: ComponentType.BUTTON,
+        }, {
+          custom_id: 'confirm',
+          label: 'Confirm',
+          style: ButtonStyle.PRIMARY,
+          type: ComponentType.BUTTON,
+        }],
+      }],
+    });
 
-      if (!appId) {
-        return ctx.error(`Unable to find an application with the id/name: ${query}`);
+    ctx.registerComponent('cancel', () => ctx.error(`Cancelled watcher for **${ugc!.name}** on ${ctx.channels.get(channelId)!.mention}.`, {
+      thumbnail: {
+        url: SteamUtil.URLS.Icon(app!.id, app!.icon),
+      },
+    }));
+
+    return ctx.registerComponent('confirm', async () => {
+      const error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
+
+      if (error) {
+        return ctx.error(error);
       }
 
-      dbQuery = dbQuery.andWhere('app_id', appId);
-    }
+      const ids = await db.insert({
+        appId: ugc!.appId,
+        ugcId: ugc!.id,
+        channelId,
+        type: WatcherType.UGC,
+      }).into('watcher');
+
+      return ctx.success(`Added watcher (#${ids[0]}) for **${ugc!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
+        thumbnail: {
+          url: SteamUtil.URLS.Icon(app!.id, app!.icon),
+        },
+      });
+    });
+  }
+
+  private static async list(ctx: CommandContext, { channel: channelId }: ListArguments) {
+    let dbQuery = db.select({ appName: 'app.name' }, { ugcName: 'ugc.name' }, 'watcher.*')
+      .from('app')
+      .innerJoin('watcher', 'app.id', 'watcher.app_id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
+      .where('guild_id', ctx.guildID);
 
     if (channelId) {
-      dbQuery = dbQuery.andWhere('channel_id', channelId);
+      dbQuery = dbQuery.andWhere('channel_webhook.id', channelId);
     }
 
-    const watchers = await dbQuery.orderBy('name', 'asc');
+    const watchers = await dbQuery;
 
     if (watchers.length === 0) {
       return ctx.error('No watchers found!');
@@ -304,7 +372,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     return ctx.send({
       content: `\`\`\`md\n${markdownTable([
-        ['Id', 'App Id', 'Name', 'Channel', 'Types'],
+        ['Id', 'App/UGC Id', 'Name', 'Channel', 'Type'],
         ...(await Promise.all(watchers.map(async (w) => {
           let channelName: string;
 
@@ -329,32 +397,35 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
           return [
             w.id,
-            w.appId,
-            w.name,
+            w.ugcId || w.appId,
+            w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName,
             channelName,
-            [w.watchNews ? 'News' : '', w.watchPrice ? 'Price' : ''].filter((type) => type).join(','),
+            w.type,
           ];
         }))),
-      ])}\`\`\``,
+      ], {
+        align: 'r',
+      })}\`\`\``,
     });
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  async remove(ctx: CommandContext, { watcher_id: watcherId }: RemoveArguments) {
+  private static async remove(ctx: CommandContext, { watcher_id: watcherId }: RemoveArguments) {
     const watcher = await db.select(
-      'app_watcher.id',
-      'app_watcher.app_id',
-      'app.name',
+      'watcher.id',
+      'watcher.app_id',
+      { appName: 'app.name' },
+      { ugcName: 'ugc.name' },
       'icon',
       'channel_id',
       'webhook_id',
       'webhook_token',
-    ).from('app_watcher')
-      .innerJoin('app', 'app.id', 'app_watcher.app_id')
-      .innerJoin('channel_webhook', 'channel_webhook.id', 'app_watcher.channel_id')
+    ).from('watcher')
+      .innerJoin('app', 'app.id', 'watcher.app_id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .where({
-        'app_watcher.id': watcherId,
-        'app_watcher.guild_id': ctx.guildID,
+        'watcher.id': watcherId,
+        guildId: ctx.guildID,
       })
       .first();
 
@@ -363,11 +434,11 @@ export default class WatchersCommand extends GuildOnlyCommand {
     }
 
     await db.delete()
-      .from('app_watcher')
+      .from('watcher')
       .where('id', watcher.id);
 
     const count = await db.count('* AS count')
-      .from('app_watcher')
+      .from('watcher')
       .where('channel_id', watcher.channelId)
       .first()
       .then((res: any) => parseInt(res.count, 10));
@@ -379,9 +450,9 @@ export default class WatchersCommand extends GuildOnlyCommand {
       await DiscordAPI.delete(Routes.webhook(watcher.webhookId));
     }
 
-    return ctx.success(`Removed watcher (#${watcherId}) for **${watcher.name}** from <#${watcher.channelId}>!`, {
+    return ctx.success(`Removed watcher (#${watcherId}) for **${watcher.ugcName || watcher.appName}** from <#${watcher.channelId}>!`, {
       thumbnail: {
-        url: SteamUtil.getIconUrl(watcher.appId, watcher.icon),
+        url: SteamUtil.URLS.Icon(watcher.appId, watcher.icon),
       },
     });
   }

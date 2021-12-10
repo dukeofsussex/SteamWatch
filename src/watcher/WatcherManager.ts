@@ -1,6 +1,7 @@
 import MessageQueue from './MessageQueue';
 import NewsWatcher from './watchers/NewsWatcher';
 import PriceWatcher from './watchers/PriceWatcher';
+import UGCWatcher from './watchers/UGCWatcher';
 import Watcher from './watchers/Watcher';
 import { Manager } from '../types';
 
@@ -15,6 +16,7 @@ export default class WatcherManager implements Manager {
     this.watchers = [
       new NewsWatcher(this.messageQueue),
       new PriceWatcher(this.messageQueue),
+      new UGCWatcher(this.messageQueue),
     ];
   }
 

@@ -5,7 +5,8 @@ import MessageQueue from '../MessageQueue';
 import db from '../../db';
 import { App, AppPrice, Currency } from '../../db/knex';
 import SteamAPI, { PriceOverview } from '../../steam/SteamAPI';
-import { SteamUtil } from '../../steam/SteamUtil';
+import SteamUtil from '../../steam/SteamUtil';
+import { WatcherType } from '../../types';
 import { EMOJIS } from '../../utils/constants';
 import env from '../../utils/env';
 import logger from '../../utils/logger';
@@ -38,7 +39,8 @@ export default class PriceWatcher extends Watcher {
     } catch (err) {
       logger.error({
         group: 'Watcher',
-        message: `Unable to fetch app prices for [${apps.join(', ')}] in ${apps[0].currencyName}!`,
+        message: `Unable to fetch app prices in ${apps[0].currencyName}!`,
+        apps,
         err,
       });
     }
@@ -93,18 +95,9 @@ export default class PriceWatcher extends Watcher {
     if (removed.length > 0) {
       const ids = removed.map((app) => app.id);
 
-      await db('app_watcher').update({
-        watchPrice: false,
-      })
+      await db('watcher').delete()
         .whereIn('app_id', ids)
-        .andWhere('watch_price', true);
-
-      await db('app_watcher').delete()
-        .whereIn('app_id', ids)
-        .andWhere({
-          watchNews: false,
-          watchPrice: false,
-        });
+        .andWhere('type', WatcherType.PRICE);
 
       await db('app_price').delete()
         .whereIn('appId', ids);
@@ -160,7 +153,7 @@ export default class PriceWatcher extends Watcher {
     const embed = Watcher.getEmbed(app, {
       title: app.name,
       description: message,
-      url: SteamUtil.getStoreUrl(app.id),
+      url: SteamUtil.URLS.Store(app.id),
       timestamp: new Date(),
     });
 
@@ -170,15 +163,15 @@ export default class PriceWatcher extends Watcher {
     }];
 
     const watchers = await db.select(
-      'app_watcher.id',
+      'watcher.id',
       'entity_id',
       'type',
       'webhook_id',
       'webhook_token',
-    ).from('app_watcher')
-      .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
-      .innerJoin('channel_webhook', 'channel_webhook.id', 'app_watcher.channel_id')
-      .innerJoin('guild', 'guild.id', 'app_watcher.guild_id')
+    ).from('watcher')
+      .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
       .where({
         appId: app.id,
         currencyId: app.currencyId,
@@ -191,8 +184,8 @@ export default class PriceWatcher extends Watcher {
   private static async fetchNextAppPrices() {
     const average = await db.avg('count', { as: 'average' })
       .from((builder: Knex.QueryBuilder) => builder.count('app_id AS count')
-        .from('app_watcher')
-        .where('app_watcher.watch_price', true)
+        .from('watcher')
+        .where('watcher.type', WatcherType.PRICE)
         .groupBy('app_id')
         .as('innerCount'))
       .first()
@@ -219,14 +212,15 @@ export default class PriceWatcher extends Watcher {
         [env.settings.watcherRunFrequency, average],
       ),
     ).from('app')
-      .innerJoin('app_watcher', 'app_watcher.app_id', 'app.id')
-      .innerJoin('guild', 'guild.id', 'app_watcher.guild_id')
+      .innerJoin('watcher', 'watcher.app_id', 'app.id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
       .innerJoin('currency', 'currency.id', 'guild.currency_id')
       .innerJoin('app_price', function appPriceInnerJoin() {
         this.on('app_price.app_id', '=', 'app.id')
           .andOn('currency.id', '=', 'app_price.currency_id');
       })
-      .where((builder) => builder.where((innerBuilder) => innerBuilder.where('app_watcher.watch_price', true)
+      .where((builder) => builder.where((innerBuilder) => innerBuilder.where('watcher.type', WatcherType.PRICE)
         .andWhereRaw('last_checked <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [env.settings.watcherRunFrequency]))
         .orWhereNull('app_price.last_checked'))
       .groupBy('app.id', 'currency.code')

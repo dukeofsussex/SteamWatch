@@ -43,11 +43,11 @@ export default class InfoCommand extends SlashCommand {
         .whereNot('id', 0)
         .then((res: any) => res.count),
       db.countDistinct('app_id AS count')
-        .from('app_watcher')
+        .from('watcher')
         .first()
         .then((res: any) => res.count),
       countQuery.clone()
-        .from('app_watcher')
+        .from('watcher')
         .then((res: any) => res.count),
     ]);
 

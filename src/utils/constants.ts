@@ -1,6 +1,7 @@
 import { oneLineTrim } from 'common-tags';
 import { Permissions } from 'slash-create';
 import env from './env';
+import { WatcherType } from '../types';
 import { homepage } from '../../package.json';
 
 export const DISCORD_ERROR_CODES = {
@@ -39,12 +40,6 @@ export const INVITE_URL = oneLineTrim`
 `;
 
 export const MAX_OPTIONS = 25;
-
-export enum WatcherType {
-  ALL = 'all',
-  NEWS = 'news',
-  PRICE = 'price',
-}
 
 export const PERMITTED_APP_TYPES: { [key: string]: string[]; } = {
   [WatcherType.NEWS]: ['application', 'game'],

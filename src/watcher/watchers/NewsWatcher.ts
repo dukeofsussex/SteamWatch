@@ -7,7 +7,8 @@ import transformArticle from '../transformers';
 import db from '../../db';
 import { App } from '../../db/knex';
 import SteamAPI from '../../steam/SteamAPI';
-import { SteamUtil } from '../../steam/SteamUtil';
+import SteamUtil from '../../steam/SteamUtil';
+import { WatcherType } from '../../types';
 import env from '../../utils/env';
 import logger from '../../utils/logger';
 
@@ -82,7 +83,7 @@ export default class NewsWatcher extends Watcher {
     });
 
     if (transformed.thumbnail) {
-      embed.image = { url: SteamUtil.getNewsImage(transformed.thumbnail) };
+      embed.image = { url: SteamUtil.URLS.NewsImage(transformed.thumbnail) };
     }
 
     await this.preEnqueue(newsItem.id, embed);
@@ -92,14 +93,14 @@ export default class NewsWatcher extends Watcher {
 
   private async preEnqueue(appId: number, embed: MessageEmbedOptions) {
     const watchers = await db.select(
-      'app_watcher.id',
+      'watcher.id',
       'entity_id',
-      'type',
+      'watcher_mention.type',
       'webhook_id',
       'webhook_token',
-    ).from('app_watcher')
-      .leftJoin('app_watcher_mention', 'app_watcher_mention.watcher_id', 'app_watcher.id')
-      .innerJoin('channel_webhook', 'channel_webhook.id', 'app_watcher.channel_id')
+    ).from('watcher')
+      .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
       .where({
         appId,
@@ -112,8 +113,8 @@ export default class NewsWatcher extends Watcher {
   private static async fetchNextApp() {
     const watcherAverage = await db.avg('count AS average')
       .from((builder: Knex.QueryBuilder) => builder.count('app_id AS count')
-        .from('app_watcher')
-        .where('app_watcher.watch_news', true)
+        .from('watcher')
+        .where('watcher.type', WatcherType.NEWS)
         .groupBy('app_id')
         .as('innerCount'))
       .first()
@@ -132,8 +133,8 @@ export default class NewsWatcher extends Watcher {
         [env.settings.watcherRunFrequency, watcherAverage],
       ),
     ).from('app')
-      .innerJoin(db.select('app_id', db.raw('COUNT(app_id) AS watcher_count')).from('app_watcher')
-        .where('app_watcher.watch_news', true)
+      .innerJoin(db.select('app_id', db.raw('COUNT(app_id) AS watcher_count')).from('watcher')
+        .where('watcher.type', WatcherType.NEWS)
         .groupBy('app_id')
         .as('watchers'), 'app.id', 'watchers.app_id')
       .whereRaw('last_checked_news <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [env.settings.watcherRunFrequency])

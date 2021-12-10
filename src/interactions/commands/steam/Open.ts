@@ -1,6 +1,6 @@
 import { CommandContext, CommandOptionType, SlashCreator } from 'slash-create';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
-import { SteamUtil } from '../../../steam/SteamUtil';
+import SteamUtil from '../../../steam/SteamUtil';
 import { EMBED_COLOURS, EMOJIS } from '../../../utils/constants';
 import env from '../../../utils/env';
 
@@ -14,19 +14,19 @@ interface Protocol {
 }
 
 const PROTOCOLS: Protocol[] = [
-  { regex: /news\/app\/(\d+)/, command: SteamUtil.BP.AppNews },
-  { regex: /steampowered\.com\/app\/(\d+)/, command: SteamUtil.BP.Store },
-  { regex: /sharedfiles\/filedetails\/\?id=(\d+)/, command: SteamUtil.BP.WorkshopItem },
-  { regex: /steamcommunity\.com\/app\/(\d+)\/workshop/, command: SteamUtil.BP.Workshop },
-  { regex: /steamcommunity\.com\/app\/(\d+)/, command: SteamUtil.BP.GameHub },
+  { regex: SteamUtil.REGEXPS.AppNews, command: SteamUtil.BP.AppNews },
+  { regex: SteamUtil.REGEXPS.Store, command: SteamUtil.BP.Store },
+  { regex: SteamUtil.REGEXPS.UGC, command: SteamUtil.BP.UGC },
+  { regex: SteamUtil.REGEXPS.Workshop, command: SteamUtil.BP.Workshop },
+  { regex: SteamUtil.REGEXPS.GameHub, command: SteamUtil.BP.GameHub },
   {
-    regex: /steamcommunity\.com\/(?:profiles|id)\/([0-9]{17}|[\w-]{2,32})/,
+    regex: SteamUtil.REGEXPS.Profile,
     command: async (id: string) => {
       const steamid = await SteamUtil.findId(id);
       return SteamUtil.BP.Profile(steamid.getSteamID64());
     },
   },
-  { regex: /steamcommunity\.com/, command: SteamUtil.BP.Community },
+  { regex: SteamUtil.REGEXPS.Community, command: SteamUtil.BP.Community },
 ];
 
 export default class OpenCommand extends GuildOnlyCommand {

@@ -5,7 +5,8 @@ import {
   SlashCreator,
 } from 'slash-create';
 import db from '../../../db';
-import { CurrencyCode, SteamUtil } from '../../../steam/SteamUtil';
+import { CurrencyCode } from '../../../db/knex';
+import SteamUtil from '../../../steam/SteamUtil';
 import { EMBED_COLOURS } from '../../../utils/constants';
 import env from '../../../utils/env';
 
@@ -86,10 +87,10 @@ export default class PriceCommand extends SlashCommand {
     return ctx.embed({
       color: EMBED_COLOURS.DEFAULT,
       title: `**${app.name}**`,
-      url: SteamUtil.getStoreUrl(app.id),
+      url: SteamUtil.URLS.Store(app.id),
       timestamp: new Date(),
       thumbnail: {
-        url: SteamUtil.getIconUrl(app.id, app.icon),
+        url: SteamUtil.URLS.Icon(app.id, app.icon),
       },
       fields: [
         {
