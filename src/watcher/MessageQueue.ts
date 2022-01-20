@@ -2,7 +2,7 @@ import { DiscordAPIError } from '@discordjs/rest';
 import { RESTPostAPIWebhookWithTokenResult, Routes } from 'discord-api-types/v9';
 import { R_OK, W_OK } from 'node:constants';
 import { access, readFile, writeFile } from 'node:fs/promises';
-import { MessageEmbedOptions, MessageOptions } from 'slash-create';
+import { EditMessageOptions } from 'slash-create';
 import db from '../db';
 import { Manager } from '../types';
 import { DISCORD_ERROR_CODES } from '../utils/constants';
@@ -11,10 +11,10 @@ import logger from '../utils/logger';
 
 const FILENAME = 'queue.json';
 
-interface QueuedItem {
+export interface QueuedItem {
   id: string;
   token: string;
-  message: MessageOptions;
+  message: Pick<EditMessageOptions, 'content' | 'embeds' | 'components'>;
 }
 
 export default class MessageQueue implements Manager {
@@ -37,7 +37,7 @@ export default class MessageQueue implements Manager {
     this.user = undefined;
   }
 
-  enqueue(id: string, token: string, message: { content: string, embeds: MessageEmbedOptions[] }) {
+  enqueue(id: string, token: string, message: QueuedItem['message']) {
     this.queue.push({ id, token, message });
 
     if (!this.queueTimeout) {
@@ -81,7 +81,7 @@ export default class MessageQueue implements Manager {
     }
   }
 
-  private backupQueue() {
+  backupQueue() {
     return writeFile(FILENAME, JSON.stringify({
       offset: this.offset,
       queue: this.queue,
@@ -113,7 +113,8 @@ export default class MessageQueue implements Manager {
           content: message.content,
           username: this.user!.username,
           avatar_url: this.user!.avatarUrl,
-          embeds: message.embeds,
+          embeds: message.embeds || [],
+          components: message.components || [],
         },
       }) as RESTPostAPIWebhookWithTokenResult;
     } catch (err) {

@@ -1,6 +1,9 @@
 # Queue backup
 queue.json
 
+# Broadcast
+broadcast.json
+
 # Logs
 logs
 *.log

@@ -1,6 +1,7 @@
 import db from './db';
 import InteractionsManager from './interactions/InteractionsManager';
 import { Manager } from './types';
+import queueBroadcast from './utils/broadcaster';
 import env from './utils/env';
 import logger from './utils/logger';
 import WatcherManager from './watcher/WatcherManager';
@@ -32,6 +33,8 @@ export default class ProcessManager implements Manager {
         group: 'Database',
         message: 'Migrated and seeded',
       });
+
+      await queueBroadcast();
     }
 
     logger.info({
