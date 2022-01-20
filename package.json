@@ -7,7 +7,8 @@
     "build": "npm run lint:fix && tsc",
     "lint": "eslint --ext .ts src",
     "lint:fix": "eslint --ext .ts --fix src",
-    "dev": "nodemon -e ts --exec ts-node src/index.ts"
+    "dev": "nodemon -e ts --exec ts-node src/index.ts",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
@@ -51,6 +52,8 @@
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-airbnb-typescript": "^14.0.1",
     "eslint-plugin-import": "^2.25.2",
+    "husky": "^7.0.4",
+    "lint-staged": "^12.2.1",
     "nodemon": "^2.0.14",
     "ts-node": "^10.4.0",
     "typescript": "^4.4.4"
