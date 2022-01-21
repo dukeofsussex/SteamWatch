@@ -126,6 +126,7 @@ export default class UGCWatcher extends Watcher {
     const watchers = await db.select(
       'watcher.id',
       'entity_id',
+      'guild_id',
       'watcher_mention.type',
       'webhook_id',
       'webhook_token',

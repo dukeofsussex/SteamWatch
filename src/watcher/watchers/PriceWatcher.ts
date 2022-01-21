@@ -165,6 +165,7 @@ export default class PriceWatcher extends Watcher {
     const watchers = await db.select(
       'watcher.id',
       'entity_id',
+      'guild_id',
       'type',
       'webhook_id',
       'webhook_token',

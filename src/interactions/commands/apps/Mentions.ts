@@ -172,7 +172,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
       const mention = mentions[i];
 
       if (mention.type === 'role') {
-        roles.push(`<@&${mention.entityId}>`);
+        roles.push(mention.entityId === ctx.guildID ? '@everyone' : `<@&${mention.entityId}>`);
       } else if (mention.type === 'member') {
         users.push(`<@${mention.entityId}>`);
       }

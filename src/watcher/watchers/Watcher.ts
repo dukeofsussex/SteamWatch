@@ -9,7 +9,7 @@ type WebhookedMentions = Pick<ChannelWebhook, 'webhookId' | 'webhookToken'>
 & { mentions: string[] };
 
 type WebhookWatcher = Pick<WatcherMention, 'entityId' | 'type'>
-& Pick<ChannelWebhook, 'webhookId' | 'webhookToken'>
+& Pick<ChannelWebhook, 'webhookId' | 'webhookToken' | 'guildId'>
 & { id: number };
 
 export default abstract class Watcher extends Worker {
@@ -34,7 +34,7 @@ export default abstract class Watcher extends Worker {
 
       if (watcher.entityId) {
         group[watcher.id].mentions
-          .push(`<@${watcher.type === 'role' ? '&' : ''}${watcher.entityId}>`);
+          .push(watcher.entityId === watcher.guildId ? '@everyone' : `<@${watcher.type === 'role' ? '&' : ''}${watcher.entityId}>`);
       }
 
       return group;
