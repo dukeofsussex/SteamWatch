@@ -104,7 +104,7 @@ export default class NewsWatcher extends Watcher {
       .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
       .where({
         appId,
-        watchNews: true,
+        'watcher.type': WatcherType.NEWS,
       });
 
     await this.enqueue(watchers, embed);

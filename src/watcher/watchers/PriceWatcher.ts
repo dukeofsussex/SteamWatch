@@ -175,7 +175,7 @@ export default class PriceWatcher extends Watcher {
       .where({
         appId: app.id,
         currencyId: app.currencyId,
-        watchPrice: true,
+        'watcher.type': WatcherType.PRICE,
       });
 
     await this.enqueue(watchers, embed);
