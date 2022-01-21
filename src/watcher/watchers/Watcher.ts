@@ -1,5 +1,6 @@
 import { MessageEmbedOptions } from 'slash-create';
 import MessageQueue from '../MessageQueue';
+import db from '../../db';
 import { App, ChannelWebhook, WatcherMention } from '../../db/knex';
 import SteamUtil from '../../steam/SteamUtil';
 import { EMBED_COLOURS } from '../../utils/constants';
@@ -12,6 +13,8 @@ type WebhookWatcher = Pick<WatcherMention, 'entityId' | 'type'>
 & Pick<ChannelWebhook, 'webhookId' | 'webhookToken' | 'guildId'>
 & { id: number };
 
+type KnexWhereObject = object;
+
 export default abstract class Watcher extends Worker {
   private readonly queue: MessageQueue;
 
@@ -20,7 +23,20 @@ export default abstract class Watcher extends Worker {
     this.queue = queue;
   }
 
-  protected async enqueue(watchers: WebhookWatcher[], embed: MessageEmbedOptions) {
+  protected async enqueue(embed: MessageEmbedOptions, where: KnexWhereObject) {
+    const watchers: WebhookWatcher[] = await db.select(
+      'watcher.id',
+      'entity_id',
+      'guild_id',
+      'watcher_mention.type',
+      'webhook_id',
+      'webhook_token',
+    ).from('watcher')
+      .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
+      .where(where);
+
     const groupedWatchers = watchers.reduce((
       group: { [index: string]: WebhookedMentions },
       watcher,

@@ -162,24 +162,11 @@ export default class PriceWatcher extends Watcher {
       value: SteamUtil.BP.Store(app.id),
     }];
 
-    const watchers = await db.select(
-      'watcher.id',
-      'entity_id',
-      'guild_id',
-      'type',
-      'webhook_id',
-      'webhook_token',
-    ).from('watcher')
-      .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
-      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-      .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
-      .where({
-        appId: app.id,
-        currencyId: app.currencyId,
-        'watcher.type': WatcherType.PRICE,
-      });
-
-    await this.enqueue(watchers, embed);
+    await this.enqueue(embed, {
+      appId: app.id,
+      currencyId: app.currencyId,
+      'watcher.type': WatcherType.PRICE,
+    });
   }
 
   private static async fetchNextAppPrices() {

@@ -1,6 +1,5 @@
 import { oneLine } from 'common-tags';
 import { Knex } from 'knex';
-import { MessageEmbedOptions } from 'slash-create';
 import Watcher from './Watcher';
 import MessageQueue from '../MessageQueue';
 import transformArticle from '../transformers';
@@ -86,29 +85,12 @@ export default class NewsWatcher extends Watcher {
       embed.image = { url: SteamUtil.URLS.NewsImage(transformed.thumbnail) };
     }
 
-    await this.preEnqueue(newsItem.id, embed);
+    await this.enqueue(embed, {
+      appId: newsItem.id,
+      'watcher.type': WatcherType.NEWS,
+    });
 
     return this.wait();
-  }
-
-  private async preEnqueue(appId: number, embed: MessageEmbedOptions) {
-    const watchers = await db.select(
-      'watcher.id',
-      'entity_id',
-      'guild_id',
-      'watcher_mention.type',
-      'webhook_id',
-      'webhook_token',
-    ).from('watcher')
-      .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
-      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-      .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
-      .where({
-        appId,
-        'watcher.type': WatcherType.NEWS,
-      });
-
-    await this.enqueue(watchers, embed);
   }
 
   private static async fetchNextApp() {

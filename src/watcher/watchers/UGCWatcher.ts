@@ -89,7 +89,27 @@ export default class UGCWatcher extends Watcher {
       }
 
       if (message) {
-        this.preEnqueue(item, message);
+        const embed = Watcher.getEmbed({
+          icon: item.appIcon,
+          id: item.appId,
+          name: item.appName,
+        }, {
+          description: message,
+          timestamp: item.lastUpdate,
+          title: item.name,
+          url: SteamUtil.URLS.UGC(item.id),
+        });
+
+        embed.fields = [{
+          name: 'Steam Client Link',
+          value: SteamUtil.BP.UGC(item.id),
+        }];
+
+        // eslint-disable-next-line no-await-in-loop
+        await this.enqueue(embed, {
+          ugcId: item.id,
+          'watcher.type': WatcherType.UGC,
+        });
       }
     }
 
@@ -104,42 +124,6 @@ export default class UGCWatcher extends Watcher {
     }
 
     return this.wait();
-  }
-
-  private async preEnqueue(item: QueryResult, message: string) {
-    const embed = Watcher.getEmbed({
-      icon: item.appIcon,
-      id: item.appId,
-      name: item.appName,
-    }, {
-      description: message,
-      timestamp: item.lastUpdate,
-      title: item.name,
-      url: SteamUtil.URLS.UGC(item.id),
-    });
-
-    embed.fields = [{
-      name: 'Steam Client Link',
-      value: SteamUtil.BP.UGC(item.id),
-    }];
-
-    const watchers = await db.select(
-      'watcher.id',
-      'entity_id',
-      'guild_id',
-      'watcher_mention.type',
-      'webhook_id',
-      'webhook_token',
-    ).from('watcher')
-      .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
-      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-      .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
-      .where({
-        ugcId: item.id,
-        'watcher.type': WatcherType.UGC,
-      });
-
-    await this.enqueue(watchers, embed);
   }
 
   private static async fetchNextUGCItems() {
