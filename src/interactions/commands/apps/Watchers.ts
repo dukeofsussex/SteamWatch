@@ -94,7 +94,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
             name: 'channel',
             description: 'The channel notifications should be sent to',
             required: true,
-            channel_types: [ChannelType.GUILD_TEXT],
+            channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT],
           }],
         }, {
           type: CommandOptionType.SUB_COMMAND,
@@ -110,7 +110,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
             name: 'channel',
             description: 'The channel notifications should be sent to',
             required: true,
-            channel_types: [ChannelType.GUILD_TEXT],
+            channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT],
           }],
         }],
       }, {
@@ -121,7 +121,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           type: CommandOptionType.CHANNEL,
           name: 'channel',
           description: 'The channel notifications are being sent to',
-          channel_types: [ChannelType.GUILD_TEXT],
+          channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT],
         }],
       }, {
         type: CommandOptionType.SUB_COMMAND,
