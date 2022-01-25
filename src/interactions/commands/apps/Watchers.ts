@@ -1,10 +1,5 @@
 import { oneLine, stripIndents } from 'common-tags';
-import {
-  RESTGetAPIChannelResult,
-  RESTGetAPIChannelWebhooksResult,
-  RESTPostAPIChannelWebhookResult,
-  Routes,
-} from 'discord-api-types/v9';
+import { RESTGetAPIChannelWebhooksResult, RESTPostAPIChannelWebhookResult, Routes } from 'discord-api-types/v9';
 import {
   ButtonStyle,
   ChannelType,
@@ -13,14 +8,13 @@ import {
   ComponentType,
   SlashCreator,
 } from 'slash-create';
-import { DiscordAPIError } from '@discordjs/rest';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 import db from '../../../db';
 import { UGC } from '../../../db/knex';
 import SteamAPI from '../../../steam/SteamAPI';
 import SteamUtil from '../../../steam/SteamUtil';
 import { WatcherType } from '../../../types';
-import { DISCORD_ERROR_CODES, EMBED_COLOURS, PERMITTED_APP_TYPES } from '../../../utils/constants';
+import { EMBED_COLOURS, PERMITTED_APP_TYPES } from '../../../utils/constants';
 import DiscordAPI from '../../../utils/DiscordAPI';
 import env from '../../../utils/env';
 import Util from '../../../utils/Util';
@@ -374,26 +368,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       content: `\`\`\`md\n${markdownTable([
         ['Id', 'App/UGC Id', 'Name', 'Channel', 'Type'],
         ...(await Promise.all(watchers.map(async (w) => {
-          let channelName: string;
-
-          try {
-            channelName = (
-              await DiscordAPI.get(Routes.channel(w.channelId)) as RESTGetAPIChannelResult
-            ).name!;
-          } catch (err) {
-            const error = err as DiscordAPIError;
-
-            switch (error.code) {
-              case DISCORD_ERROR_CODES.MISSING_ACCESS:
-                channelName = '[hidden]';
-                break;
-              case DISCORD_ERROR_CODES.UNKNOWN_CHANNEL:
-                channelName = '[deleted]';
-                break;
-              default:
-                channelName = '[unknown]';
-            }
-          }
+          const channelName = await DiscordAPI.getChannelName(w.channelId);
 
           return [
             w.id,

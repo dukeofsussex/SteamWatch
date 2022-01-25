@@ -22,4 +22,8 @@ export default class Util {
       process.on(event, () => callback());
     }
   }
+
+  static sanitizeOptionName(string: string) {
+    return string.replace(/[^\w\-: ]/, '');
+  }
 }
