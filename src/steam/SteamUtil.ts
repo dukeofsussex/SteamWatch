@@ -11,7 +11,8 @@ import {
   CurrencyCode,
   UGC,
 } from '../db/knex';
-import { EMBED_COLOURS } from '../utils/constants';
+import { WatcherType } from '../types';
+import { EMBED_COLOURS, PERMITTED_APP_TYPES } from '../utils/constants';
 import Util from '../utils/Util';
 
 interface CurrencyFormatOptions {
@@ -297,12 +298,14 @@ export default class SteamUtil {
       return null;
     }
 
+    const type = Util.capitalize(appInfo.common.type);
+
     const app: App = {
       id: appId,
       name: appInfo.common.name,
       icon: appInfo.common.icon || '',
-      type: Util.capitalize(appInfo.common.type),
-      lastCheckedNews: null,
+      type,
+      lastCheckedNews: PERMITTED_APP_TYPES[WatcherType.NEWS].includes(type) ? new Date() : null,
     };
 
     await db.insert(app).into('app');
