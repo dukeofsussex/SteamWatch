@@ -1,4 +1,5 @@
 import {
+  AutocompleteContext,
   CommandContext,
   CommandOptionType,
   SlashCommand,
@@ -35,6 +36,7 @@ export default class SearchCommand extends SlashCommand {
           type: CommandOptionType.STRING,
           name: 'query',
           description: 'Search term or app id',
+          autocomplete: true,
           required: true,
         }],
       }, {
@@ -55,6 +57,13 @@ export default class SearchCommand extends SlashCommand {
     });
 
     this.filePath = __filename;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async autocomplete(ctx: AutocompleteContext) {
+    const value = ctx.options[ctx.subcommands[0]][ctx.focused];
+
+    return ctx.sendResults(await SteamUtil.createAppAutocomplete(value));
   }
 
   // eslint-disable-next-line class-methods-use-this

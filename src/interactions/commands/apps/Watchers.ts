@@ -1,6 +1,7 @@
 import { oneLine, stripIndents } from 'common-tags';
 import { RESTGetAPIChannelWebhooksResult, RESTPostAPIChannelWebhookResult, Routes } from 'discord-api-types/v9';
 import {
+  AutocompleteContext,
   ButtonStyle,
   ChannelType,
   CommandContext,
@@ -82,6 +83,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
             type: CommandOptionType.STRING,
             name: 'query',
             description: 'Search term or app id',
+            autocomplete: true,
             required: true,
           }, {
             type: CommandOptionType.CHANNEL,
@@ -125,6 +127,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           type: CommandOptionType.NUMBER,
           name: 'watcher_id',
           description: 'The watcher\'s id',
+          autocomplete: true,
           required: true,
         }],
       }],
@@ -136,6 +139,19 @@ export default class WatchersCommand extends GuildOnlyCommand {
     });
 
     this.filePath = __filename;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async autocomplete(ctx: AutocompleteContext) {
+    if (ctx.focused === 'watcher_id') {
+      const value = ctx.options[ctx.subcommands[0]][ctx.focused];
+
+      return ctx.sendResults(await GuildOnlyCommand.createWatcherAutocomplete(value, ctx.guildID!));
+    }
+
+    const value = ctx.options[ctx.subcommands[0]][ctx.subcommands[1]][ctx.focused];
+
+    return ctx.sendResults(await SteamUtil.createAppAutocomplete(value));
   }
 
   // eslint-disable-next-line class-methods-use-this

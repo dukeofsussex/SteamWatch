@@ -8,10 +8,8 @@ import {
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 import db from '../../../db';
 import SteamUtil from '../../../steam/SteamUtil';
-import { EMBED_COLOURS, EMOJIS, MAX_OPTIONS } from '../../../utils/constants';
-import DiscordAPI from '../../../utils/DiscordAPI';
+import { EMBED_COLOURS, EMOJIS } from '../../../utils/constants';
 import env from '../../../utils/env';
-import Util from '../../../utils/Util';
 
 interface WatcherArgument {
   watcher_id: number;
@@ -100,27 +98,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
   async autocomplete(ctx: AutocompleteContext) {
     const value = ctx.options[ctx.subcommands[0]][ctx.focused];
 
-    const dbWatcher = await db.select({ appName: 'app.name' }, { ugcName: 'ugc.name' }, 'watcher.*')
-      .from('app')
-      .innerJoin('watcher', 'app.id', 'watcher.app_id')
-      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-      .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
-      .where('guild_id', ctx.guildID)
-      .andWhere('watcher.id', value)
-      .orWhere('app.name', 'LIKE', `${value}%`)
-      .orWhere('ugc.name', 'LIKE', `${value}%`)
-      .limit(MAX_OPTIONS);
-
-    return ctx.sendResults(await Promise.all(dbWatcher.map(async (w) => ({
-      name: oneLine`
-        [ID: ${w.id}]
-        ${Util.sanitizeOptionName(w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName)}
-        (${Util.capitalize(w.type)})
-        on
-        #${(await DiscordAPI.getChannelName(w.channelId))}
-      `,
-      value: w.id,
-    }))));
+    return ctx.sendResults(await GuildOnlyCommand.createWatcherAutocomplete(value, ctx.guildID!));
   }
 
   // eslint-disable-next-line class-methods-use-this

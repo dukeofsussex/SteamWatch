@@ -106,6 +106,19 @@ export default class SteamUtil {
     UGC: (ugcId: string) => `https://steamcommunity.com/sharedfiles/filedetails/?id=${ugcId}`,
   };
 
+  static async createAppAutocomplete(query: string) {
+    if (!query.length) {
+      return [];
+    }
+
+    const results = await SteamAPI.searchStore(query);
+
+    return results?.map((r) => ({
+      name: r.name,
+      value: r.id.toString(),
+    })) ?? [];
+  }
+
   static async createStoreMessage(appId: number, guildId?: string): Promise<MessageOptions | null> {
     let currency: Pick<Currency, 'code' | 'countryCode'> = !guildId
       ? DEFAULT_CURRENCY
@@ -272,7 +285,12 @@ export default class SteamUtil {
       .first()
       .then((res) => res?.id || null);
 
-    return appId || await SteamAPI.searchStore(id);
+    if (!appId) {
+      const results = await SteamAPI.searchStore(id);
+      appId = results?.[0].id ?? null;
+    }
+
+    return appId;
   }
 
   static findUGCId(id: string) {

@@ -1,3 +1,4 @@
+import { oneLine } from 'common-tags';
 import { Routes, RESTGetAPIGuildResult } from 'discord-api-types/v9';
 import {
   ButtonStyle,
@@ -48,6 +49,30 @@ export default class GuildOnlyCommand extends SlashCommand {
         style: ButtonStyle.PRIMARY,
       }],
     }];
+  }
+
+  protected static async createWatcherAutocomplete(value: string, guildId: string) {
+    const dbWatcher = await db.select({ appName: 'app.name' }, { ugcName: 'ugc.name' }, 'watcher.*')
+      .from('app')
+      .innerJoin('watcher', 'app.id', 'watcher.app_id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
+      .where('guild_id', guildId)
+      .andWhere('watcher.id', value)
+      .orWhere('app.name', 'LIKE', `${value}%`)
+      .orWhere('ugc.name', 'LIKE', `${value}%`)
+      .limit(MAX_OPTIONS);
+
+    return Promise.all(dbWatcher.map(async (w) => ({
+      name: oneLine`
+        [ID: ${w.id}]
+        ${Util.sanitizeOptionName(w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName)}
+        (${Util.capitalize(w.type)})
+        on
+        #${(await DiscordAPI.getChannelName(w.channelId))}
+      `,
+      value: w.id,
+    })));
   }
 
   /**

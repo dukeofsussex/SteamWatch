@@ -109,6 +109,7 @@ interface SearchResult {
   total: number;
   items: {
     id: number;
+    name: string;
   }[];
 }
 
@@ -232,7 +233,7 @@ export default class SteamAPI {
 
   static async searchStore(term: string) {
     const res = await this.request<SearchResult>(`https://store.steampowered.com/api/storesearch/?term=${term}&cc=US`);
-    return res?.total ? res.items[0].id : null;
+    return res?.total ? res.items : null;
   }
 
   private static async request<T>(url: string, options?: RequestInit): Promise<T | null> {
