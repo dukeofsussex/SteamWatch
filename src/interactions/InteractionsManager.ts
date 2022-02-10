@@ -18,10 +18,7 @@ export default class InteractionsManager implements Manager {
 
   async start() {
     this.registerEvents();
-    this.creator.registerCommandsIn({
-      filter: /^([^.].*)\.(?:js|ts)$/,
-      dirname: join(__dirname, 'commands'),
-    })
+    this.creator.registerCommandsIn(join(__dirname, 'commands'), ['.ts'])
       .syncCommands()
       .withServer(new FastifyServer())
       .startServer();

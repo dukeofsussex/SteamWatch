@@ -1,9 +1,10 @@
+// eslint-disable-next-line import/no-import-module-exports
 import { Knex } from 'knex';
 
 exports.up = (knex: Knex) => knex.schema
   .alterTable('currency', (table) => {
     table.string('abbreviation', 16).after('name')
-      .alter();
+      .alter({});
     table.renameColumn('abbreviation', 'code');
     table.dropColumn('flag');
   })
@@ -20,14 +21,14 @@ exports.up = (knex: Knex) => knex.schema
   .alterTable('app_news', (table) => {
     table.bigInteger('gid').unsigned()
       .after('app_id')
-      .alter();
+      .alter({});
   })
   .raw('ALTER TABLE `app_news` ADD COLUMN `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST')
   .alterTable('app_news', (table) => {
     table.integer('app_id').unsigned()
       .notNullable()
       .unique()
-      .alter();
+      .alter({});
   })
   .alterTable('app_price', (table) => {
     table.dropColumns('formatted_price', 'formatted_discounted_price');
@@ -36,7 +37,7 @@ exports.up = (knex: Knex) => knex.schema
 exports.down = (knex: Knex) => knex.schema
   .alterTable('currency', (table) => {
     table.string('code', 16).after('country_code')
-      .alter();
+      .alter({});
     table.renameColumn('code', 'abbreviation');
     table.string('flag', 8).notNullable();
   })
@@ -58,7 +59,7 @@ exports.down = (knex: Knex) => knex.schema
   .alterTable('app_news', (table) => {
     table.bigInteger('id').unsigned()
       .first()
-      .alter();
+      .alter({});
     table.primary(['id', 'app_id']);
   })
   .alterTable('app_price', (table) => {
