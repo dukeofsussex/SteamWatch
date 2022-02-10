@@ -38,7 +38,9 @@ export default class TopGGWorker extends Worker {
         }),
         method: 'POST',
       });
-      const body = await res.json() as TopGGResponse;
+
+      const body: TopGGResponse = res.ok ? await res.json() : { error: 'Invalid response from Top.gg...' };
+
       logger.log({
         group: 'Worker',
         message: body.error || 'Status updated',
