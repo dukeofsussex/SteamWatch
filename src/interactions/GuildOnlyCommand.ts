@@ -58,9 +58,9 @@ export default class GuildOnlyCommand extends SlashCommand {
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .where('guild_id', guildId)
-      .andWhere('watcher.id', value)
-      .orWhere('app.name', 'LIKE', `${value}%`)
-      .orWhere('ugc.name', 'LIKE', `${value}%`)
+      .andWhere((builder) => builder.where('watcher.id', value)
+        .orWhere('app.name', 'LIKE', `${value}%`)
+        .orWhere('ugc.name', 'LIKE', `${value}%`))
       .limit(MAX_OPTIONS);
 
     return Promise.all(dbWatcher.map(async (w) => ({
