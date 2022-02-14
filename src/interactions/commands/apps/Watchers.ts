@@ -124,7 +124,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         name: 'remove',
         description: 'Remove a watcher.',
         options: [{
-          type: CommandOptionType.NUMBER,
+          type: CommandOptionType.STRING,
           name: 'watcher_id',
           description: 'The watcher\'s id',
           autocomplete: true,

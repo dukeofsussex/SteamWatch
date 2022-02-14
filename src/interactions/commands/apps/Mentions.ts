@@ -39,7 +39,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
         name: 'add',
         description: 'Role and/or user to add to a watcher.',
         options: [{
-          type: CommandOptionType.NUMBER,
+          type: CommandOptionType.STRING,
           name: 'watcher_id',
           description: 'The watcher\'s id',
           autocomplete: true,
@@ -58,7 +58,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
         name: 'list',
         description: 'List mentions for the watcher',
         options: [{
-          type: CommandOptionType.NUMBER,
+          type: CommandOptionType.STRING,
           name: 'watcher_id',
           description: 'The watcher\'s id',
           autocomplete: true,
@@ -69,7 +69,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
         name: 'remove',
         description: 'Role and/or user to remove from a watcher.',
         options: [{
-          type: CommandOptionType.NUMBER,
+          type: CommandOptionType.STRING,
           name: 'watcher_id',
           description: 'The watcher\'s id',
           autocomplete: true,
