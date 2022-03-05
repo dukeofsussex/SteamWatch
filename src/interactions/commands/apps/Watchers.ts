@@ -22,6 +22,8 @@ import Util from '../../../utils/Util';
 
 const markdownTable = require('markdown-table');
 
+const WATCHERS_PER_TABLE = 15;
+
 interface BaseArguments {
   channel: string;
 }
@@ -381,27 +383,41 @@ export default class WatchersCommand extends GuildOnlyCommand {
     const watchers = await dbQuery;
 
     if (watchers.length === 0) {
-      return ctx.error('No watchers found!');
+      ctx.error('No watchers found!');
+      return;
     }
 
-    return ctx.send({
-      content: `\`\`\`md\n${markdownTable([
-        ['Id', 'App/UGC Id', 'Name', 'Channel', 'Type'],
-        ...(await Promise.all(watchers.map(async (w) => {
-          const channelName = await DiscordAPI.getChannelName(w.channelId);
+    /* eslint-disable no-param-reassign */
+    const grouped = watchers.reduce((prev, curr, idx) => {
+      const index = Math.floor(idx / WATCHERS_PER_TABLE);
+      (prev[index] = prev[index] || []).push(curr);
+      return prev;
+    }, []);
+    /* eslint-enable no-param-reassign */
 
-          return [
-            w.id,
-            w.ugcId || w.appId,
-            w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName,
-            channelName,
-            w.type,
-          ];
-        }))),
-      ], {
-        align: 'r',
-      })}\`\`\``,
-    });
+    /* eslint-disable no-await-in-loop */
+    for (let i = 0; i < grouped.length; i += 1) {
+      const group = grouped[i];
+      await ctx.send({
+        content: `\`\`\`md\n${markdownTable([
+          ['Id', 'App/UGC Id', 'Name', 'Channel', 'Type'],
+          ...(await Promise.all(group.map(async (w: any) => {
+            const channelName = await DiscordAPI.getChannelName(w.channelId);
+
+            return [
+              w.id,
+              w.ugcId || w.appId,
+              w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName,
+              channelName,
+              w.type,
+            ];
+          }))),
+        ], {
+          align: 'r',
+        })}\`\`\``,
+      });
+    }
+    /* eslint-enable no-await-in-loop */
   }
 
   private static async remove(ctx: CommandContext, { watcher_id: watcherId }: RemoveArguments) {
