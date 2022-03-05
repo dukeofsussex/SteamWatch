@@ -41,6 +41,9 @@ export default function transformArticle(
 
     // Certain publishers don't use a protocol
     thumbnail = thumbnail?.startsWith('//') ? `https:${thumbnail}` : thumbnail;
+
+    // Strip query params
+    [thumbnail] = thumbnail.split('?');
   };
 
   const render = bbob(createPreset(onImage)())
