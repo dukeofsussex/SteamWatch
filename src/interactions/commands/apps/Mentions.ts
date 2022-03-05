@@ -96,6 +96,10 @@ export default class MentionsCommand extends GuildOnlyCommand {
 
   // eslint-disable-next-line class-methods-use-this
   async autocomplete(ctx: AutocompleteContext) {
+    if (!ctx.guildID) {
+      return ctx.sendResults([]);
+    }
+
     const value = ctx.options[ctx.subcommands[0]][ctx.focused];
 
     return ctx.sendResults(await GuildOnlyCommand.createWatcherAutocomplete(value, ctx.guildID!));

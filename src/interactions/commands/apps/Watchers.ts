@@ -143,6 +143,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
   // eslint-disable-next-line class-methods-use-this
   async autocomplete(ctx: AutocompleteContext) {
+    if (!ctx.guildID) {
+      return ctx.sendResults([]);
+    }
+
     if (ctx.focused === 'watcher_id') {
       const value = ctx.options[ctx.subcommands[0]][ctx.focused];
 
