@@ -16,10 +16,10 @@ export default class Util {
     return status ? EMOJIS.SUCCESS : EMOJIS.ERROR;
   }
 
-  static onShutdown(callback: Function) {
+  static onShutdown(callback: () => void) {
     for (let i = 0; i < SIGNALS.length; i += 1) {
       const event = SIGNALS[i];
-      process.on(event, () => callback());
+      process.on(event, callback);
     }
   }
 

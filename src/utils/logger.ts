@@ -37,7 +37,6 @@ const logger = createLogger({
       dirname: 'logs',
       filename: '%DATE%.log',
       format: logFormat,
-      handleExceptions: true,
       maxFiles: '30d',
       utc: true,
     }),
@@ -50,7 +49,6 @@ if (env.dev) {
       colorize({ all: true }),
       logFormat,
     ),
-    handleExceptions: true,
   }));
 }
 
