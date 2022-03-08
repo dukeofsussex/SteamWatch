@@ -87,6 +87,7 @@ export default async function queueBroadcast() {
       group: 'Broadcaster',
       message: 'Skipping inactive broadcast...',
     });
+    return;
   }
 
   logger.info({
