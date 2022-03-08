@@ -62,6 +62,9 @@ export default class NewsWatcher extends Watcher {
       env.settings.maxArticleNewlines,
     );
 
+    // Truncate long news titles
+    news.title = news.title.length > 128 ? `${news.title.substring(0, 125)}...` : news.title;
+
     await db.insert({
       gid: news.gid,
       appId: newsItem.id,
