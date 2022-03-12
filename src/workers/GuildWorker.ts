@@ -27,9 +27,20 @@ export default class GuildWorker extends Worker {
   }
 
   static async processGuilds(after?: string) {
-    const guilds = await DiscordAPI.get(Routes.userGuilds(), {
-      query: new URLSearchParams(after ? [['after', after]] : undefined),
-    }) as RESTGetAPICurrentUserGuildsResult;
+    let guilds;
+
+    try {
+      guilds = await DiscordAPI.get(Routes.userGuilds(), {
+        query: new URLSearchParams(after ? [['after', after]] : undefined),
+      }) as RESTGetAPICurrentUserGuildsResult;
+    } catch (err) {
+      logger.error({
+        group: 'Worker',
+        message: 'Unable to fetch guilds',
+        err,
+      });
+      return;
+    }
 
     for (let i = 0; i < guilds.length; i += 1) {
       const guild = guilds[i];
