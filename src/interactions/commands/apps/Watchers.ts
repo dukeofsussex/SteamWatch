@@ -11,7 +11,7 @@ import {
 } from 'slash-create';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 import db from '../../../db';
-import { UGC } from '../../../db/knex';
+import { App, UGC } from '../../../db/knex';
 import SteamAPI from '../../../steam/SteamAPI';
 import SteamUtil from '../../../steam/SteamUtil';
 import { WatcherType } from '../../../types';
@@ -72,7 +72,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           options: [{
             type: CommandOptionType.STRING,
             name: 'watcher_type',
-            description: 'The application attribute(s) that should be watched for changes',
+            description: 'The application property(s) that should be watched for changes',
             required: true,
             choices: [{
               name: 'News',
@@ -80,6 +80,9 @@ export default class WatchersCommand extends GuildOnlyCommand {
             }, {
               name: 'Price',
               value: WatcherType.PRICE,
+            }, {
+              name: 'Workshop',
+              value: WatcherType.WORKSHOP,
             }],
           }, {
             type: CommandOptionType.STRING,
@@ -409,7 +412,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
               w.ugcId || w.appId,
               w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName,
               channelName,
-              w.type,
+              w.type.replace('_', ' '),
             ];
           }))),
         ], {
@@ -508,7 +511,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return null;
   }
 
-  private static async setAppPrice(app: any, guildId: string) {
+  private static async setAppPrice(app: App, guildId: string) {
     const appPrice = await db.select(
       'app_price.id',
       'guild.currency_id',
@@ -517,7 +520,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
     ).from('guild')
       .innerJoin('currency', 'currency.id', 'guild.currency_id')
       .leftJoin('app_price', function appPriceLeftJoin() {
-        this.on('app_price.app_id', '=', app.id)
+        this.on('app_price.app_id', '=', app.id.toString())
           .andOn('app_price.currency_id', '=', 'currency.id');
       })
       .where('guild.id', guildId)

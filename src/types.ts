@@ -7,4 +7,5 @@ export enum WatcherType {
   NEWS = 'news',
   PRICE = 'price',
   UGC = 'ugc',
+  WORKSHOP = 'workshop',
 }

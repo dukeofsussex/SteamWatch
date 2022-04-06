@@ -11,7 +11,7 @@ import { WatcherType } from '../../types';
 import env from '../../utils/env';
 import logger from '../../utils/logger';
 
-type QueryResult = Omit<App, 'type' | 'lastCheckedNews'>;
+type QueryResult = Pick<App, 'icon' | 'id' | 'name'>;
 
 export default class NewsWatcher extends Watcher {
   constructor(queue: MessageQueue) {

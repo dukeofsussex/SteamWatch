@@ -11,7 +11,7 @@ import { EMOJIS } from '../../utils/constants';
 import env from '../../utils/env';
 import logger from '../../utils/logger';
 
-type QueryResult = Omit<App, 'type' | 'lastCheckedNews'>
+type QueryResult = Pick<App, 'icon' | 'id' | 'name'>
 & Pick<Currency, 'code' | 'countryCode'>
 & Omit<AppPrice, 'id' | 'appId'>
 & { currencyName: string };

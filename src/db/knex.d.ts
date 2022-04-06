@@ -15,6 +15,8 @@ interface App {
   icon: string;
   type: string;
   lastCheckedNews: Date | null;
+  latestUgc: string | null;
+  lastCheckedUgc: Date | null;
 }
 
 interface AppNews {

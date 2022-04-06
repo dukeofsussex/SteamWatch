@@ -1,5 +1,5 @@
 import fetch, { RequestInit } from 'node-fetch';
-import { EPublishedFileVisibility, EResult } from 'steam-user';
+import { EPublishedFileQueryType, EPublishedFileVisibility, EResult } from 'steam-user';
 import { URLSearchParams } from 'url';
 import env from '../utils/env';
 import logger from '../utils/logger';
@@ -82,6 +82,8 @@ interface PlayersResponse<T> {
 }
 
 interface PlayerSummary {
+  avatar: string;
+  avatarmedium: string;
   avatarfull: string;
   communityvisibilitystate: number;
   lastlogoff: number;
@@ -224,6 +226,11 @@ export default class SteamAPI {
   static async getSteamLevel(steamId: string) {
     const res = await this.request<Response<SteamLevel>>(`https://api.steampowered.com/IPlayerService/GetSteamLevel/v1/?key=${env.steamWebApiKey}&steamid=${steamId}`);
     return res?.response.player_level || null;
+  }
+
+  static async queryFiles(appId: number) {
+    const res = await this.request<Response<UGCResponse>>(`https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/?key=${env.steamWebApiKey}&appid=${appId}&query_type=${EPublishedFileQueryType.RankedByPublicationDate}&return_metadata=true`);
+    return res?.response.publishedfiledetails?.[0] || null;
   }
 
   static async resolveVanityUrl(vanityUrlName: string) {

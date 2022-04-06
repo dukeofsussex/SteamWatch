@@ -324,6 +324,8 @@ export default class SteamUtil {
       icon: appInfo.common.icon || '',
       type,
       lastCheckedNews: PERMITTED_APP_TYPES[WatcherType.NEWS].includes(type) ? new Date() : null,
+      lastCheckedUgc: new Date(),
+      latestUgc: null,
     };
 
     await db.insert(app).into('app');

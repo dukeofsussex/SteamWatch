@@ -44,6 +44,7 @@ export const MAX_OPTIONS = 25;
 export const PERMITTED_APP_TYPES: { [key: string]: string[]; } = {
   [WatcherType.NEWS]: ['application', 'game'],
   [WatcherType.PRICE]: ['application', 'dlc', 'game', 'music', 'video'],
+  [WatcherType.WORKSHOP]: ['game'],
 };
 
 export const REPO_URL = homepage.split('#')[0];
