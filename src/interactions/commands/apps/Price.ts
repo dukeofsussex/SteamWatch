@@ -63,6 +63,7 @@ export default class PriceCommand extends SlashCommand {
         : await db.select('code')
           .from('currency')
           .innerJoin('guild', 'guild.currency_id', 'currency.id')
+          .where('guild.id', ctx.guildID)
           .first()
           .then((res: any) => res.code);
     } else {
