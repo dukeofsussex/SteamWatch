@@ -1,3 +1,4 @@
+import { oneLine } from 'common-tags';
 import {
   AutocompleteContext,
   CommandContext,
@@ -7,13 +8,15 @@ import {
 } from 'slash-create';
 import db from '../../../db';
 import { CurrencyCode } from '../../../db/knex';
+import SteamAPI from '../../../steam/SteamAPI';
 import SteamUtil from '../../../steam/SteamUtil';
-import { EMBED_COLOURS } from '../../../utils/constants';
+import { MAX_OPTIONS, PERMITTED_APP_TYPES } from '../../../utils/constants';
+import EmbedBuilder from '../../../utils/EmbedBuilder';
 import env from '../../../utils/env';
 
 interface CommandArguments {
   query: string;
-  currency?: string;
+  currency?: number;
 }
 
 export default class PriceCommand extends SlashCommand {
@@ -29,20 +32,42 @@ export default class PriceCommand extends SlashCommand {
         autocomplete: true,
         required: true,
       }, {
-        type: CommandOptionType.STRING,
+        type: CommandOptionType.NUMBER,
         name: 'currency',
-        description: 'The currency code to retrieve the price in',
+        description: 'The currency to retrieve the price in',
+        autocomplete: true,
       }],
     });
 
     this.filePath = __filename;
   }
 
+  private static async createCurrencyAutocomplete(query: string) {
+    const currencies = await db.select('*')
+      .from('currency')
+      .where('id', query)
+      .orWhere('name', 'LIKE', `%${query}%`)
+      .orWhere('code', 'LIKE', `${query}%`)
+      .limit(MAX_OPTIONS);
+
+    return currencies.map((currency) => ({
+      name: oneLine`
+        [${currency.code}]
+        ${currency.name}
+      `,
+      value: currency.id.toString(),
+    }));
+  }
+
   // eslint-disable-next-line class-methods-use-this
   async autocomplete(ctx: AutocompleteContext) {
     const value = ctx.options[ctx.focused];
 
-    return ctx.sendResults(await SteamUtil.createAppAutocomplete(value));
+    if (ctx.focused === 'query') {
+      return ctx.sendResults(await SteamUtil.createAppAutocomplete(value));
+    }
+
+    return ctx.sendResults(await PriceCommand.createCurrencyAutocomplete(value));
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -52,68 +77,59 @@ export default class PriceCommand extends SlashCommand {
     const appId = await SteamUtil.findAppId(query);
 
     if (!appId) {
+      return ctx.error(`Unable to find an application id for: ${query}`);
+    }
+
+    const app = (await db.select('*')
+      .from('app')
+      .where('id', appId)
+      .first()) || (await SteamUtil.persistApp(appId));
+
+    if (!app) {
       return ctx.error(`Unable to find an application with the id/name: ${query}`);
     }
 
-    let code: CurrencyCode;
-
-    if (!currency) {
-      code = !ctx.guildID
-        ? 'USD'
-        : await db.select('code')
-          .from('currency')
-          .innerJoin('guild', 'guild.currency_id', 'currency.id')
-          .where('guild.id', ctx.guildID)
-          .first()
-          .then((res: any) => res.code);
-    } else {
-      code = currency.toUpperCase() as CurrencyCode;
+    if (!PERMITTED_APP_TYPES.price.includes(app.type.toLowerCase())) {
+      return ctx.error(`Unable to fetch prices for apps of type **${app.type}**!`);
     }
 
-    const app = await db.select(
-      'app.id',
-      'app.name',
-      'icon',
-      'app_id',
-      'price',
-      'discounted_price',
-      'discount',
-    ).from('app_price')
-      .innerJoin('app', 'app.id', 'app_price.app_id')
-      .innerJoin('currency', 'currency.id', 'app_price.currency_id')
-      .where({
-        appId,
-        code,
-      })
-      .first();
+    let currencyDetails: { code: CurrencyCode, countryCode: string } = { code: 'USD', countryCode: 'US' };
 
-    if (!app) {
+    if (currency || ctx.guildID) {
+      let dbQuery = db.select('code', 'countryCode')
+        .from('currency');
+
+      if (currency) {
+        dbQuery = dbQuery.where('currency.id', currency);
+      } else {
+        dbQuery = dbQuery.innerJoin('guild', 'guild.currency_id', 'currency.id')
+          .where('guild.id', ctx.guildID);
+      }
+
+      currencyDetails = await dbQuery.first() as any;
+    }
+
+    const prices = await SteamAPI.getAppPrices([appId], currencyDetails.countryCode);
+
+    if (!prices || !prices[appId].success || Array.isArray(prices[app.id].data)) {
       return ctx.embed({
-        color: EMBED_COLOURS.DEFAULT,
-        description: 'No cached price found!',
+        ...EmbedBuilder.createApp(app, {
+          description: (!prices || !prices[appId].success)
+            ? 'No price found!'
+            : '**Free**',
+          timestamp: new Date(),
+          title: app.name,
+          url: SteamUtil.URLS.Store(appId),
+        }),
+        fields: [{
+          name: 'Steam Client Link',
+          value: SteamUtil.BP.Store(appId),
+        }],
       });
     }
 
-    return ctx.embed({
-      color: EMBED_COLOURS.DEFAULT,
-      title: `**${app.name}**`,
-      url: SteamUtil.URLS.Store(app.id),
-      timestamp: new Date(),
-      thumbnail: {
-        url: SteamUtil.URLS.Icon(app.id, app.icon),
-      },
-      fields: [
-        {
-          name: 'Price',
-          value: SteamUtil.formatPriceDisplay({
-            currency: code,
-            discount: app.discount,
-            final: app.discountedPrice,
-            initial: app.price,
-          }),
-          inline: true,
-        },
-      ],
-    });
+    return ctx.embed(
+      EmbedBuilder.createPrice(app, currencyDetails.code, prices[appId].data.price_overview!),
+    );
   }
 }
