@@ -14,20 +14,10 @@ interface App {
   name: string;
   icon: string;
   type: string;
+  latestNews: string | null;
   lastCheckedNews: Date | null;
   latestUgc: string | null;
   lastCheckedUgc: Date | null;
-}
-
-interface AppNews {
-  id: number;
-  appId: number;
-  gid: string;
-  title: string;
-  markdown: string;
-  thumbnail: string | null;
-  url: string;
-  createdAt: Date;
 }
 
 interface AppPrice {
@@ -87,7 +77,6 @@ interface WatcherMention {
 declare module 'knex/types/tables' {
   interface Tables {
     app: App;
-    app_news: AppNews;
     app_price: AppPrice;
     channel_webhook: ChannelWebhook;
     currency: Currency;

@@ -1,9 +1,7 @@
 import { MessageEmbedOptions } from 'slash-create';
 import MessageQueue from '../MessageQueue';
 import db from '../../db';
-import { App, ChannelWebhook, WatcherMention } from '../../db/knex';
-import SteamUtil from '../../steam/SteamUtil';
-import { EMBED_COLOURS } from '../../utils/constants';
+import { ChannelWebhook, WatcherMention } from '../../db/knex';
 import Worker from '../../workers/Worker';
 
 type WebhookedMentions = Pick<ChannelWebhook, 'webhookId' | 'webhookToken'>
@@ -69,30 +67,5 @@ export default abstract class Watcher extends Worker {
 
   protected pause() {
     this.timeout = setTimeout(() => this.work(), 900000); // 15m
-  }
-
-  protected static getEmbed(
-    app: Pick<App, 'icon' | 'id' | 'name'>,
-    {
-      description,
-      timestamp,
-      title,
-      url,
-    }: Pick<MessageEmbedOptions, 'description' | 'timestamp' | 'title' | 'url'>,
-  ): MessageEmbedOptions {
-    return {
-      color: EMBED_COLOURS.DEFAULT,
-      title: `**${title}**`,
-      description,
-      footer: {
-        icon_url: SteamUtil.URLS.Icon(app.id, app.icon),
-        text: app.name,
-      },
-      url,
-      timestamp,
-      thumbnail: {
-        url: SteamUtil.URLS.Icon(app.id, app.icon),
-      },
-    };
   }
 }

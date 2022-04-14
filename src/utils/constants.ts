@@ -41,9 +41,10 @@ export const INVITE_URL = oneLineTrim`
 
 export const MAX_OPTIONS = 25;
 
-export const PERMITTED_APP_TYPES: { [key: string]: string[]; } = {
+export const PERMITTED_APP_TYPES: { [key in WatcherType]: string[]; } = {
   [WatcherType.NEWS]: ['application', 'game'],
   [WatcherType.PRICE]: ['application', 'dlc', 'game', 'music', 'video'],
+  [WatcherType.UGC]: [],
   [WatcherType.WORKSHOP]: ['game'],
 };
 

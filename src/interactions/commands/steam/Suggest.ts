@@ -6,6 +6,7 @@ import {
 } from 'slash-create';
 import SteamAPI from '../../../steam/SteamAPI';
 import SteamUtil from '../../../steam/SteamUtil';
+import EmbedBuilder from '../../../utils/EmbedBuilder';
 import env from '../../../utils/env';
 
 interface CommandArgumentsOwned {
@@ -103,7 +104,7 @@ export default class SuggestCommand extends SlashCommand {
 
     const appId = sharedAppIds[Math.floor(Math.random() * sharedAppIds.length)];
 
-    const message = await SteamUtil.createStoreMessage(appId, ctx.guildID);
+    const message = await EmbedBuilder.createStoreMessage(appId, ctx.guildID);
 
     if (!message) {
       return ctx.error('Unable to fetch the application\'s details');
@@ -120,7 +121,7 @@ export default class SuggestCommand extends SlashCommand {
       return ctx.error('Unable to fetch a random application from the Steam store');
     }
 
-    const message = await SteamUtil.createStoreMessage(appId, ctx.guildID);
+    const message = await EmbedBuilder.createStoreMessage(appId, ctx.guildID);
 
     if (!message) {
       return ctx.error('Unable to fetch the application\'s details');

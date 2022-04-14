@@ -1,18 +1,12 @@
-import { oneLine, stripIndents } from 'common-tags';
-import { ButtonStyle, ComponentType, MessageOptions } from 'slash-create';
+import { oneLine } from 'common-tags';
 import SteamID from 'steamid';
 import { EResult } from 'steam-user';
 import SteamAPI from './SteamAPI';
 import steamUser from './SteamUser';
 import db from '../db';
-import {
-  App,
-  Currency,
-  CurrencyCode,
-  UGC,
-} from '../db/knex';
+import { App, CurrencyCode, UGC } from '../db/knex';
 import { WatcherType } from '../types';
-import { EMBED_COLOURS, PERMITTED_APP_TYPES } from '../utils/constants';
+import { PERMITTED_APP_TYPES } from '../utils/constants';
 import Util from '../utils/Util';
 
 interface CurrencyFormatOptions {
@@ -73,8 +67,6 @@ const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
   ZAR: { prepend: 'R ' },
 };
 
-const DEFAULT_CURRENCY = { code: 'USD', countryCode: 'US' };
-
 export default class SteamUtil {
   static readonly BP = {
     AppNews: (id: string) => SteamUtil.BP.Raw(`appnews/${id}`),
@@ -99,11 +91,13 @@ export default class SteamUtil {
   };
 
   static readonly URLS = {
+    AppNews: (appId: number) => `https://store.steampowered.com/news/app/${appId}`,
     Icon: (appId: number, icon: string) => `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.jpg`,
     NewsImage: (imageUrl: string) => imageUrl.replace(/\{STEAM_CLAN(?:_LOC)?_IMAGE\}/, 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/clans'),
     Profile: (steamId: string) => `https://steamcommunity.com/profiles/${steamId}`,
     Store: (appId: number) => `https://store.steampowered.com/app/${appId}`,
     UGC: (ugcId: string) => `https://steamcommunity.com/sharedfiles/filedetails/?id=${ugcId}`,
+    Workshop: (appId: number) => `https://store.steampowered.com/app/${appId}/workshop`,
   };
 
   static async createAppAutocomplete(query: string) {
@@ -117,124 +111,6 @@ export default class SteamUtil {
       name: r.name,
       value: r.id.toString(),
     })) ?? [];
-  }
-
-  static async createStoreMessage(appId: number, guildId?: string): Promise<MessageOptions | null> {
-    let currency: Pick<Currency, 'code' | 'countryCode'> = !guildId
-      ? DEFAULT_CURRENCY
-      : await db.select('code', 'country_code')
-        .from('currency')
-        .innerJoin('guild', 'guild.currency_id', 'currency.id')
-        .where('guild.id', guildId)
-        .first();
-    currency = currency || DEFAULT_CURRENCY;
-
-    const details = await SteamAPI.getAppDetails(appId, currency.countryCode);
-    let playerCount: number | null = null;
-
-    if (details?.type === 'game') {
-      playerCount = await SteamAPI.getNumberOfCurrentPlayers(appId!);
-    }
-
-    if (!details) {
-      return null;
-    }
-
-    let price = 'N/A';
-
-    if (details.is_free) {
-      price = '**Free**';
-    } else if (details.price_overview) {
-      price = SteamUtil.formatPriceDisplay({
-        currency: currency.code,
-        discount: details.price_overview.discount_percent,
-        final: details.price_overview.final,
-        initial: details.price_overview.initial,
-      });
-    }
-
-    return {
-      embeds: [{
-        color: EMBED_COLOURS.DEFAULT,
-        description: details.short_description,
-        title: details.name,
-        image: {
-          url: details.header_image,
-        },
-        timestamp: new Date(),
-        url: SteamUtil.URLS.Store(appId!),
-        fields: [
-          {
-            name: 'Price',
-            value: price,
-            inline: true,
-          },
-          {
-            name: 'Developers',
-            value: details.developers.join('\n'),
-            inline: true,
-          },
-          {
-            name: 'Publishers',
-            value: details.publishers?.join('\n') || 'None',
-            inline: true,
-          },
-          ...(playerCount !== null ? [{
-            name: 'Player Count',
-            value: playerCount.toString(),
-            inline: true,
-          }] : []),
-          {
-            name: 'Release Date',
-            value: details.release_date.date,
-            inline: true,
-          },
-          {
-            name: 'Details',
-            value: stripIndents`
-              ${Util.getStateEmoji(details.achievements)} **Achievements:** ${details.achievements?.total || 0}
-              ${Util.getStateEmoji(details.recommendations)} **Recommendations:** ${details.recommendations?.total || 0}
-            `,
-            inline: true,
-          },
-          ...(details.categories ? [{
-            name: 'Categories',
-            value: details.categories.map((c) => c.description).join('\n'),
-            inline: true,
-          }] : []),
-          ...(details.genres ? [{
-            name: 'Genres',
-            value: details.genres.map((g) => g.description).join('\n'),
-            inline: true,
-          }] : []),
-          {
-            name: 'Platforms',
-            value: stripIndents`
-              ${Util.getStateEmoji(details.platforms.windows)} **Windows**
-              ${Util.getStateEmoji(details.platforms.mac)} **Mac**
-              ${Util.getStateEmoji(details.platforms.linux)} **Linux**
-            `,
-            inline: true,
-          },
-          {
-            name: 'Steam Client Link',
-            value: SteamUtil.BP.Store(appId!),
-          },
-        ],
-      }],
-      components: (details.website ? [{
-        type: ComponentType.ACTION_ROW,
-        components: [
-          {
-            type: ComponentType.BUTTON,
-            label: 'View Website',
-            style: ButtonStyle.LINK,
-            url: details.website,
-          },
-        ],
-      },
-      ] : []),
-    };
   }
 
   static formatPrice(amount: number, currency: CurrencyCode) {
@@ -325,6 +201,7 @@ export default class SteamUtil {
       type,
       lastCheckedNews: PERMITTED_APP_TYPES[WatcherType.NEWS].includes(type) ? new Date() : null,
       lastCheckedUgc: new Date(),
+      latestNews: null,
       latestUgc: null,
     };
 

@@ -8,6 +8,7 @@ import SteamAPI, { PriceOverview } from '../../steam/SteamAPI';
 import SteamUtil from '../../steam/SteamUtil';
 import { WatcherType } from '../../types';
 import { EMOJIS } from '../../utils/constants';
+import EmbedBuilder from '../../utils/EmbedBuilder';
 import env from '../../utils/env';
 import logger from '../../utils/logger';
 
@@ -150,7 +151,7 @@ export default class PriceWatcher extends Watcher {
   }
 
   private async preEnqueue(app: QueryResult, message: string) {
-    const embed = Watcher.getEmbed(app, {
+    const embed = EmbedBuilder.createApp(app, {
       title: app.name,
       description: message,
       url: SteamUtil.URLS.Store(app.id),

@@ -10,6 +10,7 @@ import SteamAPI from '../../../steam/SteamAPI';
 import steamUser from '../../../steam/SteamUser';
 import SteamUtil from '../../../steam/SteamUtil';
 import { EMBED_COLOURS, EMOJIS } from '../../../utils/constants';
+import EmbedBuilder from '../../../utils/EmbedBuilder';
 import env from '../../../utils/env';
 import transformArticle from '../../../watcher/transformers';
 
@@ -85,7 +86,7 @@ export default class SearchCommand extends SlashCommand {
       return ctx.error(`Unable to find an application with the id/name: ${query}`);
     }
 
-    const message = await SteamUtil.createStoreMessage(appId, ctx.guildID);
+    const message = await EmbedBuilder.createStoreMessage(appId, ctx.guildID);
 
     if (!message) {
       return ctx.error('Unable to fetch the application\'s details');

@@ -5,8 +5,8 @@ import MessageQueue from '../MessageQueue';
 import db from '../../db';
 import { App } from '../../db/knex';
 import SteamAPI from '../../steam/SteamAPI';
-import SteamUtil from '../../steam/SteamUtil';
 import { WatcherType } from '../../types';
+import EmbedBuilder from '../../utils/EmbedBuilder';
 import env from '../../utils/env';
 import logger from '../../utils/logger';
 
@@ -34,53 +34,21 @@ export default class WorkshopWatcher extends Watcher {
       });
     }
 
+    await db('app').update({
+      lastCheckedUgc: new Date(),
+      latestUgc: ugc ? ugc.publishedfileid : app.latestUgc,
+    })
+      .where('id', app.id);
+
     if (!ugc) {
       return this.wait();
     }
-
-    await db('app').update({
-      lastCheckedUgc: new Date(),
-      latestUgc: ugc.publishedfileid,
-    })
-      .where('id', app.id);
 
     if (app.latestUgc === ugc.publishedfileid || ugc.banned) {
       return this.pause();
     }
 
-    const author = await SteamAPI.getPlayerSummary(ugc.creator);
-
-    const embed = Watcher.getEmbed({
-      icon: app.icon,
-      id: app.id,
-      name: app.name,
-    }, {
-      description: ugc.description,
-      timestamp: new Date(ugc.time_updated * 1000),
-      title: ugc.title,
-      url: SteamUtil.URLS.UGC(ugc.publishedfileid),
-    });
-
-    if (author) {
-      embed.author = {
-        name: author.personaname,
-        icon_url: author.avatar,
-        url: SteamUtil.URLS.Profile(author.steamid),
-      };
-    }
-
-    if (ugc.preview_url) {
-      embed.image = {
-        url: ugc.preview_url,
-      };
-    }
-
-    embed.fields = [{
-      name: 'Steam Client Link',
-      value: SteamUtil.BP.UGC(ugc.publishedfileid),
-    }];
-
-    await this.enqueue(embed, {
+    await this.enqueue(await EmbedBuilder.createWorkshop(app, ugc), {
       appId: app.id,
       'watcher.type': WatcherType.WORKSHOP,
     });

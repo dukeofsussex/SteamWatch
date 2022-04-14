@@ -4,7 +4,7 @@ import { URLSearchParams } from 'url';
 import env from '../utils/env';
 import logger from '../utils/logger';
 
-interface AppDetails {
+export interface AppDetails {
   achievements?: Total;
   categories?: Tag[];
   developers: string[];
@@ -29,7 +29,7 @@ interface AppDetails {
   website: string | null;
 }
 
-interface AppNews {
+export interface AppNews {
   appnews: {
     newsitems: NewsPost[];
   }
@@ -56,19 +56,19 @@ export interface NewsPost {
   url: string;
 }
 
-interface NumberOfCurrentPlayers {
+export interface NumberOfCurrentPlayers {
   player_count: number;
 }
 
-interface OwnedGame {
+export interface OwnedGame {
   appid: number;
 }
 
-interface OwnedGames {
+export interface OwnedGames {
   games: OwnedGame[];
 }
 
-interface PlayerBans {
+export interface PlayerBans {
   CommunityBanned: boolean;
   DaysSinceLastBan: number;
   EconomyBan: string;
@@ -77,11 +77,11 @@ interface PlayerBans {
   VACBanned: boolean;
 }
 
-interface PlayersResponse<T> {
+export interface PlayersResponse<T> {
   players: T[];
 }
 
-interface PlayerSummary {
+export interface PlayerSummary {
   avatar: string;
   avatarmedium: string;
   avatarfull: string;
@@ -103,11 +103,11 @@ export interface PriceOverview {
   final_formatted: string;
 }
 
-interface Response<T> {
+export interface Response<T> {
   response: T;
 }
 
-interface SearchResult {
+export interface SearchResult {
   total: number;
   items: {
     id: number;
@@ -115,19 +115,19 @@ interface SearchResult {
   }[];
 }
 
-interface SteamLevel {
+export interface SteamLevel {
   player_level: number;
 }
 
-interface Tag {
+export interface Tag {
   description: string;
 }
 
-interface Total {
+export interface Total {
   total: number;
 }
 
-interface UGC {
+export interface UGC {
   publishedfileid: string;
   result: EResult;
   creator: string;
@@ -150,11 +150,11 @@ interface UGC {
   }[];
 }
 
-interface UGCResponse {
+export interface UGCResponse {
   publishedfiledetails: UGC[];
 }
 
-interface VanityURLResolve {
+export interface VanityURLResolve {
   steamid?: string;
 }
 

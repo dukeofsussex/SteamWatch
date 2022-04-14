@@ -2,16 +2,13 @@ import { oneLine } from 'common-tags';
 import { Knex } from 'knex';
 import Watcher from './Watcher';
 import MessageQueue from '../MessageQueue';
-import transformArticle from '../transformers';
 import db from '../../db';
 import { App } from '../../db/knex';
 import SteamAPI from '../../steam/SteamAPI';
-import SteamUtil from '../../steam/SteamUtil';
 import { WatcherType } from '../../types';
+import EmbedBuilder from '../../utils/EmbedBuilder';
 import env from '../../utils/env';
 import logger from '../../utils/logger';
-
-type QueryResult = Pick<App, 'icon' | 'id' | 'name'>;
 
 export default class NewsWatcher extends Watcher {
   constructor(queue: MessageQueue) {
@@ -19,77 +16,40 @@ export default class NewsWatcher extends Watcher {
   }
 
   protected async work() {
-    const newsItem = await NewsWatcher.fetchNextApp();
+    const app = await NewsWatcher.fetchNextApp();
 
-    if (!newsItem) {
+    if (!app) {
       return this.pause();
     }
 
     let news;
 
     try {
-      news = await SteamAPI.getAppNews(newsItem.id);
+      news = await SteamAPI.getAppNews(app.id);
     } catch (err) {
       logger.error({
         group: 'Watcher',
-        message: `Unable to fetch app news for ${newsItem.id}!`,
+        message: `Unable to fetch app news for ${app.id}!`,
         err,
       });
     }
 
-    await db('app').update('lastCheckedNews', new Date())
-      .where('id', newsItem.id);
+    await db('app').update({
+      lastCheckedNews: new Date(),
+      latestNews: news ? news.gid : app.latestNews,
+    })
+      .where('id', app.id);
 
     if (!news) {
       return this.wait();
     }
 
-    const article = await db.select('id')
-      .from('app_news')
-      .where({
-        gid: news.gid,
-        appId: newsItem.id,
-      })
-      .first();
-
-    if (article) {
-      return this.wait();
+    if (app.latestNews === news.gid) {
+      return this.pause();
     }
 
-    const transformed = transformArticle(
-      news.contents,
-      env.settings.maxArticleLength,
-      env.settings.maxArticleNewlines,
-    );
-
-    // Truncate long news titles
-    news.title = news.title.length > 128 ? `${news.title.substring(0, 125)}...` : news.title;
-
-    await db.insert({
-      gid: news.gid,
-      appId: newsItem.id,
-      title: news.title,
-      markdown: transformed.markdown,
-      thumbnail: transformed.thumbnail,
-      url: news.url,
-      createdAt: new Date(news.date * 1000),
-    }).into('app_news')
-      .onConflict('appId')
-      .merge(['createdAt', 'gid', 'markdown', 'thumbnail', 'title', 'url']);
-
-    const embed = Watcher.getEmbed(newsItem, {
-      title: news.title,
-      description: transformed.markdown,
-      url: news.url,
-      timestamp: new Date(news.date * 1000),
-    });
-
-    if (transformed.thumbnail) {
-      embed.image = { url: SteamUtil.URLS.NewsImage(transformed.thumbnail) };
-    }
-
-    await this.enqueue(embed, {
-      appId: newsItem.id,
+    await this.enqueue(EmbedBuilder.createNews(app, news), {
+      appId: app.id,
       'watcher.type': WatcherType.NEWS,
     });
 
@@ -106,10 +66,8 @@ export default class NewsWatcher extends Watcher {
       .first()
       .then((res: any) => res.average || 0);
 
-    return db.select<QueryResult[]>(
-      'app.id',
-      'app.name',
-      'app.icon',
+    return db.select<App[]>(
+      'app.*',
       db.raw(
         oneLine`
         watcher_count

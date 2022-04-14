@@ -6,9 +6,9 @@ import MessageQueue from '../MessageQueue';
 import db from '../../db';
 import { UGC } from '../../db/knex';
 import SteamAPI from '../../steam/SteamAPI';
-import SteamUtil from '../../steam/SteamUtil';
 import { WatcherType } from '../../types';
 import { EMOJIS } from '../../utils/constants';
+import EmbedBuilder from '../../utils/EmbedBuilder';
 import env from '../../utils/env';
 import logger from '../../utils/logger';
 
@@ -89,21 +89,14 @@ export default class UGCWatcher extends Watcher {
       }
 
       if (message) {
-        const embed = Watcher.getEmbed({
+        // eslint-disable-next-line no-await-in-loop
+        const embed = await EmbedBuilder.createWorkshop({
           icon: item.appIcon,
           id: item.appId,
           name: item.appName,
-        }, {
-          description: message,
-          timestamp: item.lastUpdate,
-          title: item.name,
-          url: SteamUtil.URLS.UGC(item.id),
-        });
+        }, file!);
 
-        embed.fields = [{
-          name: 'Steam Client Link',
-          value: SteamUtil.BP.UGC(item.id),
-        }];
+        embed.description = message;
 
         // eslint-disable-next-line no-await-in-loop
         await this.enqueue(embed, {
