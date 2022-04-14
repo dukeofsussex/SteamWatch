@@ -15,6 +15,7 @@ import {
 } from '../../../utils/constants';
 import DiscordAPI from '../../../utils/DiscordAPI';
 import env from '../../../utils/env';
+// @ts-ignore
 import { version } from '../../../../package.json';
 
 export default class InfoCommand extends SlashCommand {

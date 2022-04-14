@@ -2,6 +2,7 @@ import { oneLineTrim } from 'common-tags';
 import { Permissions } from 'slash-create';
 import env from './env';
 import { WatcherType } from '../types';
+// @ts-ignore
 import { homepage } from '../../package.json';
 
 export const DISCORD_ERROR_CODES = {

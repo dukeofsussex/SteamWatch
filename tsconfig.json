@@ -7,13 +7,14 @@
     "noImplicitReturns": true,
     "moduleResolution": "node",
     "sourceMap": true,
-    "outDir": "dist",
-    "baseUrl": ".",
+    "baseUrl": "./src",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
+    "typings.d.ts",
     "src/**/*"
   ],
   "exclude": [
