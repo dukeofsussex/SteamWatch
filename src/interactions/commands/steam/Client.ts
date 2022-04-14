@@ -1,7 +1,7 @@
 import { CommandContext, CommandOptionType, SlashCreator } from 'slash-create';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 import SteamUtil from '../../../steam/SteamUtil';
-import { EMBED_COLOURS, EMOJIS } from '../../../utils/constants';
+import { EMBED_COLOURS } from '../../../utils/constants';
 import env from '../../../utils/env';
 
 interface CommandArguments {
@@ -32,7 +32,7 @@ const PROTOCOLS: Protocol[] = [
 export default class OpenCommand extends GuildOnlyCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
-      name: 'open',
+      name: 'client',
       description: 'Convert Steam browser urls to Steam client urls.',
       guildIDs: env.dev ? [env.devGuildId] : undefined,
       options: [{
@@ -59,8 +59,15 @@ export default class OpenCommand extends GuildOnlyCommand {
         const command = await protocol.command(match[1]);
 
         return ctx.embed({
-          color: EMBED_COLOURS.DEFAULT,
-          description: `${EMOJIS.TADA} ${command}`,
+          color: EMBED_COLOURS.SUCCESS,
+          timestamp: new Date(),
+          fields: [{
+            name: 'URL',
+            value: url,
+          }, {
+            name: 'Steam Client Link',
+            value: command,
+          }],
         });
       }
     }
