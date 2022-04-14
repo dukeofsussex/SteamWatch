@@ -4,7 +4,7 @@ import { Manager } from './types';
 import queueBroadcast from './utils/broadcaster';
 import env from './utils/env';
 import logger from './utils/logger';
-import WatcherManager from './watcher/WatcherManager';
+import WatcherManager from './watch/WatcherManager';
 import GuildWorker from './workers/GuildWorker';
 import TopGGWorker from './workers/TopGGWorker';
 

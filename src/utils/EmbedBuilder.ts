@@ -17,7 +17,7 @@ import SteamAPI, {
   UGC,
 } from '../steam/SteamAPI';
 import SteamUtil from '../steam/SteamUtil';
-import transformArticle from '../watcher/transformers';
+import transformArticle from './transformers';
 
 export type AppMinimal = Pick<App, 'icon' | 'id' | 'name'>;
 

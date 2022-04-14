@@ -12,7 +12,7 @@ import SteamUtil from '../../../steam/SteamUtil';
 import { EMBED_COLOURS, EMOJIS } from '../../../utils/constants';
 import EmbedBuilder from '../../../utils/EmbedBuilder';
 import env from '../../../utils/env';
-import transformArticle from '../../../watcher/transformers';
+import transformArticle from '../../../utils/transformers';
 
 interface Arguments {
   query: string;

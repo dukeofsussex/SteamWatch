@@ -6,7 +6,7 @@ import { INVITE_URL, REPO_URL, WEBSITE_URL } from './constants';
 import env from './env';
 import logger from './logger';
 import db from '../db';
-import MessageQueue, { QueuedItem } from '../watcher/MessageQueue';
+import MessageQueue, { QueuedItem } from '../watch/MessageQueue';
 
 const FILENAME = 'broadcast.json';
 
