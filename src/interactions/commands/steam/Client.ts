@@ -48,6 +48,7 @@ export default class OpenCommand extends GuildOnlyCommand {
 
   // eslint-disable-next-line class-methods-use-this
   async run(ctx: CommandContext) {
+    await ctx.defer();
     const { url } = ctx.options as CommandArguments;
 
     for (let i = 0; i < PROTOCOLS.length; i += 1) {
