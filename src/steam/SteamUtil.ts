@@ -156,8 +156,8 @@ export default class SteamUtil {
 
     appId = await db.select('id')
       .from('app')
-      .where('name', 'like', `%${id}%`)
-      .orWhere('id', id)
+      .where('id', id)
+      .orWhere('name', 'like', `%${id}%`)
       .first()
       .then((res) => res?.id || null);
 
@@ -188,7 +188,7 @@ export default class SteamUtil {
     const appInfo = (await steamUser.getProductInfo([appId], [], true))
       .apps[appId]?.appinfo;
 
-    if (!appInfo) {
+    if (!appInfo || !appInfo.common) {
       return null;
     }
 
