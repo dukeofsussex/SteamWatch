@@ -86,7 +86,7 @@ export default class SteamUtil {
     Profile: /steamcommunity\.com\/(?:profiles|id)\/(\d{17}|[\w-]{2,32})/,
     SteamId: /(STEAM_[0-5]:[01]:\d+)|(\[U:[10]:\d+\])|(\d{17})/i,
     Store: /steampowered\.com\/app\/(\d+)/,
-    UGC: /sharedfiles\/filedetails\/\?id=(\d+)/,
+    UGC: /filedetails\/\?id=(\d+)/,
     Workshop: /steamcommunity\.com\/app\/(\d+)\/workshop/,
   };
 
