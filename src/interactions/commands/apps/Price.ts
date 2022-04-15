@@ -32,7 +32,7 @@ export default class PriceCommand extends SlashCommand {
         autocomplete: true,
         required: true,
       }, {
-        type: CommandOptionType.NUMBER,
+        type: CommandOptionType.INTEGER,
         name: 'currency',
         description: 'The currency to retrieve the price in',
         autocomplete: true,
@@ -55,7 +55,7 @@ export default class PriceCommand extends SlashCommand {
         [${currency.code}]
         ${currency.name}
       `,
-      value: currency.id.toString(),
+      value: currency.id,
     }));
   }
 

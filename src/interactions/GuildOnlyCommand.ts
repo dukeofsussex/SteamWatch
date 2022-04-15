@@ -71,7 +71,7 @@ export default class GuildOnlyCommand extends SlashCommand {
         on
         #${(await DiscordAPI.getChannelName(w.channelId))}
       `,
-      value: w.id.toString(),
+      value: w.id,
     })));
   }
 
