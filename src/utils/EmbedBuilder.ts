@@ -64,12 +64,15 @@ export default class EmbedBuilder {
         url: news.url,
         timestamp: new Date(news.date * 1000),
       }),
+      author: news.author ? {
+        name: news.author,
+      } : undefined,
       image: transformed.thumbnail ? {
         url: SteamUtil.URLS.NewsImage(transformed.thumbnail),
       } : undefined,
       fields: [{
         name: 'Steam Client Link',
-        value: SteamUtil.BP.AppNews(news.gid),
+        value: SteamUtil.BP.AppNews(app.id),
       }],
     };
   }

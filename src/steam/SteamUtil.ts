@@ -69,7 +69,7 @@ const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
 
 export default class SteamUtil {
   static readonly BP = {
-    AppNews: (id: string) => SteamUtil.BP.Raw(`appnews/${id}`),
+    AppNews: (appId: number) => SteamUtil.BP.Raw(`appnews/${appId}`),
     Community: () => SteamUtil.BP.Raw('url/CommunityHome'),
     GameHub: (id: string) => SteamUtil.BP.Raw(`url/GameHub/${id}`),
     Profile: (id: string) => SteamUtil.BP.Raw(`url/SteamIDPage/${id}`),
