@@ -15,24 +15,6 @@ export default async function queueBroadcast() {
   await messageQueue.start();
   await messageQueue.stop();
 
-  const channels = await db.select('channel_webhook.*')
-    .from((fromBuilder: Knex.QueryBuilder) => fromBuilder.select('pg.guild_id', 'channel_id', db.raw('COUNT(channel_id) AS countPerChannel'), db.raw('maxPerGuild'))
-      .from('watcher')
-      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-      .innerJoin(db.select('guild_id', db.raw('MAX(countPerChannel) AS maxPerGuild'))
-        .from((builder: Knex.QueryBuilder) => builder.select('channel_id', 'guild_id', db.raw('COUNT(channel_id) AS countPerChannel'))
-          .from('watcher')
-          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-          .groupBy('channel_id')
-          .as('pc'))
-        .groupBy('guild_id')
-        .as('pg'), 'pg.guild_id', 'channel_webhook.guild_id')
-      .groupBy('channel_id')
-      .as('ic'))
-    .innerJoin('channel_webhook', 'channel_webhook.id', 'ic.channel_id')
-    .whereRaw('countPerChannel = maxPerGuild')
-    .groupBy('guild_id');
-
   let message: QueuedItem['message'];
   let active: boolean;
 
@@ -44,6 +26,14 @@ export default async function queueBroadcast() {
     logger.error({
       group: 'Broadcaster',
       message: 'No broadcast found',
+    });
+    return;
+  }
+
+  if (!active) {
+    logger.info({
+      group: 'Broadcaster',
+      message: 'Skipping inactive broadcast...',
     });
     return;
   }
@@ -82,13 +72,23 @@ export default async function queueBroadcast() {
     }],
   }];
 
-  if (!active) {
-    logger.info({
-      group: 'Broadcaster',
-      message: 'Skipping inactive broadcast...',
-    });
-    return;
-  }
+  const channels = await db.select('channel_webhook.*')
+    .from((fromBuilder: Knex.QueryBuilder) => fromBuilder.select('pg.guild_id', 'channel_id', db.raw('COUNT(channel_id) AS countPerChannel'), db.raw('maxPerGuild'))
+      .from('watcher')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .innerJoin(db.select('guild_id', db.raw('MAX(countPerChannel) AS maxPerGuild'))
+        .from((builder: Knex.QueryBuilder) => builder.select('channel_id', 'guild_id', db.raw('COUNT(channel_id) AS countPerChannel'))
+          .from('watcher')
+          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+          .groupBy('channel_id')
+          .as('pc'))
+        .groupBy('guild_id')
+        .as('pg'), 'pg.guild_id', 'channel_webhook.guild_id')
+      .groupBy('channel_id')
+      .as('ic'))
+    .innerJoin('channel_webhook', 'channel_webhook.id', 'ic.channel_id')
+    .whereRaw('countPerChannel = maxPerGuild')
+    .groupBy('guild_id');
 
   logger.info({
     group: 'Broadcaster',
