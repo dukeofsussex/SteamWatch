@@ -22,9 +22,4 @@ export default class Util {
       process.on(event, callback);
     }
   }
-
-  // https://github.com/discord/discord-api-docs/issues/4388
-  static sanitizeOptionName(string: string) {
-    return string.replace(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/, '');
-  }
 }

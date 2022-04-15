@@ -66,7 +66,7 @@ export default class GuildOnlyCommand extends SlashCommand {
     return Promise.all(dbWatcher.map(async (w) => ({
       name: oneLine`
         [ID: ${w.id}]
-        ${Util.sanitizeOptionName(w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName)}
+        ${w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName}
         (${Util.capitalize(w.type)})
         on
         #${(await DiscordAPI.getChannelName(w.channelId))}
