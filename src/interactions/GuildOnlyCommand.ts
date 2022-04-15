@@ -134,7 +134,7 @@ export default class GuildOnlyCommand extends SlashCommand {
 
         logger.info({
           group: 'Interaction',
-          message: 'Setup new guild!',
+          message: 'Set up new guild!',
         });
 
         resolve(true);
