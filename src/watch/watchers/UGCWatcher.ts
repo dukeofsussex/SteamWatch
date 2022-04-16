@@ -2,7 +2,6 @@ import { oneLine, stripIndents } from 'common-tags';
 import { Knex } from 'knex';
 import { EResult } from 'steam-user';
 import Watcher from './Watcher';
-import MessageQueue from '../MessageQueue';
 import db from '../../db';
 import { UGC } from '../../db/knex';
 import SteamAPI from '../../steam/SteamAPI';
@@ -11,6 +10,7 @@ import { EMOJIS } from '../../utils/constants';
 import EmbedBuilder from '../../utils/EmbedBuilder';
 import env from '../../utils/env';
 import logger from '../../utils/logger';
+import MessageQueue from '../../utils/MessageQueue';
 
 type QueryResult = UGC & {
   appName: string;

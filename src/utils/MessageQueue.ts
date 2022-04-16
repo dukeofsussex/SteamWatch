@@ -3,11 +3,11 @@ import { RESTPostAPIWebhookWithTokenResult, Routes } from 'discord-api-types/v9'
 import { R_OK, W_OK } from 'node:constants';
 import { access, readFile, writeFile } from 'node:fs/promises';
 import { EditMessageOptions } from 'slash-create';
+import { DISCORD_ERROR_CODES } from './constants';
+import DiscordAPI, { DiscordUser } from './DiscordAPI';
+import logger from './logger';
 import db from '../db';
 import { Manager } from '../types';
-import { DISCORD_ERROR_CODES } from '../utils/constants';
-import DiscordAPI, { DiscordUser } from '../utils/DiscordAPI';
-import logger from '../utils/logger';
 
 const FILENAME = 'queue.json';
 

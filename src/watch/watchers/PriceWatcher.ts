@@ -1,7 +1,6 @@
 import { oneLine, stripIndents } from 'common-tags';
 import { Knex } from 'knex';
 import Watcher from './Watcher';
-import MessageQueue from '../MessageQueue';
 import db from '../../db';
 import { App, AppPrice, Currency } from '../../db/knex';
 import SteamAPI, { PriceOverview } from '../../steam/SteamAPI';
@@ -11,6 +10,7 @@ import { EMOJIS } from '../../utils/constants';
 import EmbedBuilder from '../../utils/EmbedBuilder';
 import env from '../../utils/env';
 import logger from '../../utils/logger';
+import MessageQueue from '../../utils/MessageQueue';
 
 type QueryResult = Pick<App, 'icon' | 'id' | 'name'>
 & Pick<Currency, 'code' | 'countryCode'>

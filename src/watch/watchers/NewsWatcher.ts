@@ -1,7 +1,6 @@
 import { oneLine } from 'common-tags';
 import { Knex } from 'knex';
 import Watcher from './Watcher';
-import MessageQueue from '../MessageQueue';
 import db from '../../db';
 import { App } from '../../db/knex';
 import SteamAPI from '../../steam/SteamAPI';
@@ -9,6 +8,7 @@ import { WatcherType } from '../../types';
 import EmbedBuilder from '../../utils/EmbedBuilder';
 import env from '../../utils/env';
 import logger from '../../utils/logger';
+import MessageQueue from '../../utils/MessageQueue';
 
 export default class NewsWatcher extends Watcher {
   constructor(queue: MessageQueue) {

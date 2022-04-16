@@ -1,7 +1,7 @@
 import { MessageEmbedOptions } from 'slash-create';
-import MessageQueue from '../MessageQueue';
 import db from '../../db';
 import { ChannelWebhook, WatcherMention } from '../../db/knex';
+import MessageQueue from '../../utils/MessageQueue';
 import Worker from '../../workers/Worker';
 
 type WebhookedMentions = Pick<ChannelWebhook, 'webhookId' | 'webhookToken'>
