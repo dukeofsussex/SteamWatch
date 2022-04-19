@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.1]
+
+### Fixed
+
+- Fix guilds receiving multiple broadcasts
+
 ## [3.2.0]
 
 ### Added
