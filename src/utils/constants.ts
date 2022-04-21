@@ -51,4 +51,6 @@ export const PERMITTED_APP_TYPES: { [key in WatcherType]: string[]; } = {
 
 export const REPO_URL = homepage.split('#')[0];
 
+export const STEAM_NEWS_APPID = 593110;
+
 export const WEBSITE_URL = 'https://steam.watch';

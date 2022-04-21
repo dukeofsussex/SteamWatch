@@ -15,7 +15,7 @@ import { App, UGC } from '../../../db/knex';
 import SteamAPI from '../../../steam/SteamAPI';
 import SteamUtil from '../../../steam/SteamUtil';
 import { WatcherType } from '../../../types';
-import { EMBED_COLOURS, PERMITTED_APP_TYPES } from '../../../utils/constants';
+import { EMBED_COLOURS, PERMITTED_APP_TYPES, STEAM_NEWS_APPID } from '../../../utils/constants';
 import DiscordAPI from '../../../utils/DiscordAPI';
 import env from '../../../utils/env';
 import Util from '../../../utils/Util';
@@ -41,6 +41,7 @@ type AddUGCArguments = BaseAddArguments;
 interface AddArguments {
   app: AddAppArguments;
   ugc: AddUGCArguments;
+  steam: BaseArguments;
 }
 
 type ListArguments = BaseArguments;
@@ -107,6 +108,17 @@ export default class WatchersCommand extends GuildOnlyCommand {
             description: 'UGC url or item id',
             required: true,
           }, {
+            type: CommandOptionType.CHANNEL,
+            name: 'channel',
+            description: 'The channel notifications should be sent to',
+            required: true,
+            channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT],
+          }],
+        }, {
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'steam',
+          description: 'Watch Steam for (Valve) news',
+          options: [{
             type: CommandOptionType.CHANNEL,
             name: 'channel',
             description: 'The channel notifications should be sent to',
@@ -195,6 +207,14 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
       if (add.ugc) {
         return WatchersCommand.addUGC(ctx, add.ugc);
+      }
+
+      if (add.steam) {
+        return WatchersCommand.addApp(ctx, {
+          channel: add.steam.channel,
+          query: STEAM_NEWS_APPID.toString(),
+          watcher_type: WatcherType.NEWS,
+        });
       }
     }
 
