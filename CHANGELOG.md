@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.2]
+
+### Added
+
+- Support watching Steam news by adding support for `config` apps
+
 ## [3.2.1]
 
 ### Fixed
