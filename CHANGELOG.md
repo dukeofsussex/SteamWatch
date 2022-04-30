@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.3]
+
+### Fixed
+
+- Fix not being able to remove watchers
+
 ## [3.2.2]
 
 ### Added
