@@ -9,15 +9,22 @@ import {
   ComponentType,
   SlashCreator,
 } from 'slash-create';
+import { DiscordAPIError } from '@discordjs/rest';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 import db from '../../../db';
 import { App, UGC } from '../../../db/knex';
 import SteamAPI from '../../../steam/SteamAPI';
 import SteamUtil from '../../../steam/SteamUtil';
 import { WatcherType } from '../../../types';
-import { EMBED_COLOURS, PERMITTED_APP_TYPES, STEAM_NEWS_APPID } from '../../../utils/constants';
+import {
+  DISCORD_ERROR_CODES,
+  EMBED_COLOURS,
+  PERMITTED_APP_TYPES,
+  STEAM_NEWS_APPID,
+} from '../../../utils/constants';
 import DiscordAPI from '../../../utils/DiscordAPI';
 import env from '../../../utils/env';
+import logger from '../../../utils/logger';
 import Util from '../../../utils/Util';
 
 const markdownTable = require('markdown-table');
@@ -481,7 +488,23 @@ export default class WatchersCommand extends GuildOnlyCommand {
       await db.delete()
         .from('channel_webhook')
         .where('id', watcher.channelId);
-      await DiscordAPI.delete(Routes.webhook(watcher.webhookId));
+
+      try {
+        await DiscordAPI.delete(Routes.webhook(watcher.webhookId));
+      } catch (err) {
+        if ((err as DiscordAPIError).code === DISCORD_ERROR_CODES.UNKNOWN_WEBHOOK_CODE) {
+          logger.info({
+            group: 'Interaction/Watchers',
+            message: 'Webhook already removed',
+          });
+        } else {
+          logger.error({
+            group: 'Interaction/Watchers',
+            message: 'Unable to remove webhook!',
+            err,
+          });
+        }
+      }
     }
 
     return ctx.success(`Removed watcher (#${watcherId}) for **${watcher.ugcName || watcher.appName}** from <#${watcher.channelId}>!`, {
