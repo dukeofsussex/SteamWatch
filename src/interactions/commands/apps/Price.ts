@@ -106,7 +106,8 @@ export default class PriceCommand extends SlashCommand {
           .where('guild.id', ctx.guildID);
       }
 
-      currencyDetails = await dbQuery.first() as any;
+      const details = await dbQuery.first();
+      currencyDetails = details || currencyDetails;
     }
 
     const prices = await SteamAPI.getAppPrices([appId], currencyDetails.countryCode);
