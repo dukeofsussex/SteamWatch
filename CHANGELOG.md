@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.2.4]
+
+### Added
+
+- Log command arguments
+
+### Fixed
+
+- Fix price command for not yet setup guilds
+- Fix watcher webhook removal error
+
 ## [3.2.3]
 
 ### Fixed
