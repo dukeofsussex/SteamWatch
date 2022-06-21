@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.5]
+
+### Fixed
+
+- Fix mass data loss in case of Discord not returning guilds
+
 ## [3.2.4]
 
 ### Added
