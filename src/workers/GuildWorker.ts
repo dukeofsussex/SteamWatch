@@ -24,7 +24,7 @@ export default class GuildWorker extends Worker {
 
     const count = await db.delete()
       .from('guild')
-      .whereRaw('last_update <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 HOUR)');
+      .whereRaw('last_update <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR)');
 
     if (count > 0) {
       logger.info({
