@@ -10,7 +10,17 @@ export default class GuildWorker extends Worker {
   }
 
   async work() {
-    await GuildWorker.processGuilds();
+    try {
+      await GuildWorker.processGuilds();
+    } catch (err) {
+      logger.error({
+        group: 'Worker',
+        message: 'Unable to process guilds',
+        err,
+      });
+      this.wait();
+      return;
+    }
 
     const count = await db.delete()
       .from('guild')
@@ -27,20 +37,9 @@ export default class GuildWorker extends Worker {
   }
 
   static async processGuilds(after?: string) {
-    let guilds;
-
-    try {
-      guilds = await DiscordAPI.get(Routes.userGuilds(), {
-        query: new URLSearchParams(after ? [['after', after]] : undefined),
-      }) as RESTGetAPICurrentUserGuildsResult;
-    } catch (err) {
-      logger.error({
-        group: 'Worker',
-        message: 'Unable to fetch guilds',
-        err,
-      });
-      return;
-    }
+    const guilds = await DiscordAPI.get(Routes.userGuilds(), {
+      query: new URLSearchParams(after ? [['after', after]] : undefined),
+    }) as RESTGetAPICurrentUserGuildsResult;
 
     for (let i = 0; i < guilds.length; i += 1) {
       const guild = guilds[i];
