@@ -5,12 +5,6 @@ import { WatcherType } from '../types';
 // @ts-ignore
 import { homepage } from '../../package.json';
 
-export const DISCORD_ERROR_CODES = {
-  UNKNOWN_CHANNEL: 10003,
-  UNKNOWN_WEBHOOK_CODE: 10015,
-  MISSING_ACCESS: 50001,
-};
-
 export const EMBED_COLOURS = {
   DEFAULT: 0x00ADEE,
   ERROR: 0xed4245,

@@ -1,5 +1,10 @@
 import { oneLine, stripIndents } from 'common-tags';
-import { RESTGetAPIChannelWebhooksResult, RESTPostAPIChannelWebhookResult, Routes } from 'discord-api-types/v9';
+import {
+  RESTGetAPIChannelWebhooksResult,
+  RESTJSONErrorCodes,
+  RESTPostAPIChannelWebhookResult,
+  Routes,
+} from 'discord-api-types/v9';
 import {
   AutocompleteContext,
   ButtonStyle,
@@ -16,12 +21,7 @@ import { App, UGC } from '../../../db/knex';
 import SteamAPI from '../../../steam/SteamAPI';
 import SteamUtil from '../../../steam/SteamUtil';
 import { WatcherType } from '../../../types';
-import {
-  DISCORD_ERROR_CODES,
-  EMBED_COLOURS,
-  PERMITTED_APP_TYPES,
-  STEAM_NEWS_APPID,
-} from '../../../utils/constants';
+import { EMBED_COLOURS, PERMITTED_APP_TYPES, STEAM_NEWS_APPID } from '../../../utils/constants';
 import DiscordAPI from '../../../utils/DiscordAPI';
 import env from '../../../utils/env';
 import logger from '../../../utils/logger';
@@ -492,7 +492,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       try {
         await DiscordAPI.delete(Routes.webhook(watcher.webhookId));
       } catch (err) {
-        if ((err as DiscordAPIError).code === DISCORD_ERROR_CODES.UNKNOWN_WEBHOOK_CODE) {
+        if ((err as DiscordAPIError).code === RESTJSONErrorCodes.UnknownWebhook) {
           logger.info({
             group: 'Interaction/Watchers',
             message: 'Webhook already removed',

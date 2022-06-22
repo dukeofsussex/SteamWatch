@@ -1,6 +1,10 @@
 import { CDN, DiscordAPIError, REST as Rest } from '@discordjs/rest';
-import { RESTGetAPIChannelResult, RESTGetAPIUserResult, Routes } from 'discord-api-types/v9';
-import { DISCORD_ERROR_CODES } from './constants';
+import {
+  RESTGetAPIChannelResult,
+  RESTGetAPIUserResult,
+  RESTJSONErrorCodes,
+  Routes,
+} from 'discord-api-types/v9';
 import env from './env';
 
 export interface DiscordUser extends RESTGetAPIUserResult {
@@ -30,10 +34,10 @@ class DiscordAPI extends Rest {
       const error = err as DiscordAPIError;
 
       switch (error.code) {
-        case DISCORD_ERROR_CODES.MISSING_ACCESS:
+        case RESTJSONErrorCodes.MissingAccess:
           channelName = '[hidden]';
           break;
-        case DISCORD_ERROR_CODES.UNKNOWN_CHANNEL:
+        case RESTJSONErrorCodes.UnknownChannel:
           channelName = '[deleted]';
           break;
         default:

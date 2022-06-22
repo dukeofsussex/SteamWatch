@@ -1,9 +1,8 @@
 import { DiscordAPIError } from '@discordjs/rest';
-import { RESTPostAPIWebhookWithTokenResult, Routes } from 'discord-api-types/v9';
+import { RESTJSONErrorCodes, RESTPostAPIWebhookWithTokenResult, Routes } from 'discord-api-types/v9';
 import { R_OK, W_OK } from 'node:constants';
 import { access, readFile, writeFile } from 'node:fs/promises';
 import { EditMessageOptions } from 'slash-create';
-import { DISCORD_ERROR_CODES } from './constants';
 import DiscordAPI, { DiscordUser } from './DiscordAPI';
 import logger from './logger';
 import db from '../db';
@@ -118,7 +117,7 @@ export default class MessageQueue implements Manager {
         },
       }) as RESTPostAPIWebhookWithTokenResult;
     } catch (err) {
-      if ((err as DiscordAPIError).code === DISCORD_ERROR_CODES.UNKNOWN_WEBHOOK_CODE) {
+      if ((err as DiscordAPIError).code === RESTJSONErrorCodes.UnknownWebhook) {
         await MessageQueue.purgeWebhook(id);
       } else {
         logger.error({
