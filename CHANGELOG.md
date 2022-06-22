@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.2.6]
+
+### Added
+
+- Slow down the message queue when Discord is having issues
+
+### Changed
+
+- Use provided error codes instead of maintaining an independent list
+
+### Fixed
+
+- Fix app's missing release date breaking commands relying on it in the returned embed
+
 ## [3.2.5]
 
 ### Fixed
