@@ -2,6 +2,7 @@ import { DiscordAPIError } from '@discordjs/rest';
 import { RESTJSONErrorCodes, RESTPostAPIWebhookWithTokenResult, Routes } from 'discord-api-types/v9';
 import { R_OK, W_OK } from 'node:constants';
 import { access, readFile, writeFile } from 'node:fs/promises';
+import { Response } from 'node-fetch';
 import { EditMessageOptions } from 'slash-create';
 import DiscordAPI, { DiscordUser } from './DiscordAPI';
 import logger from './logger';
@@ -9,6 +10,7 @@ import db from '../db';
 import { Manager } from '../types';
 
 const FILENAME = 'queue.json';
+const SLOWMODE_DELAY = 300000; // 5m
 
 export interface QueuedItem {
   id: string;
@@ -126,7 +128,20 @@ export default class MessageQueue implements Manager {
           discordMessage: message,
           err,
         });
+
         this.queue.push({ id, message, token });
+
+        const res = err as Response;
+
+        if (res.status >= 500) {
+          logger.warn({
+            group: 'MessageQueue',
+            message: 'Discord is having issues, slowing down...',
+          });
+
+          this.queueTimeout = setTimeout(() => this.notify(), SLOWMODE_DELAY);
+          return;
+        }
       }
     }
 
