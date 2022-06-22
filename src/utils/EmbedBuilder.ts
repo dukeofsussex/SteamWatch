@@ -168,7 +168,7 @@ export default class EmbedBuilder {
           }] : []),
           {
             name: 'Release Date',
-            value: details.release_date.date,
+            value: details.release_date.date || 'Unknown',
             inline: true,
           },
           {
