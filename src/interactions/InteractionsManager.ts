@@ -60,7 +60,7 @@ export default class InteractionsManager implements Manager {
       message: '[SYNC] Done',
     }));
 
-    this.creator.on('unverifiedRequest', (req) => logger.error({ group: 'Interaction', message: 'Unverified request', req }));
+    this.creator.on('unverifiedRequest', () => logger.warn({ group: 'Interaction', message: 'Unverified request' }));
 
     this.creator.on('warn', (err) => logger.warn({ group: 'Interaction', message: typeof err === 'string' ? err : err.message, err }));
   }
