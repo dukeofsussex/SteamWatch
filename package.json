@@ -1,6 +1,6 @@
 {
   "name": "steam-watch",
-  "version": "3.2.6",
+  "version": "3.2.7",
   "description": "A Discord bot for keeping track of Steam apps",
   "main": "dist/index.js",
   "scripts": {

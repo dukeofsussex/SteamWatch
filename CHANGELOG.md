@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.2.7]
+
+### Fixed
+
+- Fix profile ids (i.e. very large invalid numbers) timing out app details requests
+- Reduce severity of Discord's verification requests
+- Fix slow entity monitoring
+
 ## [3.2.6]
 
 ### Added
