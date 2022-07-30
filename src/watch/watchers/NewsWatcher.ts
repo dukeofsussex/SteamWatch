@@ -40,18 +40,12 @@ export default class NewsWatcher extends Watcher {
     })
       .where('id', app.id);
 
-    if (!news) {
-      return this.wait();
+    if (news && app.latestNews !== news.gid) {
+      await this.enqueue(EmbedBuilder.createNews(app, news), {
+        appId: app.id,
+        'watcher.type': WatcherType.NEWS,
+      });
     }
-
-    if (app.latestNews === news.gid) {
-      return this.pause();
-    }
-
-    await this.enqueue(EmbedBuilder.createNews(app, news), {
-      appId: app.id,
-      'watcher.type': WatcherType.NEWS,
-    });
 
     return this.wait();
   }

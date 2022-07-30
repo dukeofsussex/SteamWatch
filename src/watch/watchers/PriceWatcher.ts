@@ -26,8 +26,7 @@ export default class PriceWatcher extends Watcher {
     const apps = await PriceWatcher.fetchNextAppPrices();
 
     if (!apps) {
-      this.pause();
-      return;
+      return this.pause();
     }
 
     let prices;
@@ -47,8 +46,7 @@ export default class PriceWatcher extends Watcher {
     }
 
     if (!prices) {
-      this.pause();
-      return;
+      return this.wait();
     }
 
     const removed: QueryResult[] = [];
@@ -104,7 +102,7 @@ export default class PriceWatcher extends Watcher {
         .whereIn('appId', ids);
     }
 
-    this.wait();
+    return this.wait();
   }
 
   private async processChanges(app: QueryResult, priceOverview: PriceOverview) {

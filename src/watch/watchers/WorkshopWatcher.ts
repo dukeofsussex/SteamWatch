@@ -40,18 +40,12 @@ export default class WorkshopWatcher extends Watcher {
     })
       .where('id', app.id);
 
-    if (!ugc) {
-      return this.wait();
+    if (ugc && app.latestUgc !== ugc.publishedfileid && !ugc.banned) {
+      await this.enqueue(await EmbedBuilder.createWorkshop(app, ugc), {
+        appId: app.id,
+        'watcher.type': WatcherType.WORKSHOP,
+      });
     }
-
-    if (app.latestUgc === ugc.publishedfileid || ugc.banned) {
-      return this.pause();
-    }
-
-    await this.enqueue(await EmbedBuilder.createWorkshop(app, ugc), {
-      appId: app.id,
-      'watcher.type': WatcherType.WORKSHOP,
-    });
 
     return this.wait();
   }
