@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.8]
+
+### Fixed
+
+- Fix exception when parsing invalid bbcode list tags
+- Fix exception when shutting down the bot
+
 ## [3.2.7]
 
 ### Fixed
