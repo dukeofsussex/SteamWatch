@@ -146,7 +146,7 @@ export default class SteamUtil {
   static async findAppId(id: string) {
     let appId: number | null = Number.parseInt(id, 10);
     if (!Number.isNaN(appId) && Number.isFinite(appId)) {
-      return appId > 0 ? appId : null;
+      return appId > 0 && appId < 100000000 ? appId : null;
     }
 
     const urlMatch = id.match(/\/app\/(\d+)\/?/);
