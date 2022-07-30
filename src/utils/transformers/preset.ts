@@ -11,9 +11,10 @@ import {
 
 const SPECIAL_SPACE = '\u00A0';
 
-const isListTagNode = (node: ListTagNode) => node.tag === 'list'
-  || node.tag === 'ol'
-  || node.tag === 'ul';
+const isListTagNode = (node: ListTagNode) => node.tag
+  && (node.tag === 'list'
+    || node.tag === 'ol'
+    || node.tag === 'ul');
 const isNewlineNode = (node: TagNodeContentNode) => ((typeof node === 'string' && node === '\n')
   || (typeof node === 'object' && (node.tag === 'br' || node.tag === 'br/')));
 const needsTrimming = (node: TagNodeContentNode) => (typeof node === 'string' && node === ' ')
