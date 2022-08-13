@@ -33,6 +33,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
     super(creator, {
       name: 'mentions',
       description: 'Manage mentions for a watcher.',
+      dmPermission: false,
       guildIDs: env.dev ? [env.devGuildId] : undefined,
       options: [{
         type: CommandOptionType.SUB_COMMAND,

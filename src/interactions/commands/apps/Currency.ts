@@ -21,6 +21,7 @@ export default class CurrencyCommand extends GuildOnlyCommand {
     super(creator, {
       name: 'currency',
       description: 'Manage the preferred app currency for the guild.',
+      dmPermission: false,
       guildIDs: env.dev ? [env.devGuildId] : undefined,
       requiredPermissions: ['MANAGE_CHANNELS'],
     });
