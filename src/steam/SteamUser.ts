@@ -1,4 +1,4 @@
-import SteamUser, { EResult } from 'steam-user';
+import SteamUser from 'steam-user';
 import db from '../db';
 import env from '../utils/env';
 import logger from '../utils/logger';
@@ -27,7 +27,7 @@ steamUser.on('error', (err) => logger.error({
   err,
 }));
 steamUser.on('loggedOn', (details) => {
-  if (details.eresult !== EResult.OK) {
+  if (details.eresult !== SteamUser.EResult.OK) {
     logger.error({
       group: 'Steam',
       message: 'Failed to log in!',
