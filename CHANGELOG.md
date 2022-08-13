@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.3.0]
+
+### Changed
+
+- Simplify shutdown logic
+- Block guild-only commands in DMs
+- Update dependencies where possible (ignore ESM)
+
+### Fixed
+
+- Ensure bot has sufficient permissions (i.e. `MANAGE_WEBHOOKS`) to run specific commands
+
 ## [3.2.8]
 
 ### Fixed
