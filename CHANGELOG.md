@@ -2,6 +2,12 @@
 
 ## [3.3.1]
 
+### Fixed
+
+- Fix process shutdown timeout
+
+## [3.3.1]
+
 ### Changed
 
 - Improve readability of permissions flags
