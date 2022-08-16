@@ -1,4 +1,5 @@
 import { oneLineTrim } from 'common-tags';
+import { PermissionFlagsBits } from 'discord-api-types/v9';
 import { Permissions } from 'slash-create';
 import env from './env';
 import { WatcherType } from '../types';
@@ -24,7 +25,7 @@ export const EMOJIS = {
 };
 
 const perms = new Permissions([
-  Permissions.FLAGS.MANAGE_WEBHOOKS,
+  PermissionFlagsBits.ManageWebhooks,
 ]).bitfield;
 
 export const INVITE_URL = oneLineTrim`

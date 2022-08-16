@@ -1,5 +1,6 @@
 import { oneLine, stripIndents } from 'common-tags';
 import {
+  PermissionFlagsBits,
   RESTGetAPIChannelWebhooksResult,
   RESTJSONErrorCodes,
   RESTPostAPIChannelWebhookResult,
@@ -12,7 +13,6 @@ import {
   CommandContext,
   CommandOptionType,
   ComponentType,
-  Permissions,
   SlashCreator,
 } from 'slash-create';
 import { DiscordAPIError } from '@discordjs/rest';
@@ -188,7 +188,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       return null;
     }
 
-    if (!ctx.appPermissions?.has(Permissions.FLAGS.MANAGE_WEBHOOKS)) {
+    if (!ctx.appPermissions?.has(PermissionFlagsBits.ManageWebhooks)) {
       return ctx.error('This bot requires the `MANAGE_WEBHOOKS` permission! Please check the assigned role(s).');
     }
 
