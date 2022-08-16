@@ -77,6 +77,6 @@ export default class ProcessManager implements Manager {
     }
 
     await db.destroy();
-    process.exitCode = process.exitCode || 0;
+    process.exit(process.exitCode || 0);
   }
 }
