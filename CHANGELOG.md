@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.3.1]
+
+### Changed
+
+- Improve readability of permissions flags
+
 ## [3.3.0]
 
 ### Changed
