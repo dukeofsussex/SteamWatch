@@ -73,6 +73,6 @@ export default class OpenCommand extends GuildOnlyCommand {
       }
     }
 
-    return ctx.error('Unable to process url');
+    return ctx.error('Unable to process url.');
   }
 }

@@ -60,7 +60,7 @@ export default class ProfileCommand extends SlashCommand {
     ]);
 
     if (!bans || !summary) {
-      return ctx.error('Unable to process Steam profile');
+      return ctx.error('Unable to process Steam profile.');
     }
 
     return ctx.embed({

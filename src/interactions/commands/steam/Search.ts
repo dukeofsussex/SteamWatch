@@ -89,7 +89,7 @@ export default class SearchCommand extends SlashCommand {
     const message = await EmbedBuilder.createStoreMessage(appId, ctx.guildID);
 
     if (!message) {
-      return ctx.error('Unable to fetch the application\'s details');
+      return ctx.error('Unable to fetch the application\'s details.');
     }
 
     return ctx.send(message);

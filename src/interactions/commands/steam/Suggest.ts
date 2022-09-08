@@ -86,20 +86,20 @@ export default class SuggestCommand extends SlashCommand {
     const steamIds = await Promise.all(profileValues.map((p) => SteamUtil.findId(p)));
 
     if (steamIds.some((s) => !s)) {
-      return ctx.error(`Unable to get Steam profile for ${profileValues[steamIds.findIndex((s) => !s)]}`);
+      return ctx.error(`Unable to get Steam profile for ${profileValues[steamIds.findIndex((s) => !s)]}.`);
     }
 
     const games = await Promise.all(steamIds.map((p) => SteamAPI.getOwnedGames(p.getSteamID64())));
 
     if (games.some((s) => !s)) {
-      return ctx.error(`Unable to get games for ${profileValues[games.findIndex((g) => !g)]}`);
+      return ctx.error(`Unable to get games for ${profileValues[games.findIndex((g) => !g)]}. Please make sure game details are visible to the public!`);
     }
 
     const appIds = games.map((gs) => gs!.map((g) => g.appid));
     const sharedAppIds = appIds.reduce((p, c) => p.filter((pg) => c.includes(pg)));
 
     if (!sharedAppIds) {
-      return ctx.error('Unable to find a game all accounts own');
+      return ctx.error('Unable to find a game all accounts own.');
     }
 
     const appId = sharedAppIds[Math.floor(Math.random() * sharedAppIds.length)];
@@ -107,7 +107,7 @@ export default class SuggestCommand extends SlashCommand {
     const message = await EmbedBuilder.createStoreMessage(appId, ctx.guildID);
 
     if (!message) {
-      return ctx.error('Unable to fetch the application\'s details');
+      return ctx.error('Unable to fetch the application\'s details.');
     }
 
     return ctx.send(message);
@@ -118,13 +118,13 @@ export default class SuggestCommand extends SlashCommand {
     const appId = await SteamAPI.getRandom();
 
     if (!appId) {
-      return ctx.error('Unable to fetch a random application from the Steam store');
+      return ctx.error('Unable to fetch a random application from the Steam store.');
     }
 
     const message = await EmbedBuilder.createStoreMessage(appId, ctx.guildID);
 
     if (!message) {
-      return ctx.error('Unable to fetch the application\'s details');
+      return ctx.error('Unable to fetch the application\'s details.');
     }
 
     return ctx.send(message);
