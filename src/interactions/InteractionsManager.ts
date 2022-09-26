@@ -1,3 +1,4 @@
+import fastify from 'fastify';
 import { FastifyServer, SlashCreator } from 'slash-create';
 import { join } from 'path';
 import './CommandContextExtensions';
@@ -18,9 +19,13 @@ export default class InteractionsManager implements Manager {
 
   async start() {
     this.registerEvents();
+
+    const server = fastify();
+    server.get('/status', async () => ({ status: 'OK' }));
+
     this.creator.registerCommandsIn(join(__dirname, 'commands'), ['.ts'])
       .syncCommands()
-      .withServer(new FastifyServer())
+      .withServer(new FastifyServer(server))
       .startServer();
   }
 
