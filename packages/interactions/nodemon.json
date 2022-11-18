@@ -1,0 +1,10 @@
+{
+  "execMap": {
+    "ts": "ts-node -r tsconfig-paths/register"
+  },
+  "watch": [
+    "src",
+    "../shared/src"
+  ],
+  "ext": "ts"
+}

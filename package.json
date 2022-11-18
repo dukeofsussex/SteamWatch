@@ -2,12 +2,13 @@
   "name": "steam-watch",
   "version": "3.3.2",
   "description": "A Discord bot for keeping track of Steam apps",
-  "main": "dist/index.js",
   "scripts": {
-    "build": "npm run lint:fix && tsc",
-    "lint": "eslint --ext .ts src",
-    "lint:fix": "eslint --ext .ts --fix src",
-    "dev": "nodemon -e ts --exec ts-node src/index.ts",
+    "build": "npm run build --workspaces --if-present",
+    "build:interactions": "npm run build -w @steamwatch/interactions",
+    "build:processes": "npm run build -w @steamwatch/processes",
+    "lint": "npm run lint --workspaces --if-present",
+    "dev:interactions": "npm run dev -w @steamwatch/interactions",
+    "dev:processes": "npm run dev -w @steamwatch/processes",
     "prepare": "husky install"
   },
   "repository": {
@@ -15,37 +16,14 @@
     "url": "git+https://github.com/dukeofsussex/SteamWatch.git"
   },
   "author": "Christopher Satchell",
-  "license": "GPL-3.0",
+  "license": "SEE LICENSE IN LICENSE",
   "bugs": {
     "url": "https://github.com/dukeofsussex/SteamWatch/issues"
   },
   "homepage": "https://github.com/dukeofsussex/SteamWatch#readme",
-  "dependencies": {
-    "@bbob/core": "^2.8.1",
-    "@bbob/plugin-helper": "^2.8.1",
-    "@bbob/preset": "^2.8.1",
-    "@discordjs/rest": "^1.0.1",
-    "common-tags": "^1.8.2",
-    "date-fns": "^2.29.1",
-    "discord-api-types": "^0.37.2",
-    "dotenv": "^16.0.1",
-    "fastify": "^3.9.1",
-    "html-entities": "^2.3.3",
-    "knex": "^2.2.0",
-    "markdown-table": "^2.0.0",
-    "mysql": "^2.18.1",
-    "node-fetch": "^2.6.7",
-    "slash-create": "^5.7.1",
-    "steam-user": "^4.24.6",
-    "steamid": "^2.0.0",
-    "winston": "^3.8.1",
-    "winston-daily-rotate-file": "^4.7.1"
-  },
   "devDependencies": {
-    "@types/common-tags": "^1.8.1",
+    "@tsconfig/node-lts-strictest": "^18.12.1",
     "@types/node": "^18.7.3",
-    "@types/node-fetch": "^2.6.2",
-    "@types/steam-user": "^4.23.0",
     "@typescript-eslint/eslint-plugin": "^5.33.0",
     "@typescript-eslint/parser": "^5.33.0",
     "eslint": "^8.21.0",
@@ -56,6 +34,11 @@
     "lint-staged": "^13.0.3",
     "nodemon": "^2.0.19",
     "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.1.0",
     "typescript": "^4.7.4"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "private": true
 }

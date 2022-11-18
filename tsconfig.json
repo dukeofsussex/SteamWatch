@@ -1,25 +1,6 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "esModuleInterop": true,
-    "target": "ES2021",
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "moduleResolution": "node",
-    "sourceMap": true,
-    "baseUrl": "./src",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "forceConsistentCasingInFileNames": true
-  },
+  "extends": "./tsconfig.base.json",
   "include": [
-    "knexfile.ts",
-    "typings.d.ts",
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
+    "packages"
   ]
 }

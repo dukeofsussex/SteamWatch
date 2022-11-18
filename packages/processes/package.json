@@ -1,0 +1,30 @@
+{
+  "name": "@steamwatch/processes",
+  "version": "3.3.2",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npm run lint && tsc -b",
+    "lint": "eslint --ext .ts --fix src",
+    "dev": "nodemon src/index.ts"
+  },
+  "dependencies": {
+    "@discordjs/rest": "^1.0.1",
+    "@steamwatch/shared": "*",
+    "date-fns": "^2.29.1",
+    "common-tags": "^1.8.2",
+    "discord-api-types": "^0.37.2",
+    "fastify": "^3.9.1",
+    "knex": "^2.2.0",
+    "markdown-table": "^2.0.0",
+    "node-fetch": "^2.6.7",
+    "slash-create": "^5.7.1",
+    "steamid": "^2.0.0",
+    "steam-user": "^4.24.6"
+  },
+  "devDependencies": {
+    "@types/common-tags": "^1.8.1",
+    "@types/node-fetch": "^2.6.2",
+    "@types/steam-user": "^4.23.0"
+  }
+}

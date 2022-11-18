@@ -1,0 +1,33 @@
+{
+  "name": "@steamwatch/shared",
+  "version": "3.3.2",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npm run lint && tsc",
+    "lint": "eslint --ext .ts --fix src"
+  },
+  "dependencies": {
+    "@bbob/core": "^2.8.1",
+    "@bbob/plugin-helper": "^2.8.1",
+    "@bbob/preset": "^2.8.1",
+    "@discordjs/rest": "^1.0.1",
+    "common-tags": "^1.8.2",
+    "dotenv": "^16.0.1",
+    "discord-api-types": "^0.37.2",
+    "html-entities": "^2.3.3",
+    "knex": "^2.2.0",
+    "mysql": "^2.18.1",
+    "node-fetch": "^2.6.7",
+    "slash-create": "^5.7.1",
+    "steam-user": "^4.24.6",
+    "steamid": "^2.0.0",
+    "winston": "^3.8.1",
+    "winston-daily-rotate-file": "^4.7.1"
+  },
+  "devDependencies": {
+    "@types/common-tags": "^1.8.1",
+    "@types/node-fetch": "^2.6.2",
+    "@types/steam-user": "^4.23.0"
+  }
+}
