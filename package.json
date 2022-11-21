@@ -29,7 +29,7 @@
     "date-fns": "^2.29.1",
     "discord-api-types": "^0.37.2",
     "dotenv": "^16.0.1",
-    "fastify": "^3.9.1",
+    "fastify": "^3.29.4",
     "html-entities": "^2.3.3",
     "knex": "^2.2.0",
     "markdown-table": "^2.0.0",
