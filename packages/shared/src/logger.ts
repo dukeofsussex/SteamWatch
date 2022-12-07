@@ -1,55 +1,50 @@
 import { oneLine } from 'common-tags';
 import { inspect } from 'node:util';
 import { createLogger, format, transports } from 'winston';
-import DailyRotateFile from 'winston-daily-rotate-file';
 import env from './env';
 
 const {
   colorize,
   combine,
   errors,
+  json,
   metadata,
   printf,
   timestamp,
 } = format;
 
-const logFormat = combine(
+const baseFormat = combine(
   timestamp(),
   errors({ stack: true }),
-  metadata({ fillExcept: ['timestamp', 'level', 'group', 'message', 'stack'] }),
-  printf(({
-    timestamp: ts,
-    level,
-    group,
-    message,
-    metadata: meta,
-    stack,
-  }) => `${oneLine`
-      ${ts} [${level}]: ${(group ? `[${group}] ` : '')}
-    `} ${message} ${Object.keys(meta).length ? `\n${inspect(meta)}` : ''} ${stack ? `\n${stack}` : ''}`),
 );
+
+const logFormat = env.dev
+  ? combine(
+    baseFormat,
+    colorize({ all: true }),
+    metadata({ fillExcept: ['timestamp', 'level', 'group', 'message', 'stack'] }),
+    printf(({
+      timestamp: ts,
+      level,
+      group,
+      message,
+      metadata: meta,
+      stack,
+    }) => `${oneLine`
+        ${ts} [${level}]: ${(group ? `[${group}] ` : '')}
+      `} ${message} ${Object.keys(meta).length ? `\n${inspect(meta)}` : ''} ${stack ? `\n${stack}` : ''}`),
+  ) : combine(
+    baseFormat,
+    json(),
+  );
 
 const logger = createLogger({
   level: env.logging.level,
   transports: [
-    new DailyRotateFile({
-      datePattern: 'YYYY-MM-DD',
-      dirname: 'logs',
-      filename: '%DATE%.log',
+    new transports.Console({
       format: logFormat,
-      maxFiles: '30d',
-      utc: true,
     }),
   ],
 });
-
-if (env.dev) {
-  logger.add(new transports.Console({
-    format: combine(
-      colorize({ all: true }),
-      logFormat,
-    ),
-  }));
-}
 
 export default logger;

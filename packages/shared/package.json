@@ -21,8 +21,7 @@
     "slash-create": "^5.7.1",
     "steam-user": "^4.24.6",
     "steamid": "^2.0.0",
-    "winston": "^3.8.1",
-    "winston-daily-rotate-file": "^4.7.1"
+    "winston": "^3.8.1"
   },
   "devDependencies": {
     "@types/common-tags": "^1.8.1",
