@@ -1,6 +1,5 @@
 {
   "name": "@steamwatch/shared",
-  "version": "3.3.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
