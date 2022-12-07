@@ -1,13 +1,9 @@
 import { join } from 'node:path';
 import { config } from 'dotenv';
 
-const result = config({
+config({
   path: join(__dirname, '../../..', '.env'),
 });
-
-if (result.error) {
-  throw result.error;
-}
 
 export default {
   discord: {
