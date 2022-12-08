@@ -12,6 +12,8 @@ export default class InteractionsManager implements Manager {
       applicationID: env.discord.appId,
       publicKey: env.discord.publicKey,
       token: env.discord.token,
+      serverHost: env.server.host,
+      serverPort: env.server.port,
     });
   }
 

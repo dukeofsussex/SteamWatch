@@ -22,6 +22,10 @@ export default {
   logging: {
     level: process.env['LOG_LEVEL'] || 'info',
   },
+  server: {
+    host: process.env['SERVER_HOST'] || '127.0.0.1',
+    port: parseInt(process.env['SERVER_PORT'] || '8080', 10),
+  },
   settings: {
     maxArticleLength: parseInt(process.env['SETTINGS_MAX_ARTICLE_LENGTH'] || '1000', 10),
     maxArticleNewlines: parseInt(process.env['SETTINGS_MAX_ARTICLE_NEWLINES'] || '10', 10),
