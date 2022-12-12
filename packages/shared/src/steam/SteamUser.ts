@@ -9,7 +9,7 @@ if (env.debug) {
   // @ts-ignore Missing typings
   steamUser.on('debug', (message: string) => {
     logger.debug({
-      group: 'Steam',
+      label: 'Steam:debug',
       message,
     });
   });
@@ -17,29 +17,31 @@ if (env.debug) {
 
 steamUser.on('disconnected', (_, msg) => {
   logger.info({
-    group: 'Steam',
+    label: 'Steam:disconnected',
     message: `Disconnected: (${msg || 'Unknown'})`,
   });
 });
 steamUser.on('error', (err) => logger.error({
-  group: 'Steam',
+  label: 'Steam:error',
   message: err.message,
   err,
 }));
 steamUser.on('loggedOn', (details) => {
   if (details['eresult'] !== SteamUser.EResult.OK) {
     logger.error({
-      group: 'Steam',
-      message: 'Failed to log in!',
+      label: 'Steam:loggedOn',
+      message: 'Failed to log in to Steam!',
       details,
     });
   } else {
     logger.info({
-      group: 'Steam',
+      label: 'Steam:loggedOn',
       message: 'Logged in',
     });
   }
 });
+
+// TODO Move to worker
 steamUser.on('changelist', async (_: number, appIds: number[]) => {
   const storedApps = await db.select('id')
     .from('app')
@@ -49,10 +51,10 @@ steamUser.on('changelist', async (_: number, appIds: number[]) => {
     return;
   }
 
-  logger.debug({
-    group: 'Steam',
-    message: 'Updating apps...',
-  });
+  // logger.debug({
+  //   label: 'Steam',
+  //   message: 'Updating apps...',
+  // });
 
   const { apps } = await steamUser.getProductInfo(storedApps.map((app) => app.id), [], true);
 

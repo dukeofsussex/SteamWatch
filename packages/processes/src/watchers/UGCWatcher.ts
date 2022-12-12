@@ -31,14 +31,18 @@ export default class UGCWatcher extends Watcher {
       return this.pause();
     }
 
+    logger.info({
+      message: 'Checking UGC for updates',
+      ugcItems,
+    });
+
     let published;
 
     try {
       published = await SteamAPI.getPublishedFileDetails(ugcItems.map((item) => item.id));
     } catch (err) {
       logger.error({
-        group: 'Watcher',
-        message: 'Unable to fetch published file details!',
+        message: 'Unable to fetch UGC details!',
         ugcItems,
         err,
       });
@@ -99,6 +103,13 @@ export default class UGCWatcher extends Watcher {
         }, file!);
 
         embed.description = message;
+
+        logger.info({
+          message: `Found new UGC update! ${message.split(' ').slice(1)
+            .join(' ')}`,
+          item,
+          file,
+        });
 
         // eslint-disable-next-line no-await-in-loop
         await this.enqueue(embed, {

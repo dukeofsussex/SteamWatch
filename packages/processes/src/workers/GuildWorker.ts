@@ -12,7 +12,6 @@ export default class GuildWorker extends Worker {
       await GuildWorker.processGuilds();
     } catch (err) {
       logger.error({
-        group: 'Worker',
         message: 'Unable to process guilds',
         err,
       });
@@ -26,8 +25,8 @@ export default class GuildWorker extends Worker {
 
     if (count > 0) {
       logger.info({
-        group: 'Worker',
-        message: `Left ${count} guild(s)`,
+        message: 'Left guild(s)',
+        count,
       });
     }
 
@@ -39,6 +38,7 @@ export default class GuildWorker extends Worker {
       query: new URLSearchParams(after ? [['after', after]] : undefined),
     }) as RESTGetAPICurrentUserGuildsResult;
 
+    // TODO Set up guilds that haven't been set up by users
     for (let i = 0; i < guilds.length; i += 1) {
       const guild = guilds[i] as RESTAPIPartialCurrentUserGuild;
 

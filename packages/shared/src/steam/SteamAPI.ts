@@ -251,8 +251,11 @@ export default class SteamAPI {
       return await res.json() as T;
     } catch (err) {
       logger.error({
-        group: 'SteamAPI',
+        label: 'SteamAPI',
+        message: (err as Error).message,
         err,
+        url,
+        options,
       });
       return null;
     }

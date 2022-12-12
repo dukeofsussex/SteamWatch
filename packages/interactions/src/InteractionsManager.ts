@@ -34,40 +34,58 @@ export default class InteractionsManager implements Manager {
 
   private async registerEvents() {
     if (env.debug) {
-      this.creator.on('debug', (message) => logger.debug({ group: 'Interaction', message }));
+      this.creator.on('debug', (message) => logger.debug({
+        label: 'Interaction:debug',
+        message,
+      }));
     }
 
     this.creator.on('commandBlock', (command, ctx, reason) => logger.info({
-      group: 'Interaction',
-      message: `[BLOCK] "${InteractionsManager.stringifyCommand(command.commandName, ctx.options)}" : ${reason}`,
+      label: 'Interaction:commandBlock',
+      message: `${InteractionsManager.stringifyCommand(command.commandName, ctx.options)}`,
+      reason,
     }));
 
     this.creator.on('commandError', (command, err, ctx) => {
       logger.error({
-        group: 'Interaction',
-        message: `[ERROR] "${InteractionsManager.stringifyCommand(command.commandName, ctx.options)}""`,
+        label: 'Interaction:commandError',
+        message: `${InteractionsManager.stringifyCommand(command.commandName, ctx.options)}`,
         err,
       });
       ctx.error(`Uh oh, something went wrong. Please report this bug on our [Discord](${env.discord.invite}) or sacrifice your wallet to a Steam sale, maybe that'll fix it!`);
     });
 
     this.creator.on('commandRun', (command, _, ctx) => logger.info({
-      group: 'Interaction',
-      message: `[RUN] "${InteractionsManager.stringifyCommand(command.commandName, ctx.options)}"`,
+      label: 'Interaction:commandRun',
+      message: `${InteractionsManager.stringifyCommand(command.commandName, ctx.options)}`,
     }));
 
-    this.creator.on('error', (err) => logger.error({ group: 'Interaction', message: err.message, err }));
+    this.creator.on('error', (err) => logger.error({
+      label: 'Interaction:error',
+      message: err.message,
+      err,
+    }));
 
-    this.creator.on('ping', () => logger.info({ group: 'Interaction', message: '[PING] Ponged' }));
+    this.creator.on('ping', () => logger.info({
+      label: 'Interaction:ping',
+      message: 'Ponged',
+    }));
 
     this.creator.once('synced', () => logger.info({
-      group: 'Interaction',
+      label: 'Interaction:synced',
       message: '[SYNC] Done',
     }));
 
-    this.creator.on('unverifiedRequest', () => logger.warn({ group: 'Interaction', message: 'Unverified request' }));
+    this.creator.on('unverifiedRequest', () => logger.warn({
+      label: 'Interaction:unverifiedRequest',
+      message: 'Unverified request',
+    }));
 
-    this.creator.on('warn', (err) => logger.warn({ group: 'Interaction', message: typeof err === 'string' ? err : err.message, err }));
+    this.creator.on('warn', (err) => logger.warn({
+      label: 'Interaction:warn',
+      message: typeof err === 'string' ? err : err.message,
+      err,
+    }));
   }
 
   private static stringifyCommand(name: string, args: object): string {

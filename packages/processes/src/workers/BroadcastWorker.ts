@@ -33,18 +33,12 @@ export default class BroadcastWorker extends Worker {
       await access(FILENAME, R_OK | W_OK);
       ({ active, message } = JSON.parse((await readFile(FILENAME)).toString()));
     } catch {
-      logger.error({
-        group: 'Broadcaster',
-        message: 'No broadcast found',
-      });
+      logger.warn('No broadcast found');
       return;
     }
 
     if (!active) {
-      logger.info({
-        group: 'Broadcaster',
-        message: 'Skipping inactive broadcast...',
-      });
+      logger.info('Skipping inactive broadcast...');
       return;
     }
 
@@ -100,10 +94,7 @@ export default class BroadcastWorker extends Worker {
       .whereRaw('countPerChannel = maxPerGuild')
       .groupBy('guild_id');
 
-    logger.info({
-      group: 'Broadcaster',
-      message: `Queueing broadcast for ${channels.length} guilds...`,
-    });
+    logger.info(`Queueing broadcast for ${channels.length} guilds...`);
 
     for (let i = 0; i < channels.length; i += 1) {
       const channel = channels[i];
@@ -118,10 +109,7 @@ export default class BroadcastWorker extends Worker {
 
     await this.messageQueue.backupQueue();
 
-    logger.info({
-      group: 'Broadcaster',
-      message: 'Broadcast queued, stopping...',
-    });
+    logger.info('Broadcast queued, stopping...');
 
     super.stop();
   }

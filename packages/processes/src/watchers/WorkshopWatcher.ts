@@ -24,14 +24,19 @@ export default class WorkshopWatcher extends Watcher {
       return this.pause();
     }
 
+    logger.info({
+      message: 'Checking workshop for new submissions',
+      app,
+    });
+
     let ugc;
 
     try {
       ugc = await SteamAPI.queryFiles(app.id);
     } catch (err) {
       logger.error({
-        group: 'Watcher',
-        message: `Unable to fetch workshop submissions for ${app.id}!`,
+        message: 'Unable to fetch workshop submissions',
+        appId: app.id,
         err,
       });
     }
@@ -43,6 +48,11 @@ export default class WorkshopWatcher extends Watcher {
       .where('id', app.id);
 
     if (ugc && app.latestUgc !== ugc.publishedfileid && !ugc.banned) {
+      logger.info({
+        message: 'Found new workshop submission',
+        ugc,
+      });
+
       await this.enqueue(await EmbedBuilder.createWorkshop(app, ugc), {
         appId: app.id,
         'watcher.type': WatcherType.WORKSHOP,

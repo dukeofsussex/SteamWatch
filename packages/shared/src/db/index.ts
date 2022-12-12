@@ -104,19 +104,19 @@ export default knex({
   log: {
     debug(message: string) {
       return logger.debug({
-        group: 'Database',
+        label: 'Database:debug',
         message,
       });
     },
     error(message: string) {
       return logger.error({
-        group: 'Database',
+        label: 'Database:error',
         message,
       });
     },
     warn(message: string) {
       return logger.warn({
-        group: 'Database',
+        label: 'Database:warn',
         message,
       });
     },

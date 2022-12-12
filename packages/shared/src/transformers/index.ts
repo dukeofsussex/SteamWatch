@@ -4,6 +4,7 @@ import { decode } from 'html-entities';
 import type { TagNode } from './BBob';
 import createPreset from './preset';
 import createRender from './render';
+import logger from '../logger';
 
 interface TransformedArticle {
   exceedsMaxlength: boolean;
@@ -46,9 +47,21 @@ export default function transformArticle(
     [thumbnail] = thumbnail?.split('?') ?? [null];
   };
 
-  const render = bbob(createPreset(onImage)())
-    .process(decodedContent, options)
-    .html;
+  let render;
+
+  try {
+    render = bbob(createPreset(onImage)())
+      .process(decodedContent, options)
+      .html;
+  } catch (err) {
+    logger.error({
+      message: (err as Error).message,
+      err,
+    });
+
+    // TODO Rework parser
+    throw err;
+  }
 
   return { ...render, thumbnail };
 }

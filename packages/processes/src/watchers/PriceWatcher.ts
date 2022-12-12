@@ -34,6 +34,11 @@ export default class PriceWatcher extends Watcher {
       return this.pause();
     }
 
+    logger.info({
+      message: 'Checking app prices',
+      apps,
+    });
+
     let prices;
 
     try {
@@ -43,8 +48,8 @@ export default class PriceWatcher extends Watcher {
       );
     } catch (err) {
       logger.error({
-        group: 'Watcher',
-        message: `Unable to fetch app prices in ${apps[0]!.currencyName}!`,
+        message: 'Unable to fetch app prices',
+        currency: apps[0]!.currencyName,
         apps,
         err,
       });
@@ -69,6 +74,12 @@ export default class PriceWatcher extends Watcher {
         const message = !prices[app.id]!.success
           ? `No longer available in **${app.code}**.`
           : 'App is now free-to-play.';
+
+        logger.info({
+          message: `Price watcher removed! Reason: ${message}`,
+          app,
+          priceOverview: prices[app.id]!.data.price_overview!,
+        });
 
         // eslint-disable-next-line no-await-in-loop
         await this.preEnqueue(
@@ -149,6 +160,12 @@ export default class PriceWatcher extends Watcher {
     }
 
     if (message) {
+      logger.info({
+        message: `Found new price! ${message.split(' ').slice(1)
+          .join(' ')}`,
+        app,
+        priceOverview,
+      });
       await this.preEnqueue(app, message);
     }
   }
@@ -174,7 +191,7 @@ export default class PriceWatcher extends Watcher {
   }
 
   private static async fetchNextAppPrices() {
-    const average = await db.avg('count', { as: 'average' })
+    const average = await db.avg('count AS average')
       .from((builder: Knex.QueryBuilder) => builder.count('app_id AS count')
         .from('watcher')
         .where('watcher.type', WatcherType.PRICE)

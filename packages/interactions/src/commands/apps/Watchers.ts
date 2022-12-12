@@ -499,16 +499,9 @@ export default class WatchersCommand extends GuildOnlyCommand {
         await DiscordAPI.delete(Routes.webhook(watcher.webhookId));
       } catch (err) {
         if ((err as DiscordAPIError).code === RESTJSONErrorCodes.UnknownWebhook) {
-          logger.info({
-            group: 'Interaction/Watchers',
-            message: 'Webhook already removed',
-          });
+          logger.info('Webhook already removed');
         } else {
-          logger.error({
-            group: 'Interaction/Watchers',
-            message: 'Unable to remove webhook!',
-            err,
-          });
+          logger.error('Unable to remove webhook!');
         }
       }
     }

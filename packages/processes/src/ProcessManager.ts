@@ -32,55 +32,42 @@ export default class ProcessManager implements Manager {
   }
 
   async start() {
-    logger.info({
-      group: 'Process',
-      message: 'Initializing...',
-    });
+    logger.info('Initializing...');
 
     if (!env.dev) {
       await db.migrate.latest();
+      logger.info('Database migrated');
       await db.seed.run();
-      logger.info({
-        group: 'Database',
-        message: 'Migrated and seeded',
-      });
+      logger.info('Database seeded');
     }
 
-    logger.info({
-      group: 'Database',
-      message: 'Ready',
-    });
+    logger.info('Database ready');
 
     for (let i = 0; i < this.processes.length; i += 1) {
       const process = this.processes[i] as Manager;
 
-      logger.info({
-        group: 'Process',
-        message: `Starting ${process.constructor.name}...`,
-      });
+      logger.info(`Starting ${process.constructor.name}...`);
 
       // eslint-disable-next-line no-await-in-loop
       await process.start();
     }
+
+    logger.info('Processes started');
   }
 
   async stop() {
-    logger.info({
-      group: 'Process',
-      message: 'Shutting down...',
-    });
+    logger.info('Shutting down...');
 
     for (let i = 0; i < this.processes.length; i += 1) {
       const process = this.processes[i] as Manager;
 
-      logger.info({
-        group: 'Process',
-        message: `Stopping ${process.constructor.name}...`,
-      });
+      logger.info(`Stopping ${process.constructor.name}...`);
 
       // eslint-disable-next-line no-await-in-loop
       await process.stop();
     }
+
+    logger.info('Processes stopped');
 
     await db.destroy();
     process.exit(process.exitCode || 0);

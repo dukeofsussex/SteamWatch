@@ -61,17 +61,24 @@ export default class MessageQueue implements Manager {
       if (this.queueSize()) {
         this.queueTimeout = setTimeout(() => this.notify(), this.queueDelay);
       }
-    } catch {
-      logger.debug({
-        group: 'MessageQueue',
-        message: 'No queue file found',
+
+      logger.info({
+        message: 'Queue file found',
+        length: this.queueSize(),
       });
+    } catch {
+      logger.warn('No queue file found');
     }
 
     this.backupInterval = setInterval(() => this.backupQueue(), 60000); // 1m
   }
 
   async stop() {
+    logger.info({
+      message: 'Stopping queue',
+      length: this.queueSize(),
+    });
+
     await this.backupQueue();
 
     if (this.backupInterval) {
@@ -85,6 +92,11 @@ export default class MessageQueue implements Manager {
   }
 
   backupQueue() {
+    logger.info({
+      message: 'Backing up queue',
+      length: this.queueSize(),
+    });
+
     return writeFile(FILENAME, JSON.stringify({
       offset: this.offset,
       queue: this.queue,
@@ -125,9 +137,10 @@ export default class MessageQueue implements Manager {
         await MessageQueue.purgeWebhook(id);
       } else {
         logger.error({
-          group: 'MessageQueue',
-          message: `Unable to send webhook request with ${id}/${token}!`,
-          discordMessage: message,
+          message: 'Unable to send webhook request',
+          id,
+          token,
+          body: message,
           err,
         });
 
@@ -137,8 +150,8 @@ export default class MessageQueue implements Manager {
 
         if (res.status >= 500) {
           logger.warn({
-            group: 'MessageQueue',
             message: 'Discord is having issues, slowing down...',
+            res,
           });
 
           this.queueTimeout = setTimeout(() => this.notify(), SLOWMODE_DELAY);
@@ -161,8 +174,8 @@ export default class MessageQueue implements Manager {
 
   private static async purgeWebhook(id: string) {
     logger.info({
-      group: 'MessageQueue',
-      message: `Purging webhook ${id}!`,
+      message: 'Purging expired webhook',
+      id,
     });
     return db.delete()
       .from('channel_webhook')

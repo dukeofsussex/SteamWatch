@@ -22,16 +22,16 @@ const logFormat = env.dev
   ? combine(
     baseFormat,
     colorize({ all: true }),
-    metadata({ fillExcept: ['timestamp', 'level', 'group', 'message', 'stack'] }),
+    metadata({ fillExcept: ['timestamp', 'level', 'label', 'message', 'stack'] }),
     printf(({
       timestamp: ts,
       level,
-      group,
+      label,
       message,
       metadata: meta,
       stack,
     }) => `${oneLine`
-        ${ts} [${level}]: ${(group ? `[${group}] ` : '')}
+        ${ts} [${level}]: ${(label ? `[${label}] ` : '')}
       `} ${message} ${Object.keys(meta).length ? `\n${inspect(meta)}` : ''} ${stack ? `\n${stack}` : ''}`),
   ) : combine(
     baseFormat,

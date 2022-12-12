@@ -26,12 +26,17 @@ export default class NewsWatcher extends Watcher {
 
     let news;
 
+    logger.info({
+      message: 'Checking app news',
+      app,
+    });
+
     try {
       news = await SteamAPI.getAppNews(app.id);
     } catch (err) {
       logger.error({
-        group: 'Watcher',
-        message: `Unable to fetch app news for ${app.id}!`,
+        message: 'Unable to fetch app news',
+        appId: app.id,
         err,
       });
     }
@@ -43,6 +48,11 @@ export default class NewsWatcher extends Watcher {
       .where('id', app.id);
 
     if (news && app.latestNews !== news.gid) {
+      logger.info({
+        message: 'Found new article',
+        news,
+      });
+
       await this.enqueue(EmbedBuilder.createNews(app, news), {
         appId: app.id,
         'watcher.type': WatcherType.NEWS,

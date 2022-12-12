@@ -1,8 +1,3 @@
-export interface Manager {
-  start(): Promise<void> | void;
-  stop(): Promise<void> | void;
-}
-
 export * from './constants';
 export { default as db } from './db';
 export * from './db';

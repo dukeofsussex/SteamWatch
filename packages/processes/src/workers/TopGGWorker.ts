@@ -13,10 +13,7 @@ export default class TopGGWorker extends Worker {
 
   async work() {
     if (!process.env['TOPGG_TOKEN']) {
-      logger.warn({
-        group: 'Worker',
-        message: 'No token set for Top.gg, stopping...',
-      });
+      logger.warn('No token set for Top.gg, stopping...');
       this.stop();
       return;
     }
@@ -41,13 +38,11 @@ export default class TopGGWorker extends Worker {
       const body: TopGGResponse = res.ok ? await res.json() : { error: 'Invalid response from Top.gg...' };
 
       logger.log({
-        group: 'Worker',
         message: body.error || 'Status updated',
         level: body.error ? 'error' : 'debug',
       });
     } catch (err) {
       logger.error({
-        group: 'Worker',
         message: 'Unable to post bot stats to Top.gg!',
         err,
       });

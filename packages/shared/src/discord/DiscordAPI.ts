@@ -6,6 +6,7 @@ import {
   Routes,
 } from 'discord-api-types/v9';
 import env from '../env';
+import logger from '../logger';
 
 export interface DiscordUser extends RESTGetAPIUserResult {
   avatarUrl?: string
@@ -42,6 +43,11 @@ class DiscordAPI extends REST {
           break;
         default:
           channelName = '[unknown]';
+          logger.error({
+            message: error.message,
+            channelId,
+            err,
+          });
       }
     }
 
