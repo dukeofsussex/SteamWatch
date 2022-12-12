@@ -1,4 +1,4 @@
-import { RESTAPIPartialCurrentUserGuild, RESTGetAPICurrentUserGuildsResult, Routes } from 'discord-api-types/v9';
+import { RESTAPIPartialCurrentUserGuild, RESTGetAPICurrentUserGuildsResult, Routes } from 'discord-api-types/v10';
 import { db, DiscordAPI, logger } from '@steamwatch/shared';
 import Worker from './Worker';
 

@@ -1,5 +1,5 @@
 import { oneLineTrim } from 'common-tags';
-import { PermissionFlagsBits } from 'discord-api-types/v9';
+import { PermissionFlagsBits } from 'discord-api-types/v10';
 import { Permissions } from 'slash-create';
 import env from './env';
 // @ts-ignore

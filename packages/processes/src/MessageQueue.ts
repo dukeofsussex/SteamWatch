@@ -1,5 +1,5 @@
 import type { DiscordAPIError } from '@discordjs/rest';
-import { RESTJSONErrorCodes, RESTPostAPIWebhookWithTokenResult, Routes } from 'discord-api-types/v9';
+import { RESTJSONErrorCodes, RESTPostAPIWebhookWithTokenResult, Routes } from 'discord-api-types/v10';
 import { R_OK, W_OK } from 'node:constants';
 import { access, readFile, writeFile } from 'node:fs/promises';
 import type { Response } from 'node-fetch';
