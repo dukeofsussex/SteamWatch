@@ -18,7 +18,12 @@ class DiscordAPI extends REST {
   async getCurrentUser() {
     if (!user) {
       user = await this.get(Routes.user()) as RESTGetAPIUserResult;
-      user.avatarUrl = new CDN().avatar(user.id, user.avatar!);
+
+      const cdn = new CDN();
+
+      user.avatarUrl = user.avatar
+        ? cdn.avatar(user.id, user.avatar)
+        : cdn.defaultAvatar(parseInt(user.discriminator, 10) % 5);
     }
 
     return user;
