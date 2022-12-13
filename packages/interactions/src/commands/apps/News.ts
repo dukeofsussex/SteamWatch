@@ -77,6 +77,6 @@ export default class NewsCommand extends SlashCommand {
       }));
     }
 
-    return ctx.embed(EmbedBuilder.createNews(app, news));
+    return ctx.embed(await EmbedBuilder.createNews(app, news));
   }
 }

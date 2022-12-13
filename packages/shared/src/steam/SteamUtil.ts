@@ -80,6 +80,7 @@ export default class SteamUtil {
   static readonly BP = {
     AppNews: (appId: number) => SteamUtil.BP.Raw(`appnews/${appId}`),
     Community: () => SteamUtil.BP.Raw('url/CommunityHome'),
+    EventAnnouncement: (appId: number, eventId: string) => SteamUtil.BP.Raw(`url/EventAnnouncementPage/${appId}/${eventId}`),
     GameHub: (id: string) => SteamUtil.BP.Raw(`url/GameHub/${id}`),
     Profile: (id: string) => SteamUtil.BP.Raw(`url/SteamIDPage/${id}`),
     Raw: (path: string) => `steam://${path}`,
@@ -101,6 +102,7 @@ export default class SteamUtil {
 
   static readonly URLS = {
     AppNews: (appId: number) => `https://store.steampowered.com/news/app/${appId}`,
+    EventAnnouncement: (appId: number, eventId: string) => `https://store.steampowered.com/news/app/${appId}/view/${eventId}`,
     Icon: (appId: number, icon: string) => `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.jpg`,
     NewsImage: (imageUrl: string) => imageUrl.replace(/\{STEAM_CLAN(?:_LOC)?_IMAGE\}/, 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/clans'),
     Profile: (steamId: string) => `https://steamcommunity.com/profiles/${steamId}`,

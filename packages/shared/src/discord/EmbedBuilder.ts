@@ -46,19 +46,25 @@ export default class EmbedBuilder {
     };
   }
 
-  static createNews(app: AppMinimal, news: NewsPost): MessageEmbedOptions {
+  static async createNews(app: AppMinimal, news: NewsPost): Promise<MessageEmbedOptions> {
     const transformed = transformArticle(
       news.contents,
       env.settings.maxArticleLength,
       env.settings.maxArticleNewlines,
     );
 
+    let eventId = null;
+
+    if (news.feedname === 'steam_community_announcements') {
+      eventId = await SteamAPI.getEventIdForArticle(news.url);
+    }
+
     return {
       ...this.createApp(app, {
         // Truncate long news titles
         title: news.title.length > 128 ? `${news.title.substring(0, 125)}...` : news.title,
         description: transformed.markdown,
-        url: news.url,
+        url: eventId ? SteamUtil.URLS.EventAnnouncement(app.id, eventId) : news.url,
         timestamp: new Date(news.date * 1000),
       }),
       ...(news.author ? {
@@ -71,10 +77,11 @@ export default class EmbedBuilder {
           url: SteamUtil.URLS.NewsImage(transformed.thumbnail),
         },
       } : {}),
-      fields: [{
-        name: 'Steam Client Link',
-        value: SteamUtil.BP.AppNews(app.id),
-      }],
+      fields: eventId
+        ? [{
+          name: 'Steam Client Link',
+          value: SteamUtil.BP.EventAnnouncement(app.id, eventId),
+        }] : [],
     };
   }
 

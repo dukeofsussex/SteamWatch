@@ -184,6 +184,16 @@ export default class SteamAPI {
     return this.request<KeyedAppDetails>(`https://store.steampowered.com/api/appdetails?appids=${appIds.join(',')}&filters=price_overview&cc=${cc}`);
   }
 
+  static async getEventIdForArticle(externalUrl: string) {
+    const res = await fetch(externalUrl, {
+      method: 'HEAD',
+    });
+
+    const urlParts = res.url.split('/');
+
+    return urlParts[urlParts.length - 1];
+  }
+
   static async getNumberOfCurrentPlayers(appId: number) {
     const res = await this.request<Response<NumberOfCurrentPlayers>>(`https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${appId}`);
     return res?.response.player_count || null;
