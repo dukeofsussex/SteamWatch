@@ -10,6 +10,7 @@ import {
 import {
   Currency,
   db,
+  DEFAULT_COMPONENT_EXPIRATION,
   DiscordUtil,
   EMBED_COLOURS,
   env,
@@ -77,56 +78,79 @@ export default class CurrencyCommand extends GuildOnlyCommand {
     });
 
     // Change currency
-    ctx.registerComponent('currency_change', async () => {
-      ctx.editOriginal({
-        embeds,
-        components: await CurrencyCommand.buildModifiedCurrencyComponents(page, placeholder),
-      });
-    });
+    ctx.registerComponentFrom(
+      ctx.messageID!,
+      'currency_change',
+      async () => {
+        ctx.editOriginal({
+          embeds,
+          components: await CurrencyCommand.buildModifiedCurrencyComponents(page, placeholder),
+        });
+      },
+      DEFAULT_COMPONENT_EXPIRATION,
+      () => {
+        ctx.editOriginal({ embeds, components: [] });
+      },
+    );
 
     // Cancel
-    ctx.registerComponent('currency_change_cancel', async () => {
-      ctx.editOriginal({ embeds, components: [] });
-    });
+    ctx.registerComponentFrom(
+      ctx.messageID!,
+      'currency_change_cancel',
+      async () => {
+        ctx.editOriginal({ embeds, components: [] });
+      },
+      DEFAULT_COMPONENT_EXPIRATION,
+    );
 
     // Change currency select options
-    ctx.registerComponent('currency_select_change', async () => {
-      page = page === 0 ? 1 : 0;
-      ctx.editOriginal({
-        embeds,
-        components: await CurrencyCommand.buildModifiedCurrencyComponents(page, placeholder),
-      });
-    });
+    ctx.registerComponentFrom(
+      ctx.messageID!,
+      'currency_select_change',
+      async () => {
+        page = page === 0 ? 1 : 0;
+        ctx.editOriginal({
+          embeds,
+          components: await CurrencyCommand.buildModifiedCurrencyComponents(page, placeholder),
+        });
+      },
+      DEFAULT_COMPONENT_EXPIRATION,
+    );
 
     // Currency selected
-    ctx.registerComponent('currency_select', async (cctx: ComponentContext) => {
-      const currencyId = parseInt(cctx.data.data.values![0]!, 10);
+    ctx.registerComponentFrom(
+      ctx.messageID!,
+      'currency_select',
+      async (cctx: ComponentContext) => {
+        const currencyId = parseInt(cctx.data.data.values![0]!, 10);
 
-      dbCurrency = await db.select('*')
-        .from('currency')
-        .where('id', currencyId)
-        .first() as Currency;
+        dbCurrency = await db.select('*')
+          .from('currency')
+          .where('id', currencyId)
+          .first() as Currency;
 
-      // Fetch all apps that aren't already being tracked in the new currency
-      const apps = await CurrencyCommand.fetchApps(dbCurrency.id.toString(), ctx.guildID!);
+        // Fetch all apps that aren't already being tracked in the new currency
+        const apps = await CurrencyCommand.fetchApps(dbCurrency.id.toString(), ctx.guildID!);
 
-      // Process missing app prices for new currency
-      if (apps.length > 0) {
-        const invalidApps = await CurrencyCommand.processAppPrices(apps, dbCurrency);
+        // Process missing app prices for new currency
+        if (apps.length > 0) {
+          const invalidApps = await CurrencyCommand.processAppPrices(apps, dbCurrency);
 
-        if (invalidApps.length > 0) {
-          return ctx.error(stripIndents`
+          if (invalidApps.length > 0) {
+            return ctx.error(stripIndents`
             Unable to change currency to **${dbCurrency.code}**.
             ${invalidApps.join('\n')}
           `);
+          }
         }
-      }
 
-      await db('guild').update('currency_id', currencyId)
-        .where('id', ctx.guildID);
+        await db('guild').update('currency_id', currencyId)
+          .where('id', ctx.guildID);
 
-      return ctx.success(`Currency set to ${DiscordUtil.getFlagEmoji(dbCurrency.countryCode)} [${dbCurrency.code}] ${dbCurrency.name}.`);
-    });
+        return ctx.success(`Currency set to ${DiscordUtil.getFlagEmoji(dbCurrency.countryCode)} [${dbCurrency.code}] ${dbCurrency.name}.`);
+      },
+      DEFAULT_COMPONENT_EXPIRATION,
+    );
   }
 
   private static async buildModifiedCurrencyComponents(page: number, placeholder: string) {

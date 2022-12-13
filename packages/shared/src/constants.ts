@@ -8,6 +8,8 @@ import { homepage, version } from '../../../package.json'; // ESLint keeps chang
 
 export const DEFAULT_CURRENCY = { code: 'USD', countryCode: 'US' };
 
+export const DEFAULT_COMPONENT_EXPIRATION = 180000; // 3m
+
 export const EMBED_COLOURS = {
   DEFAULT: 0x00ADEE,
   ERROR: 0xed4245,

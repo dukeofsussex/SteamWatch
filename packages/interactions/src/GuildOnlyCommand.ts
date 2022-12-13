@@ -17,6 +17,7 @@ import {
   DiscordUtil,
   logger,
   MAX_OPTIONS,
+  DEFAULT_COMPONENT_EXPIRATION,
 } from '@steamwatch/shared';
 
 export default class GuildOnlyCommand extends SlashCommand {
@@ -109,41 +110,53 @@ export default class GuildOnlyCommand extends SlashCommand {
 
     return new Promise<boolean>((resolve) => {
       // Change currency select options
-      ctx.registerComponent('currency_select_change', async () => {
-        page = page === 0 ? 1 : 0;
-        ctx.editOriginal({
-          embeds,
-          components: await GuildOnlyCommand.buildCurrencyComponents(page),
-        });
-      });
+      ctx.registerComponent(
+        'currency_select_change',
+        async () => {
+          page = page === 0 ? 1 : 0;
+          ctx.editOriginal({
+            embeds,
+            components: await GuildOnlyCommand.buildCurrencyComponents(page),
+          });
+        },
+        DEFAULT_COMPONENT_EXPIRATION,
+      );
 
       // Finish guild setup
-      ctx.registerComponent('currency_select', async (cctx: ComponentContext) => {
-        await cctx.editOriginal({
-          embeds: [{
-            color: EMBED_COLOURS.SUCCESS,
-            description: `${EMOJIS.SUCCESS} Guild ready!`,
-          }],
-          components: [],
-        });
+      ctx.registerComponent(
+        'currency_select',
+        async (cctx: ComponentContext) => {
+          await cctx.editOriginal({
+            embeds: [{
+              color: EMBED_COLOURS.SUCCESS,
+              description: `${EMOJIS.SUCCESS} Guild ready!`,
+            }],
+            components: [],
+          });
 
-        const guild = await DiscordAPI.get(Routes.guild(ctx.guildID!), {
-          query: new URLSearchParams([['with_counts', 'true']]),
-        }) as RESTGetAPIGuildResult;
+          const guild = await DiscordAPI.get(Routes.guild(ctx.guildID!), {
+            query: new URLSearchParams([['with_counts', 'true']]),
+          }) as RESTGetAPIGuildResult;
 
-        await db.insert({
-          id: ctx.guildID!,
-          name: guild.name,
-          currencyId: cctx.data.data.values![0],
-        }).into('guild');
+          await db.insert({
+            id: ctx.guildID!,
+            name: guild.name,
+            currencyId: cctx.data.data.values![0],
+          }).into('guild');
 
-        logger.info({
-          message: 'New guild set up',
-          guild,
-        });
+          logger.info({
+            message: 'New guild set up',
+            guild,
+          });
 
-        resolve(true);
-      });
+          resolve(true);
+        },
+        DEFAULT_COMPONENT_EXPIRATION,
+        () => {
+          ctx.timeout();
+          throw new Error('Timed out');
+        },
+      );
     });
   }
 }

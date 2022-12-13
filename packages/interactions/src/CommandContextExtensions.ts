@@ -8,6 +8,7 @@ declare module 'slash-create' {
     embed(embed: MessageEmbedOptions): Promise<boolean | Message>;
     success(message: string, embedOptions?: EmbedOptions): Promise<boolean | Message>;
     error(message: string, embedOptions?: EmbedOptions): Promise<boolean | Message>;
+    timeout(): Promise<boolean | Message>;
   }
 }
 
@@ -38,4 +39,8 @@ Context.prototype.error = function sendErrorEmbed(
     description: `${EMOJIS.ERROR} ${message}`,
     ...embedOptions,
   });
+};
+
+Context.prototype.timeout = function sendTimeoutEmbed() {
+  return this.error('Interaction Timed Out! Please run the command again.');
 };

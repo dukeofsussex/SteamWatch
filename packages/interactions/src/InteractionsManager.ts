@@ -10,6 +10,8 @@ export default class InteractionsManager implements Manager {
   constructor() {
     this.creator = new SlashCreator({
       applicationID: env.discord.appId,
+      componentTimeouts: true,
+      latencyThreshold: 250,
       publicKey: env.discord.publicKey,
       token: env.discord.token,
       serverHost: env.server.host,

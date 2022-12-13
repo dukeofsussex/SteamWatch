@@ -20,6 +20,7 @@ import {
   App,
   capitalize,
   db,
+  DEFAULT_COMPONENT_EXPIRATION,
   DiscordAPI,
   EMBED_COLOURS,
   env,
@@ -289,39 +290,48 @@ export default class WatchersCommand extends GuildOnlyCommand {
       }],
     });
 
-    ctx.registerComponent('cancel', () => ctx.error(`Cancelled watcher for **${app!.name} (${app!.type})** on ${ctx.channels.get(channelId)!.mention}.`, {
-      thumbnail: {
-        url: SteamUtil.URLS.Icon(app!.id, app!.icon),
-      },
-    }));
-
-    return ctx.registerComponent('confirm', async () => {
-      let error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
-
-      if (error) {
-        return ctx.error(error);
-      }
-
-      if (watcherType === WatcherType.PRICE) {
-        error = await WatchersCommand.setAppPrice(app, ctx.guildID!);
-      }
-
-      if (error) {
-        return ctx.error(error);
-      }
-
-      const ids = await db.insert({
-        appId,
-        channelId,
-        type: watcherType,
-      }).into('watcher');
-
-      return ctx.success(`Added watcher (#${ids[0]}) for **${app!.name} (${app!.type})** to ${ctx.channels.get(channelId)!.mention}.`, {
+    ctx.registerComponent(
+      'cancel',
+      () => ctx.error(`Cancelled watcher for **${app!.name} (${app!.type})** on ${ctx.channels.get(channelId)!.mention}.`, {
         thumbnail: {
           url: SteamUtil.URLS.Icon(app!.id, app!.icon),
         },
-      });
-    });
+      }),
+      DEFAULT_COMPONENT_EXPIRATION,
+    );
+
+    return ctx.registerComponent(
+      'confirm',
+      async () => {
+        let error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
+
+        if (error) {
+          return ctx.error(error);
+        }
+
+        if (watcherType === WatcherType.PRICE) {
+          error = await WatchersCommand.setAppPrice(app, ctx.guildID!);
+        }
+
+        if (error) {
+          return ctx.error(error);
+        }
+
+        const ids = await db.insert({
+          appId,
+          channelId,
+          type: watcherType,
+        }).into('watcher');
+
+        return ctx.success(`Added watcher (#${ids[0]}) for **${app!.name} (${app!.type})** to ${ctx.channels.get(channelId)!.mention}.`, {
+          thumbnail: {
+            url: SteamUtil.URLS.Icon(app!.id, app!.icon),
+          },
+        });
+      },
+      DEFAULT_COMPONENT_EXPIRATION,
+      () => ctx.timeout(),
+    );
   }
 
   private static async addUGC(ctx: CommandContext, { channel: channelId, query }: AddUGCArguments) {
@@ -376,32 +386,41 @@ export default class WatchersCommand extends GuildOnlyCommand {
       }],
     });
 
-    ctx.registerComponent('cancel', () => ctx.error(`Cancelled watcher for **${ugc!.name}** on ${ctx.channels.get(channelId)!.mention}.`, {
-      thumbnail: {
-        url: SteamUtil.URLS.Icon(app!.id, app!.icon),
-      },
-    }));
-
-    return ctx.registerComponent('confirm', async () => {
-      const error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
-
-      if (error) {
-        return ctx.error(error);
-      }
-
-      const ids = await db.insert({
-        appId: ugc!.appId,
-        ugcId: ugc!.id,
-        channelId,
-        type: WatcherType.UGC,
-      }).into('watcher');
-
-      return ctx.success(`Added watcher (#${ids[0]}) for **${ugc!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
+    ctx.registerComponent(
+      'cancel',
+      () => ctx.error(`Cancelled watcher for **${ugc!.name}** on ${ctx.channels.get(channelId)!.mention}.`, {
         thumbnail: {
           url: SteamUtil.URLS.Icon(app!.id, app!.icon),
         },
-      });
-    });
+      }),
+      DEFAULT_COMPONENT_EXPIRATION,
+    );
+
+    return ctx.registerComponent(
+      'confirm',
+      async () => {
+        const error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
+
+        if (error) {
+          return ctx.error(error);
+        }
+
+        const ids = await db.insert({
+          appId: ugc!.appId,
+          ugcId: ugc!.id,
+          channelId,
+          type: WatcherType.UGC,
+        }).into('watcher');
+
+        return ctx.success(`Added watcher (#${ids[0]}) for **${ugc!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
+          thumbnail: {
+            url: SteamUtil.URLS.Icon(app!.id, app!.icon),
+          },
+        });
+      },
+      DEFAULT_COMPONENT_EXPIRATION,
+      () => ctx.timeout(),
+    );
   }
 
   private static async list(ctx: CommandContext, { channel: channelId }: ListArguments) {
