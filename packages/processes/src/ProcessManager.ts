@@ -5,6 +5,7 @@ import {
   Manager,
 } from '@steamwatch/shared';
 import MessageQueue from './MessageQueue';
+import SteamGatewayManager from './managers/SteamGatewayManager';
 import NewsWatcher from './watchers/NewsWatcher';
 import PriceWatcher from './watchers/PriceWatcher';
 import UGCWatcher from './watchers/UGCWatcher';
@@ -28,6 +29,7 @@ export default class ProcessManager implements Manager {
       new BroadcastWorker(messageQueue),
       new GuildWorker(),
       new TopGGWorker(),
+      new SteamGatewayManager(),
     ];
   }
 
