@@ -17,7 +17,7 @@ if (env.debug) {
 steamUser.on('disconnected', (_, msg) => {
   logger.info({
     label: 'Steam:disconnected',
-    message: `Disconnected: (${msg || 'Unknown'})`,
+    message: msg || 'Unknown',
   });
 });
 steamUser.on('error', (err) => logger.error({
