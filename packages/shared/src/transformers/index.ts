@@ -12,13 +12,9 @@ interface TransformedArticle {
   thumbnail: string | null;
 }
 
-export default function transformArticle(
-  content: string,
-  maxLength: number,
-  maxNewlines: number,
-): TransformedArticle {
+export default function transformArticle(content: string): TransformedArticle {
   let decodedContent = content;
-  let options: any = { render: createRender(maxLength, maxNewlines) };
+  let options: any = { render: createRender() };
   let thumbnail: string | null = null;
 
   if (/<\/?p>|<br\/?>/i.test(content)) {

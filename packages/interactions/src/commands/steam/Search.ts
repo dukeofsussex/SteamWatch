@@ -126,11 +126,7 @@ export default class SearchCommand extends SlashCommand {
       return ctx.error(`Unable to find UGC with the id/url: ${query}`);
     }
 
-    const transformed = transformArticle(
-      ugc.description,
-      env.settings.maxArticleLength,
-      env.settings.maxArticleNewlines,
-    );
+    const transformed = transformArticle(ugc.description);
 
     return ctx.embed({
       author: {

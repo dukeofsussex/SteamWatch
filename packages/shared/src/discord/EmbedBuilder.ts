@@ -8,7 +8,6 @@ import {
 import DiscordUtil from './DiscordUtil';
 import { DEFAULT_CURRENCY, EMBED_COLOURS } from '../constants';
 import db, { App, Currency, CurrencyCode } from '../db';
-import env from '../env';
 import SteamAPI, {
   NewsPost,
   PriceOverview,
@@ -47,11 +46,7 @@ export default class EmbedBuilder {
   }
 
   static async createNews(app: AppMinimal, news: NewsPost): Promise<MessageEmbedOptions> {
-    const transformed = transformArticle(
-      news.contents,
-      env.settings.maxArticleLength,
-      env.settings.maxArticleNewlines,
-    );
+    const transformed = transformArticle(news.contents);
 
     let eventId = null;
 

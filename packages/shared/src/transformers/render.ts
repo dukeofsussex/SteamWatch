@@ -1,9 +1,11 @@
 import type { TagNodeContent, TagNodeContentNode } from './BBob';
 
 // Prevent long newline chains.
+const MAX_LENGTH = 1000;
 const MAX_NEWLINE_REPETITIONS = 2;
+const MAX_NEWLINES = 10;
 
-export default function createRender(maxLength: number, maxNewlines: number) {
+export default function createRender() {
   let currentLength = 0;
   let currentNewlines = 0;
   let currentNewlineRepetitions = 0;
@@ -28,10 +30,10 @@ export default function createRender(maxLength: number, maxNewlines: number) {
       }
 
       const { length } = node;
-      exceeded = (currentLength + length) >= maxLength || currentNewlines >= maxNewlines;
+      exceeded = (currentLength + length) >= MAX_LENGTH || currentNewlines >= MAX_NEWLINES;
 
       rendered = exceeded
-        ? node.substring(0, length - (maxLength - currentLength))
+        ? node.substring(0, length - (MAX_LENGTH - currentLength))
         : node;
 
       if (node !== '\n') {

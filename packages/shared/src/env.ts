@@ -27,8 +27,6 @@ export default {
     port: parseInt(process.env['SERVER_PORT'] || '8080', 10),
   },
   settings: {
-    maxArticleLength: parseInt(process.env['SETTINGS_MAX_ARTICLE_LENGTH'] || '1000', 10),
-    maxArticleNewlines: parseInt(process.env['SETTINGS_MAX_ARTICLE_NEWLINES'] || '10', 10),
     maxMentionsPerWatcher: parseInt(process.env['SETTINGS_MAX_MENTIONS_PER_WATCHER'] || '10', 10),
     maxWatchersPerGuild: parseInt(process.env['SETTINGS_MAX_WATCHERS_PER_GUILD'] || '10', 10),
     watcherRunFrequency: parseInt(process.env['SETTINGS_WATCHER_RUN_FREQUENCY'] || '4', 10),
