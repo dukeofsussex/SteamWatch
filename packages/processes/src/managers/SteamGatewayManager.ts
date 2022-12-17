@@ -1,14 +1,17 @@
 import {
-  db, logger, Manager, steamUser,
+  db,
+  logger,
+  Manager,
+  steamClient,
 } from '@steamwatch/shared';
 
 export default class SteamGatewayManager implements Manager {
   async start() {
-    steamUser.addListener('changelist', this.onChangeListReceived);
+    steamClient.addListener('changelist', this.onChangeListReceived);
   }
 
   stop() {
-    steamUser.removeListener('changelist', this.onChangeListReceived);
+    steamClient.removeListener('changelist', this.onChangeListReceived);
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -23,7 +26,7 @@ export default class SteamGatewayManager implements Manager {
 
     logger.info(`Updating ${storedApps.length} apps...`);
 
-    const { apps } = await steamUser.getProductInfo(storedApps.map((app) => app.id), [], true);
+    const { apps } = await steamClient.getProductInfo(storedApps.map((app) => app.id), [], true);
 
     for (let i = 0; i < storedApps.length; i += 1) {
       const appInfo = apps[storedApps[i]!.id]!.appinfo;

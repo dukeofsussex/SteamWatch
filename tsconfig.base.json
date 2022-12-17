@@ -5,7 +5,7 @@
     "removeComments": true,
     "noImplicitAny": true,
     "noImplicitThis": true,
-    "resolveJsonModule": true,
+    "resolveJsonModule": true
   },
   "exclude": [
     "node_modules"

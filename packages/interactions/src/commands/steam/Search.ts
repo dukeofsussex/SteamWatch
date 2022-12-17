@@ -12,7 +12,7 @@ import {
   EMOJIS,
   env,
   SteamAPI,
-  steamUser,
+  steamClient,
   SteamUtil,
   transformArticle,
 } from '@steamwatch/shared';
@@ -116,7 +116,7 @@ export default class SearchCommand extends SlashCommand {
     }
 
     const [app, profile] = await Promise.all([
-      steamUser.getProductInfo([ugc.consumer_app_id], [], true),
+      steamClient.getProductInfo([ugc.consumer_app_id], [], true),
       SteamAPI.getPlayerSummary(ugc.creator),
     ]);
 

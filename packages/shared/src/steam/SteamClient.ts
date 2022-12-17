@@ -1,12 +1,13 @@
-import SteamUser from 'steam-user';
+import { EResult } from 'steam-user';
+import SteamWatchUser from './SteamWatchUser';
 import env from '../env';
 import logger from '../logger';
 
-const steamUser = new SteamUser({ enablePicsCache: true });
+const steamClient = new SteamWatchUser({ enablePicsCache: true });
 
 if (env.debug) {
   // @ts-ignore Missing typings
-  steamUser.on('debug', (message: string) => {
+  steamClient.on('debug', (message: string) => {
     logger.debug({
       label: 'Steam:debug',
       message,
@@ -14,19 +15,19 @@ if (env.debug) {
   });
 }
 
-steamUser.on('disconnected', (_, msg) => {
+steamClient.on('disconnected', (_, msg) => {
   logger.info({
     label: 'Steam:disconnected',
     message: msg || 'Unknown',
   });
 });
-steamUser.on('error', (err) => logger.error({
+steamClient.on('error', (err) => logger.error({
   label: 'Steam:error',
   message: err.message,
   err,
 }));
-steamUser.on('loggedOn', (details) => {
-  if (details['eresult'] !== SteamUser.EResult.OK) {
+steamClient.on('loggedOn', (details) => {
+  if (details['eresult'] !== EResult.OK) {
     logger.error({
       label: 'Steam:loggedOn',
       message: 'Failed to log in to Steam!',
@@ -40,6 +41,6 @@ steamUser.on('loggedOn', (details) => {
   }
 });
 
-steamUser.logOn();
+steamClient.logOn();
 
-export default steamUser;
+export default steamClient;

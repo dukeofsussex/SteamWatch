@@ -2,7 +2,7 @@ import { oneLine } from 'common-tags';
 import SteamID from 'steamid';
 import { EResult } from 'steam-user';
 import SteamAPI, { AppType } from './SteamAPI';
-import steamUser from './SteamUser';
+import steamClient from './SteamClient';
 import db, {
   App,
   CurrencyCode,
@@ -200,7 +200,7 @@ export default class SteamUtil {
   }
 
   static async persistApp(appId: number) {
-    const appInfo = (await steamUser.getProductInfo([appId], [], true))
+    const appInfo = (await steamClient.getProductInfo([appId], [], true))
       .apps[appId]?.appinfo;
 
     if (!appInfo || !appInfo.common) {
