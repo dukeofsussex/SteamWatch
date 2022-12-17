@@ -12,4 +12,5 @@ export { default as SteamAPI } from './steam/SteamAPI';
 export * from './steam/SteamAPI';
 export { default as steamClient } from './steam/SteamClient';
 export { default as SteamUtil } from './steam/SteamUtil';
+export * from './steam/SteamWatchUser';
 export * from './utils';

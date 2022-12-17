@@ -214,12 +214,8 @@ export default class SteamUtil {
       name: appInfo.common.name,
       icon: appInfo.common.icon || '',
       type,
-      lastCheckedNews: SteamUtil.canHaveWatcher(type as AppType, WatcherType.NEWS)
-        ? new Date()
-        : null,
-      lastCheckedUgc: new Date(),
-      latestNews: null,
-      latestUgc: null,
+      lastCheckedNews: null,
+      lastCheckedUgc: null,
     };
 
     await db.insert(app).into('app');
@@ -252,7 +248,6 @@ export default class SteamUtil {
       id: ugcId,
       appId: file.consumer_app_id,
       lastChecked: null,
-      lastUpdate: new Date(file.time_updated * 1000),
       name: file.title,
     };
 

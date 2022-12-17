@@ -15,9 +15,7 @@ export interface App {
   name: string;
   icon: string;
   type: string;
-  latestNews: string | null;
   lastCheckedNews: Date | null;
-  latestUgc: string | null;
   lastCheckedUgc: Date | null;
 }
 
@@ -56,7 +54,6 @@ export interface UGC {
   id: string;
   appId: number;
   name: string;
-  lastUpdate: Date;
   lastChecked: Date | null;
 }
 
