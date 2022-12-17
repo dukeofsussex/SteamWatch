@@ -183,7 +183,7 @@ export default class PriceWatcher extends Watcher {
       value: SteamUtil.BP.Store(app.id),
     }];
 
-    await this.enqueue(embed, {
+    await this.enqueue([embed], {
       appId: app.id,
       currencyId: app.currencyId,
       'watcher.type': WatcherType.PRICE,

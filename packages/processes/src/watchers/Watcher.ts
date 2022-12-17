@@ -24,7 +24,7 @@ export default abstract class Watcher extends Worker {
     this.queue = queue;
   }
 
-  protected async enqueue(embed: MessageEmbedOptions, where: KnexWhereObject) {
+  protected async enqueue(embeds: MessageEmbedOptions[], where: KnexWhereObject) {
     const watchers: WebhookWatcher[] = await db.select(
       'watcher.id',
       'entity_id',
@@ -63,7 +63,7 @@ export default abstract class Watcher extends Worker {
       const watcher = groupedWatchers[keys[i]!] as WebhookedMentions;
       this.queue.enqueue(watcher.webhookId, watcher.webhookToken, {
         content: watcher.mentions.join(' ') || '',
-        embeds: [embed],
+        embeds,
       });
     }
   }

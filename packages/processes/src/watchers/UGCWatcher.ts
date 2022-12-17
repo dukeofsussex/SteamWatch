@@ -112,7 +112,7 @@ export default class UGCWatcher extends Watcher {
         });
 
         // eslint-disable-next-line no-await-in-loop
-        await this.enqueue(embed, {
+        await this.enqueue([embed], {
           ugcId: item.id,
           'watcher.type': WatcherType.UGC,
         });
