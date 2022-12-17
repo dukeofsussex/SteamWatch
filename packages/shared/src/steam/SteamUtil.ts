@@ -128,6 +128,16 @@ export default class SteamUtil {
     })) ?? [];
   }
 
+  static formatFileSize(bytes: number) {
+    const block = 1024;
+    const decimals = 3;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(block));
+
+    return `${parseFloat((bytes / block ** i).toFixed(decimals))} ${sizes[i]}`;
+  }
+
   static formatPrice(amount: number, currency: CurrencyCode) {
     const options = CurrencyFormats[currency];
     let fixedAmount = amount.toString().slice(0, -2);

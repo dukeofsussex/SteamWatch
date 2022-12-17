@@ -74,6 +74,8 @@ export interface QueryFilesResponse {
 }
 
 export default class SteamWatchUser extends SteamUser {
+  connected = false;
+
   // TODO Determine whether needed
   // getTags(): Promise<ChangeHistory> {
   //   const data = {

@@ -39,6 +39,8 @@ export const INVITE_URL = oneLineTrim`
   &scope=applications.commands%20bot
 `;
 
+export const MAX_EMBEDS = 10;
+
 export const MAX_OPTIONS = 25;
 
 export const REPO_URL = homepage.split('#')[0]!;

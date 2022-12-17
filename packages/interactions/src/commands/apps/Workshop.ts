@@ -77,6 +77,6 @@ export default class WorkshopCommand extends SlashCommand {
       }));
     }
 
-    return ctx.embed(await EmbedBuilder.createWorkshop(app, ugc));
+    return ctx.embed(await EmbedBuilder.createWorkshop(app, ugc, 'time_updated'));
   }
 }

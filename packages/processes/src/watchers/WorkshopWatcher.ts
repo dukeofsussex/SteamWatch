@@ -1,4 +1,5 @@
 import { oneLine } from 'common-tags';
+import { subHours } from 'date-fns';
 import type { Knex } from 'knex';
 import {
   App,
@@ -6,11 +7,15 @@ import {
   EmbedBuilder,
   env,
   logger,
-  SteamAPI,
+  MAX_EMBEDS,
+  steamClient,
   WatcherType,
 } from '@steamwatch/shared';
+import type { PublishedFile } from '@steamwatch/shared/src/steam/SteamWatchUser';
 import Watcher from './Watcher';
 import type MessageQueue from '../MessageQueue';
+
+const MAX_FILES = MAX_EMBEDS * MAX_EMBEDS;
 
 export default class WorkshopWatcher extends Watcher {
   constructor(queue: MessageQueue) {
@@ -18,6 +23,13 @@ export default class WorkshopWatcher extends Watcher {
   }
 
   protected async work() {
+    if (!steamClient.connected) {
+      logger.info({
+        message: 'Waiting for Steam connection',
+      });
+      return this.wait();
+    }
+
     const app = await WorkshopWatcher.fetchNextApp();
 
     if (!app) {
@@ -29,34 +41,65 @@ export default class WorkshopWatcher extends Watcher {
       app,
     });
 
-    let ugc;
+    let cursor;
+    let files: PublishedFile[] = [];
+    const lastCheckedMs = (app.lastCheckedUgc ?? subHours(new Date(), 1)).getTime() / 1000;
+    let index = -1;
 
-    try {
-      ugc = await SteamAPI.queryFiles(app.id);
-    } catch (err) {
-      logger.error({
-        message: 'Unable to fetch workshop submissions',
-        appId: app.id,
-        err,
-      });
+    while (files.length < MAX_FILES && index === -1) {
+      let response;
+
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        response = await steamClient.queryFiles(app.id, cursor);
+      } catch (err) {
+        logger.error({
+          message: 'Unable to fetch workshop submissions',
+          appId: app.id,
+          err,
+        });
+        break;
+      }
+
+      cursor = response.next_cursor;
+      index = response.publishedfiledetails.findIndex((file) => file.time_created <= lastCheckedMs);
+      files = files.concat(
+        response.publishedfiledetails.slice(0, index !== -1 ? index : undefined),
+      );
     }
 
     await db('app').update({
       lastCheckedUgc: new Date(),
-      latestUgc: ugc ? ugc.publishedfileid : app.latestUgc,
     })
       .where('id', app.id);
 
-    if (ugc && app.latestUgc !== ugc.publishedfileid && !ugc.banned) {
+    let embeds = [];
+
+    for (let i = files.length - 1; i >= 0; i -= 1) {
+      const file = files[i] as PublishedFile;
+
+      if (file.banned || file.ban_reason) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
       logger.info({
         message: 'Found new workshop submission',
-        ugc,
+        file,
       });
 
-      await this.enqueue(await EmbedBuilder.createWorkshop(app, ugc), {
-        appId: app.id,
-        'watcher.type': WatcherType.WORKSHOP,
-      });
+      // eslint-disable-next-line no-await-in-loop
+      embeds.push(await EmbedBuilder.createWorkshop(app, file, 'time_created'));
+
+      if (embeds.length === MAX_EMBEDS || i === 0) {
+        // eslint-disable-next-line no-await-in-loop
+        this.enqueue(embeds, {
+          appId: app.id,
+          'watcher.type': WatcherType.WORKSHOP,
+        });
+
+        embeds = [];
+      }
     }
 
     return this.wait();

@@ -8,12 +8,8 @@ import {
 import DiscordUtil from './DiscordUtil';
 import { DEFAULT_CURRENCY, EMBED_COLOURS } from '../constants';
 import db, { App, Currency, CurrencyCode } from '../db';
-import SteamAPI, {
-  NewsPost,
-  PriceOverview,
-  SteamUGC,
-  Tag,
-} from '../steam/SteamAPI';
+import SteamAPI, { NewsPost, PriceOverview, Tag } from '../steam/SteamAPI';
+import type { PublishedFile } from '../steam/SteamWatchUser';
 import SteamUtil from '../steam/SteamUtil';
 import transformArticle from '../transformers';
 
@@ -222,15 +218,15 @@ export default class EmbedBuilder {
     };
   }
 
-  static async createWorkshop(app: AppMinimal, ugc: SteamUGC): Promise<MessageEmbedOptions> {
-    const author = await SteamAPI.getPlayerSummary(ugc.creator);
+  static async createWorkshop(app: AppMinimal, file: PublishedFile, timestamp: keyof Pick<PublishedFile, 'time_created' | 'time_updated'>): Promise<MessageEmbedOptions> {
+    const author = await SteamAPI.getPlayerSummary(file.creator);
 
     return {
       ...this.createApp(app, {
-        description: ugc.description,
-        timestamp: new Date(ugc.time_updated * 1000),
-        title: ugc.title,
-        url: SteamUtil.URLS.UGC(ugc.publishedfileid),
+        description: transformArticle(file.file_description).markdown,
+        timestamp: new Date(file[timestamp] * 1000),
+        title: file.title,
+        url: SteamUtil.URLS.UGC(file.publishedfileid),
       }),
       ...(author ? {
         author: {
@@ -239,14 +235,18 @@ export default class EmbedBuilder {
           url: SteamUtil.URLS.Profile(author.steamid),
         },
       } : {}),
-      ...(ugc.preview_url ? {
+      ...(file.preview_url ? {
         image: {
-          url: ugc.preview_url,
+          url: file.preview_url,
         },
       } : {}),
       fields: [{
+        name: 'File Size',
+        value: SteamUtil.formatFileSize(parseInt(file.filesize, 10)),
+        inline: true,
+      }, {
         name: 'Steam Client Link',
-        value: SteamUtil.BP.UGC(ugc.publishedfileid),
+        value: SteamUtil.BP.UGC(file.publishedfileid),
       }],
     };
   }

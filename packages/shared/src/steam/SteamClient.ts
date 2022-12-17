@@ -20,6 +20,7 @@ steamClient.on('disconnected', (_, msg) => {
     label: 'Steam:disconnected',
     message: msg || 'Unknown',
   });
+  steamClient.connected = false;
 });
 steamClient.on('error', (err) => logger.error({
   label: 'Steam:error',
@@ -38,6 +39,7 @@ steamClient.on('loggedOn', (details) => {
       label: 'Steam:loggedOn',
       message: 'Logged in',
     });
+    steamClient.connected = true;
   }
 });
 
