@@ -73,8 +73,6 @@ export default class WorkshopWatcher extends Watcher {
     })
       .where('id', app.id);
 
-    let embeds = [];
-
     for (let i = files.length - 1; i >= 0; i -= 1) {
       const file = files[i] as PublishedFile;
 
@@ -88,18 +86,13 @@ export default class WorkshopWatcher extends Watcher {
         file,
       });
 
-      // eslint-disable-next-line no-await-in-loop
-      embeds.push(await EmbedBuilder.createWorkshop(app, file, 'time_created'));
-
-      if (embeds.length === MAX_EMBEDS || i === 0) {
+      this.enqueue([
         // eslint-disable-next-line no-await-in-loop
-        this.enqueue(embeds, {
-          appId: app.id,
-          'watcher.type': WatcherType.WORKSHOP,
-        });
-
-        embeds = [];
-      }
+        await EmbedBuilder.createWorkshop(app, file, 'time_created'),
+      ], {
+        appId: app.id,
+        'watcher.type': WatcherType.WORKSHOP,
+      });
     }
 
     return this.wait();
