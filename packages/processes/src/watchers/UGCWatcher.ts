@@ -7,7 +7,9 @@ import {
   EMOJIS,
   env,
   logger,
-  SteamAPI,
+  MAX_EMBEDS,
+  steamClient,
+  transformArticle,
   UGC,
   WatcherType,
 } from '@steamwatch/shared';
@@ -25,6 +27,13 @@ export default class UGCWatcher extends Watcher {
   }
 
   protected async work() {
+    if (!steamClient.connected) {
+      logger.info({
+        message: 'Waiting for Steam connection',
+      });
+      return this.wait();
+    }
+
     const ugcItems = await UGCWatcher.fetchNextUGCItems();
 
     if (ugcItems.length === 0) {
@@ -36,10 +45,12 @@ export default class UGCWatcher extends Watcher {
       ugcItems,
     });
 
+    const ids = ugcItems.map((item) => parseInt(item.id, 10));
     let published;
 
     try {
-      published = await SteamAPI.getPublishedFileDetails(ugcItems.map((item) => item.id));
+      // Poor typings
+      published = await steamClient.getPublishedFileDetails(ids) as any;
     } catch (err) {
       logger.error({
         message: 'Unable to fetch UGC details!',
@@ -48,16 +59,20 @@ export default class UGCWatcher extends Watcher {
       });
     }
 
-    if (!published) {
+    await db('ugc').update({
+      lastChecked: new Date(),
+    })
+      .whereIn('id', ids);
+
+    if (!published || !published.files) {
       return this.wait();
     }
 
     const removed: string[] = [];
-    const unchanged: string[] = [];
 
     for (let i = 0; i < ugcItems.length; i += 1) {
       const item = ugcItems[i] as QueryResult;
-      const file = published.find((pItem) => pItem.publishedfileid === item.id);
+      const file = published.files[item.id];
       let message = '';
 
       if (!file) {
@@ -65,56 +80,92 @@ export default class UGCWatcher extends Watcher {
           ${EMOJIS.ALERT} UGC watcher removed!
           Item not found!
         `;
-        removed.push(item.id);
       } else if (file.banned) {
         message = stripIndents`
           ${EMOJIS.ALERT} UGC watcher removed!
           Item has been banned!
           Reason: ${file.ban_reason || 'Unknown'}
         `;
-        removed.push(item.id);
       } else if (file.result !== EResult.OK) {
         message = stripIndents`
           ${EMOJIS.ALERT} UGC watcher removed!
           Steam returned an invalid result: ${EResult[file.result]}
         `;
-        removed.push(item.id);
-      } else if (new Date(file.time_updated * 1000) > item.lastUpdate) {
-        message = `${EMOJIS.TADA} Item has been updated!`;
-        item.lastUpdate = new Date(file.time_updated * 1000);
-
-        // eslint-disable-next-line no-await-in-loop
-        await db('ugc').update({
-          lastChecked: new Date(),
-          lastUpdate: item.lastUpdate,
-          name: file.title,
-        })
-          .where('id', file.publishedfileid);
-      } else {
-        unchanged.push(item.id);
       }
 
-      if (message) {
-        // eslint-disable-next-line no-await-in-loop
-        const embed = await EmbedBuilder.createWorkshop({
+      /**
+       * Watcher doesn't need to be removed and UGC up-to-date
+       */
+      if (!message && item.lastChecked && (item.lastChecked > new Date(file.time_updated * 1000))) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      // eslint-disable-next-line no-await-in-loop
+      const embed = await EmbedBuilder.createWorkshop(
+        {
           icon: item.appIcon,
           id: item.appId,
           name: item.appName,
-        }, file!);
+        },
+        file,
+        'time_updated',
+      );
 
+      if (message) {
         embed.description = message;
-
-        logger.info({
-          message: `Found new UGC update! ${message.split(' ').slice(1)
-            .join(' ')}`,
-          item,
-          file,
-        });
 
         // eslint-disable-next-line no-await-in-loop
         await this.enqueue([embed], {
           ugcId: item.id,
           'watcher.type': WatcherType.UGC,
+        });
+
+        removed.push(item.id);
+
+        logger.info({
+          message: message.split(' ').slice(1)
+            .join(' '),
+          item,
+          file,
+        });
+      } else {
+        // eslint-disable-next-line no-await-in-loop
+        const changeHistory = await steamClient.getChangeHistory(
+          item.id,
+          item.lastChecked ? MAX_EMBEDS : 1,
+        );
+
+        const lastCheckedMs = item.lastChecked ? (item.lastChecked.getTime() / 1000) : 0;
+
+        for (let j = changeHistory.changes.length - 1; j >= 0; j -= 1) {
+          const entry = changeHistory.changes[j]!;
+
+          if (item.lastChecked && entry.timestamp <= lastCheckedMs) {
+            // eslint-disable-next-line no-continue
+            continue;
+          }
+
+          // eslint-disable-next-line no-await-in-loop
+          await this.enqueue([{
+            ...embed,
+            description: transformArticle(entry.change_description).markdown || 'No changelog',
+          }], {
+            ugcId: item.id,
+            'watcher.type': WatcherType.UGC,
+          });
+        }
+
+        // eslint-disable-next-line no-await-in-loop
+        await db('ugc').update({
+          name: file.title,
+        })
+          .where('id', file.publishedfileid);
+
+        logger.info({
+          message: 'Found new UGC update!',
+          item,
+          file,
         });
       }
     }
@@ -122,11 +173,6 @@ export default class UGCWatcher extends Watcher {
     if (removed.length > 0) {
       await db('ugc').delete()
         .whereIn('id', removed);
-    }
-
-    if (unchanged.length > 0) {
-      await db('ugc').update('lastChecked', new Date())
-        .whereIn('id', published.map((item) => item.publishedfileid));
     }
 
     return this.wait();
