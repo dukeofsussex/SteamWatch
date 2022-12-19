@@ -242,7 +242,7 @@ export default class EmbedBuilder {
       } : {}),
       fields: [{
         name: 'File Size',
-        value: SteamUtil.formatFileSize(parseInt(file.filesize, 10)),
+        value: SteamUtil.formatFileSize(parseInt(file.file_size, 10)),
         inline: true,
       }, {
         name: 'Steam Client Link',
