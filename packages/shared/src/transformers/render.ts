@@ -1,7 +1,7 @@
 import type { TagNodeContent, TagNodeContentNode } from './BBob';
 
+const MAX_LENGTH = 2048;
 // Prevent long newline chains.
-const MAX_LENGTH = 1000;
 const MAX_NEWLINE_REPETITIONS = 2;
 const MAX_NEWLINES = 10;
 
