@@ -6,6 +6,11 @@ exports.up = (knex: Knex) => knex.schema
     table.dropColumn('latest_news');
     table.dropColumn('latest_ugc');
   })
+  .alterTable('watcher', (table) => {
+    table.bigInteger('thread_id')
+      .unsigned()
+      .after('channel_id');
+  })
   .alterTable('ugc', (table) => {
     table.dropColumn('last_update');
   });
@@ -18,6 +23,9 @@ exports.down = (knex: Knex) => knex.schema
     table.bigint('latest_ugc')
       .unsigned()
       .after('last_checked_news');
+  })
+  .alterTable('watcher', (table) => {
+    table.dropColumn('thread_id');
   })
   .alterTable('ugc', (table) => {
     table.dateTime('last_update')

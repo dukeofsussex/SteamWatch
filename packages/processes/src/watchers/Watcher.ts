@@ -2,17 +2,19 @@ import type { MessageEmbedOptions } from 'slash-create';
 import {
   db,
   ChannelWebhook,
+  Watcher as DBWatcher,
   WatcherMention,
 } from '@steamwatch/shared';
 import type MessageQueue from '../MessageQueue';
 import Worker from '../workers/Worker';
 
 type WebhookedMentions = Pick<ChannelWebhook, 'webhookId' | 'webhookToken'>
+& Pick<DBWatcher, 'threadId'>
 & { mentions: string[] };
 
 type WebhookWatcher = Pick<WatcherMention, 'entityId' | 'type'>
 & Pick<ChannelWebhook, 'webhookId' | 'webhookToken' | 'guildId'>
-& { id: number };
+& Pick<DBWatcher, 'id' | 'threadId'>;
 
 type KnexWhereObject = object;
 
@@ -27,6 +29,7 @@ export default abstract class Watcher extends Worker {
   protected async enqueue(embeds: MessageEmbedOptions[], where: KnexWhereObject) {
     const watchers: WebhookWatcher[] = await db.select(
       'watcher.id',
+      'thread_id',
       'entity_id',
       'guild_id',
       'watcher_mention.type',
@@ -46,6 +49,7 @@ export default abstract class Watcher extends Worker {
       group[watcher.id] = group[watcher.id] || {
         webhookId: watcher.webhookId,
         webhookToken: watcher.webhookToken,
+        threadId: watcher.threadId,
         mentions: [],
       };
 
@@ -61,10 +65,15 @@ export default abstract class Watcher extends Worker {
 
     for (let i = 0; i < keys.length; i += 1) {
       const watcher = groupedWatchers[keys[i]!] as WebhookedMentions;
-      this.queue.enqueue(watcher.webhookId, watcher.webhookToken, {
-        content: watcher.mentions.join(' ') || '',
-        embeds,
-      });
+      this.queue.enqueue(
+        watcher.webhookId,
+        watcher.webhookToken,
+        watcher.threadId,
+        {
+          content: watcher.mentions.join(' ') || '',
+          embeds,
+        },
+      );
     }
   }
 

@@ -38,23 +38,21 @@ const markdownTable = require('markdown-table');
 const WATCHERS_PER_TABLE = 15;
 
 interface BaseArguments {
-  channel: string;
-}
-
-interface BaseAddArguments extends BaseArguments {
   query: string;
+  channel: string;
+  thread_id?: string;
 }
-
-interface AddAppArguments extends BaseAddArguments {
-  watcher_type: WatcherType;
-}
-
-type AddUGCArguments = BaseAddArguments;
 
 interface AddArguments {
-  app: AddAppArguments;
-  ugc: AddUGCArguments;
-  steam: BaseArguments;
+  news: BaseArguments;
+  price: BaseArguments;
+  steam: Pick<BaseArguments, 'channel' | 'thread_id'>;
+  ugc: BaseArguments;
+  workshop: BaseArguments;
+}
+
+interface AddAppArguments extends BaseArguments {
+  watcher_type: WatcherType
 }
 
 type ListArguments = BaseArguments;
@@ -69,6 +67,31 @@ interface CommandArguments {
   remove?: RemoveArguments;
 }
 
+const ChannelArg = {
+  type: CommandOptionType.CHANNEL,
+  name: 'channel',
+  description: 'The channel notifications should be sent to',
+  required: true,
+  // TODO Replace magic number with enum once typings have been fixed upstream
+  channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT, 15],
+};
+
+const ThreadArg = {
+  type: CommandOptionType.STRING,
+  name: 'thread_id',
+  description: 'The thread notifications should be sent to (ONLY REQUIRED IF THE CHANNEL IS A FORUM)',
+  autocomplete: true,
+  required: false,
+};
+
+const QueryArg = {
+  type: CommandOptionType.STRING,
+  name: 'query',
+  description: 'Search term or app id',
+  autocomplete: true,
+  required: true,
+};
+
 export default class WatchersCommand extends GuildOnlyCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
@@ -82,85 +105,79 @@ export default class WatchersCommand extends GuildOnlyCommand {
         description: 'Add a watcher for a Steam item.',
         options: [{
           type: CommandOptionType.SUB_COMMAND,
-          name: 'app',
-          description: 'Watch a Steam app (game, dlc, etc.)',
-          options: [{
-            type: CommandOptionType.STRING,
-            name: 'watcher_type',
-            description: 'The application property(s) that should be watched for changes',
-            required: true,
-            choices: [{
-              name: 'News',
-              value: WatcherType.NEWS,
-            }, {
-              name: 'Price',
-              value: WatcherType.PRICE,
-            }, {
-              name: 'Workshop',
-              value: WatcherType.WORKSHOP,
-            }],
-          }, {
-            type: CommandOptionType.STRING,
-            name: 'query',
-            description: 'Search term or app id',
-            autocomplete: true,
-            required: true,
-          }, {
-            type: CommandOptionType.CHANNEL,
-            name: 'channel',
-            description: 'The channel notifications should be sent to',
-            required: true,
-            channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT],
-          }],
+          name: 'news',
+          description: 'Watch a Steam app (game, dlc, etc.) for news',
+          options: [
+            QueryArg,
+            ChannelArg,
+            ThreadArg,
+          ],
+        },
+        {
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'price',
+          description: 'Watch a Steam app (game, dlc, etc.) for price changes',
+          options: [
+            QueryArg,
+            ChannelArg,
+            ThreadArg,
+          ],
+        },
+        {
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'steam',
+          description: 'Watch Steam for (Valve) news',
+          options: [
+            ChannelArg,
+            ThreadArg,
+          ],
         }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'ugc',
           description: 'Watch a workshop item/user-generated content',
-          options: [{
-            type: CommandOptionType.STRING,
-            name: 'query',
-            description: 'UGC url or item id',
-            required: true,
-          }, {
-            type: CommandOptionType.CHANNEL,
-            name: 'channel',
-            description: 'The channel notifications should be sent to',
-            required: true,
-            channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT],
-          }],
+          options: [
+            {
+              ...QueryArg,
+              autocomplete: false,
+              description: 'UGC id or url',
+            },
+            ChannelArg,
+            ThreadArg,
+          ],
         }, {
           type: CommandOptionType.SUB_COMMAND,
-          name: 'steam',
-          description: 'Watch Steam for (Valve) news',
-          options: [{
-            type: CommandOptionType.CHANNEL,
-            name: 'channel',
-            description: 'The channel notifications should be sent to',
-            required: true,
-            channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT],
-          }],
+          name: 'workshop',
+          description: 'Watch a Steam app\'s (game, dlc, etc.) workshop for new submissions',
+          options: [
+            QueryArg,
+            ChannelArg,
+            ThreadArg,
+          ],
         }],
       }, {
         type: CommandOptionType.SUB_COMMAND,
         name: 'list',
         description: 'List app watchers.',
-        options: [{
-          type: CommandOptionType.CHANNEL,
-          name: 'channel',
-          description: 'The channel notifications are being sent to',
-          channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT],
-        }],
+        options: [
+          {
+            ...ChannelArg,
+            description: 'The channel notifications are being sent to',
+            required: false,
+          },
+        ],
       }, {
         type: CommandOptionType.SUB_COMMAND,
         name: 'remove',
         description: 'Remove a watcher.',
-        options: [{
-          type: CommandOptionType.INTEGER,
-          name: 'watcher_id',
-          description: 'The watcher\'s id',
-          autocomplete: true,
-          required: true,
-        }],
+        options: [
+          {
+            type: CommandOptionType.INTEGER,
+            name: 'watcher_id',
+            description: 'The watcher\'s id',
+            autocomplete: true,
+            required: true,
+          },
+        ],
       }],
       requiredPermissions: ['MANAGE_CHANNELS'],
       throttling: {
@@ -174,13 +191,20 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
   // eslint-disable-next-line class-methods-use-this
   override async autocomplete(ctx: AutocompleteContext) {
+    if (!ctx.guildID) {
+      return ctx.sendResults([]);
+    }
+
     if (ctx.focused === 'watcher_id') {
       const value = ctx.options[ctx.subcommands[0]!][ctx.focused];
-
       return ctx.sendResults(await GuildOnlyCommand.createWatcherAutocomplete(value, ctx.guildID!));
     }
 
     const value = ctx.options[ctx.subcommands[0]!][ctx.subcommands[1]!][ctx.focused];
+
+    if (ctx.focused === 'thread_id') {
+      return ctx.sendResults(await GuildOnlyCommand.createThreadAutocomplete(value, ctx.guildID!));
+    }
 
     return ctx.sendResults(await SteamUtil.createAppAutocomplete(value));
   }
@@ -215,12 +239,26 @@ export default class WatchersCommand extends GuildOnlyCommand {
         `);
       }
 
-      if (add.app) {
-        return WatchersCommand.addApp(ctx, add.app);
+      const addSub = add[ctx.subcommands[1]! as keyof AddArguments];
+
+      // TODO Replace magic number with enum once typings have been fixed upstream
+      if (ctx.channels.get(addSub.channel)!.type === 15
+          && !addSub.thread_id) {
+        return ctx.error('A thread is required when using forum channels!');
       }
 
-      if (add.ugc) {
-        return WatchersCommand.addUGC(ctx, add.ugc);
+      if (add.news) {
+        return WatchersCommand.addApp(ctx, {
+          ...add.news,
+          watcher_type: WatcherType.NEWS,
+        });
+      }
+
+      if (add.price) {
+        return WatchersCommand.addApp(ctx, {
+          ...add.price,
+          watcher_type: WatcherType.PRICE,
+        });
       }
 
       if (add.steam) {
@@ -228,6 +266,17 @@ export default class WatchersCommand extends GuildOnlyCommand {
           channel: add.steam.channel,
           query: STEAM_NEWS_APPID.toString(),
           watcher_type: WatcherType.NEWS,
+        });
+      }
+
+      if (add.ugc) {
+        return WatchersCommand.addUGC(ctx, add.ugc);
+      }
+
+      if (add.workshop) {
+        return WatchersCommand.addApp(ctx, {
+          ...add.workshop,
+          watcher_type: WatcherType.WORKSHOP,
         });
       }
     }
@@ -241,7 +290,12 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
   private static async addApp(
     ctx: CommandContext,
-    { channel: channelId, query: name, watcher_type: watcherType }: AddAppArguments,
+    {
+      channel: channelId,
+      query: name,
+      watcher_type: watcherType,
+      thread_id: threadId,
+    }: AddAppArguments,
   ) {
     const appId = await SteamUtil.findAppId(name);
 
@@ -320,6 +374,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         const ids = await db.insert({
           appId,
           channelId,
+          threadId,
           type: watcherType,
         }).into('watcher');
 
@@ -334,7 +389,14 @@ export default class WatchersCommand extends GuildOnlyCommand {
     );
   }
 
-  private static async addUGC(ctx: CommandContext, { channel: channelId, query }: AddUGCArguments) {
+  private static async addUGC(
+    ctx: CommandContext,
+    {
+      channel: channelId,
+      query,
+      thread_id: threadId,
+    }: BaseArguments,
+  ) {
     const ugcId = SteamUtil.findUGCId(query);
 
     if (!ugcId) {
@@ -409,6 +471,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           appId: ugc!.appId,
           ugcId: ugc!.id,
           channelId,
+          threadId,
           type: WatcherType.UGC,
         }).into('watcher');
 

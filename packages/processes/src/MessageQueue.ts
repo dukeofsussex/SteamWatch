@@ -18,6 +18,7 @@ const SLOWMODE_DELAY = 300000; // 5m
 export interface QueuedItem {
   id: string;
   token: string;
+  threadId: string | null;
   message: Pick<EditMessageOptions, 'content' | 'embeds' | 'components'>;
 }
 
@@ -40,8 +41,13 @@ export default class MessageQueue implements Manager {
     this.queueDelay = 250; // 0.25s
   }
 
-  enqueue(id: string, token: string, message: QueuedItem['message']) {
-    this.queue.push({ id, token, message });
+  enqueue(id: string, token: string, threadId: string | null, message: QueuedItem['message']) {
+    this.queue.push({
+      id,
+      token,
+      threadId,
+      message,
+    });
 
     if (!this.queueTimeout) {
       this.queueTimeout = setTimeout(() => this.notify(), this.queueDelay);
@@ -120,10 +126,20 @@ export default class MessageQueue implements Manager {
   }
 
   private async notify() {
-    const { id, message, token } = this.dequeue()!;
+    const {
+      id,
+      message,
+      threadId,
+      token,
+    } = this.dequeue()!;
 
     try {
       await DiscordAPI.post(Routes.webhook(id, token), {
+        ...(threadId ? {
+          query: new URLSearchParams({
+            thread_id: threadId,
+          }),
+        } : {}),
         body: {
           content: message.content,
           username: this.user!.username,
@@ -144,7 +160,12 @@ export default class MessageQueue implements Manager {
           err,
         });
 
-        this.queue.push({ id, message, token });
+        this.queue.push({
+          id,
+          message,
+          threadId,
+          token,
+        });
 
         const res = err as Response;
 

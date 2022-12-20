@@ -1,5 +1,5 @@
 import { oneLine } from 'common-tags';
-import { Routes, RESTGetAPIGuildResult } from 'discord-api-types/v10';
+import { Routes, RESTGetAPIGuildResult, RESTGetAPIGuildThreadsResult } from 'discord-api-types/v10';
 import {
   ButtonStyle,
   CommandContext,
@@ -37,7 +37,7 @@ export default class GuildOnlyCommand extends SlashCommand {
       components: [{
         custom_id: 'currency_select',
         placeholder: 'Select your currency',
-        type: ComponentType.SELECT,
+        type: ComponentType.STRING_SELECT,
         options: currencies.map(({
           id, name, code, countryCode,
         }) => ({
@@ -55,6 +55,19 @@ export default class GuildOnlyCommand extends SlashCommand {
         style: ButtonStyle.PRIMARY,
       }],
     }];
+  }
+
+  protected static async createThreadAutocomplete(value: string, guildId: string) {
+    const guildThreads = await DiscordAPI.get(
+      Routes.guildActiveThreads(guildId),
+    ) as RESTGetAPIGuildThreadsResult;
+
+    return guildThreads.threads.filter(
+      (thread) => thread.id.includes(value) || thread.name?.includes(value),
+    ).map((thread) => ({
+      name: thread.name || 'N/A',
+      value: thread.id,
+    }));
   }
 
   protected static async createWatcherAutocomplete(value: string, guildId: string) {

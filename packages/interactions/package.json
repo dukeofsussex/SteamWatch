@@ -15,7 +15,7 @@
     "discord-api-types": "^0.37.2",
     "fastify": "^3.9.1",
     "markdown-table": "^2.0.0",
-    "slash-create": "^5.7.1",
+    "slash-create": "^5.11.0",
     "steamid": "^2.0.0",
     "steam-user": "^4.24.6"
   },

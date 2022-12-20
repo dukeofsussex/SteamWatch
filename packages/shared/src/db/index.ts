@@ -62,6 +62,7 @@ export interface Watcher {
   appId: number;
   ugcId: string;
   channelId: string;
+  threadId: string | null;
   type: WatcherType;
 }
 
