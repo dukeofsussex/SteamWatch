@@ -241,6 +241,11 @@ export default class EmbedBuilder {
         },
       } : {}),
       fields: [{
+        name: 'Tags',
+        value: file.tags.map((tag) => tag.tag).join('\n') || 'None',
+        inline: true,
+      },
+      {
         name: 'File Size',
         value: SteamUtil.formatFileSize(parseInt(file.file_size, 10)),
         inline: true,
