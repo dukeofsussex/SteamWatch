@@ -1,8 +1,5 @@
 /// <reference path="./steam-user.d.ts" />
-import SteamUser, {
-  EPublishedFileVisibility,
-  EResult,
-} from 'steam-user';
+import SteamUser from 'steam-user';
 import EMsg from 'steam-user/enums/EMsg';
 import Schema from 'steam-user/protobufs/generated/_load';
 
@@ -42,17 +39,17 @@ export enum FileType {
 }
 
 export interface PublishedFile {
-  result: EResult;
+  result: SteamUser.EResult;
   publishedfileid: string;
   creator: string;
-  consumer_app_id: number;
+  consumer_appid: number;
   file_size: string;
   preview_url: string;
   title: string;
   file_description: string;
   time_created: number;
   time_updated: number;
-  visibility: EPublishedFileVisibility
+  visibility: SteamUser.EPublishedFileVisibility
   banned: boolean;
   ban_reason: string;
   file_type: FileType;
