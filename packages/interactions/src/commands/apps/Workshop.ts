@@ -9,7 +9,7 @@ import {
   db,
   EmbedBuilder,
   env,
-  SteamAPI,
+  steamClient,
   SteamUtil,
   WatcherType,
 } from '@steamwatch/shared';
@@ -46,6 +46,11 @@ export default class WorkshopCommand extends SlashCommand {
   // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
     await ctx.defer();
+
+    if (!steamClient.connected) {
+      return ctx.error('Currently not connected to Steam. Please try again in a few minutes');
+    }
+
     const { query } = ctx.options as CommandArguments;
     const appId = await SteamUtil.findAppId(query);
 
@@ -66,9 +71,9 @@ export default class WorkshopCommand extends SlashCommand {
       return ctx.error(`Unable to fetch workshop items for apps of type **${app.type}**!`);
     }
 
-    const ugc = await SteamAPI.queryFiles(appId);
+    const files = await steamClient.queryFiles(appId);
 
-    if (!ugc) {
+    if (!files.publishedfiledetails.length) {
       return ctx.embed(EmbedBuilder.createApp(app, {
         description: 'No UGC found!',
         timestamp: new Date(),
@@ -77,6 +82,6 @@ export default class WorkshopCommand extends SlashCommand {
       }));
     }
 
-    return ctx.embed(await EmbedBuilder.createWorkshop(app, ugc, 'time_updated'));
+    return ctx.embed(await EmbedBuilder.createWorkshop(app, files.publishedfiledetails[0]!, 'time_updated'));
   }
 }
