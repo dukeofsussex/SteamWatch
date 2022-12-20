@@ -5,12 +5,13 @@ import {
   SlashCommand,
   SlashCreator,
 } from 'slash-create';
-import { EPublishedFileVisibility, EResult } from 'steam-user';
+import SteamUser from 'steam-user';
 import {
   EmbedBuilder,
   EMBED_COLOURS,
   EMOJIS,
   env,
+  PublishedFile,
   SteamAPI,
   steamClient,
   SteamUtil,
@@ -99,34 +100,39 @@ export default class SearchCommand extends SlashCommand {
   }
 
   private static async searchUGC(ctx: CommandContext, query: string) {
+    if (!steamClient.connected) {
+      return ctx.error('Currently not connected to Steam. Please try again in a few minutes');
+    }
+
     const ugcId = SteamUtil.findUGCId(query);
 
     if (!ugcId) {
       return ctx.error(`Unable to parse UGC identifier: ${query}`);
     }
 
-    const ugc = (await SteamAPI.getPublishedFileDetails([ugcId]))?.[0];
+    const published = (await steamClient.getPublishedFileDetails([parseInt(ugcId, 10)])) as any;
+    const file = published?.files?.[ugcId] as PublishedFile;
 
-    if (!ugc) {
+    if (!file) {
       return ctx.error(`Unable to find UGC with the id/url: ${query}`);
     }
 
-    if (ugc.result !== EResult.OK) {
-      return ctx.error(`Unable to process UGC: ${EResult[ugc.result]}`);
+    if (file.result !== SteamUser.EResult.OK) {
+      return ctx.error(`Unable to process UGC: ${SteamUser.EResult[file.result]}`);
     }
 
     const [app, profile] = await Promise.all([
-      steamClient.getProductInfo([ugc.consumer_app_id], [], true),
-      SteamAPI.getPlayerSummary(ugc.creator),
+      steamClient.getProductInfo([file.consumer_appid], [], true),
+      SteamAPI.getPlayerSummary(file.creator),
     ]);
 
-    const appInfo = app.apps[ugc.consumer_app_id]?.appinfo;
+    const appInfo = app.apps[file.consumer_appid]?.appinfo;
 
     if (!appInfo || !profile) {
-      return ctx.error(`Unable to find UGC with the id/url: ${query}`);
+      return ctx.error(`Unable to process app info: ${query}`);
     }
 
-    const transformed = transformArticle(ugc.description);
+    const transformed = transformArticle(file.file_description);
 
     return ctx.embed({
       author: {
@@ -138,55 +144,60 @@ export default class SearchCommand extends SlashCommand {
       description: transformed.markdown,
       footer: {
         text: appInfo.common.name,
-        icon_url: SteamUtil.URLS.Icon(ugc.consumer_app_id, appInfo.common.icon),
+        icon_url: SteamUtil.URLS.Icon(file.consumer_appid, appInfo.common.icon),
       },
       thumbnail: {
-        url: ugc.preview_url,
+        url: file.preview_url,
       },
-      timestamp: new Date(ugc.time_updated * 1000),
-      title: ugc.title,
+      timestamp: new Date(file.time_updated * 1000),
+      title: file.title,
       url: SteamUtil.URLS.UGC(ugcId),
       fields: [{
         name: 'Created',
-        value: `<t:${ugc.time_created}>`,
+        value: `<t:${file.time_created}>`,
         inline: true,
       }, {
         name: 'Updated',
-        value: `<t:${ugc.time_updated}>`,
+        value: `<t:${file.time_updated}>`,
         inline: true,
       }, {
         name: 'Visibility',
-        value: EPublishedFileVisibility[ugc.visibility]!,
+        value: SteamUser.EPublishedFileVisibility[file.visibility]! || 'N/A',
         inline: true,
       }, {
         name: 'Favourites',
-        value: ugc.favorited.toString(),
+        value: file.favorited.toString(),
         inline: true,
       }, {
         name: 'Subscriptions',
-        value: ugc.subscriptions.toString(),
+        value: file.subscriptions.toString(),
         inline: true,
       }, {
         name: 'Views',
-        value: ugc.views.toString(),
+        value: file.views.toString(),
         inline: true,
       }, {
         name: 'Lifetime Favs',
-        value: ugc.lifetime_favorited.toString(),
+        value: file.lifetime_favorited.toString(),
         inline: true,
       }, {
         name: 'Lifetime Subs',
-        value: ugc.lifetime_subscriptions.toString(),
+        value: file.lifetime_subscriptions.toString(),
         inline: true,
       }, {
         name: 'Tags',
-        value: ugc.tags.map((tag) => tag.tag).join('\n') || 'None',
+        value: file.tags.map((tag) => tag.tag).join('\n') || 'None',
         inline: true,
       },
-      ...(ugc.banned ? [{
+      ...(file.banned ? [{
         name: `${EMOJIS.ALERT} Banned`,
-        value: ugc.ban_reason,
+        value: file.ban_reason,
       }] : []),
+      {
+        name: 'File Size',
+        value: SteamUtil.formatFileSize(parseInt(file.file_size, 10)),
+        inline: true,
+      },
       {
         name: 'Steam Client Link',
         value: SteamUtil.BP.UGC(ugcId),
