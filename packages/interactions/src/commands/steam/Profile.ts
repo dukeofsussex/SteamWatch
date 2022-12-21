@@ -55,7 +55,8 @@ export default class ProfileCommand extends SlashCommand {
 
     const steamID64 = steamID.getSteamID64();
 
-    const [bans, summary, level] = await Promise.all([
+    const [aliases, bans, summary, level] = await Promise.all([
+      SteamAPI.getPlayerAliases(steamID64),
       SteamAPI.getPlayerBans(steamID64),
       SteamAPI.getPlayerSummary(steamID64),
       SteamAPI.getSteamLevel(steamID64),
@@ -97,6 +98,14 @@ export default class ProfileCommand extends SlashCommand {
             **ID64:** ${steamID64}
           `,
         inline: true,
+      }, {
+        name: 'Recent Aliases',
+        value: aliases.length
+          ? aliases.slice(0, 10)
+            .filter((alias) => alias.newname !== summary.personaname)
+            .map((alias) => alias.newname)
+            .join('\n')
+          : 'None',
       }, {
         name: 'Steam Client Link',
         value: SteamUtil.BP.Profile(steamID64),

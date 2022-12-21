@@ -70,6 +70,10 @@ export interface OwnedGames {
   games: OwnedGame[];
 }
 
+export interface PlayerAlias {
+  newname: string;
+}
+
 export interface PlayerBans {
   CommunityBanned: boolean;
   DaysSinceLastBan: number;
@@ -202,6 +206,11 @@ export default class SteamAPI {
   static async getOwnedGames(steamId: string) {
     const res = await this.request<Response<OwnedGames>>(`https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${env.steamWebApiKey}&steamid=${steamId}&include_played_free_games=true`);
     return res?.response.games || null;
+  }
+
+  static async getPlayerAliases(steamId: string) {
+    const res = await this.request<PlayerAlias[]>(`https://steamcommunity.com/profiles/${steamId}/ajaxaliases`);
+    return res || [];
   }
 
   static async getPlayerBans(steamId: string) {
