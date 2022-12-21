@@ -21,8 +21,9 @@ export interface ChangeLog {
 }
 
 // EWorkshopFileType is lacking
+// https://partner.steamgames.com/doc/api/ISteamRemoteStorage#EWorkshopFileType
 export enum FileType {
-  Normal = 0,
+  Item = 0,
   Microtransaction = 1,
   Collection = 2,
   Art = 3,

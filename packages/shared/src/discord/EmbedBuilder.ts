@@ -245,11 +245,17 @@ export default class EmbedBuilder {
         value: file.tags.map((tag) => tag.tag).join('\n') || 'None',
         inline: true,
       },
-      ...([FileType.Art, FileType.Normal, FileType.Screenshot].includes(file.file_type) ? [{
-        name: 'File Size',
-        value: SteamUtil.formatFileSize(parseInt(file.file_size, 10)),
-        inline: true,
-      }] : []),
+      ...([
+        FileType.Art,
+        FileType.Item,
+        FileType.Microtransaction,
+        FileType.Screenshot,
+        FileType.WebGuide,
+      ].includes(file.file_type) ? [{
+          name: 'File Size',
+          value: SteamUtil.formatFileSize(parseInt(file.file_size, 10)),
+          inline: true,
+        }] : []),
       {
         name: 'Steam Client Link',
         value: SteamUtil.BP.UGC(file.publishedfileid),

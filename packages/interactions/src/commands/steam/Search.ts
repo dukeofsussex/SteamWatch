@@ -198,11 +198,17 @@ export default class SearchCommand extends SlashCommand {
         name: `${EMOJIS.ALERT} Banned`,
         value: file.ban_reason,
       }] : []),
-      ...([FileType.Art, FileType.Normal, FileType.Screenshot].includes(file.file_type) ? [{
-        name: 'File Size',
-        value: SteamUtil.formatFileSize(parseInt(file.file_size, 10)),
-        inline: true,
-      }] : []),
+      ...([
+        FileType.Art,
+        FileType.Item,
+        FileType.Microtransaction,
+        FileType.Screenshot,
+        FileType.WebGuide,
+      ].includes(file.file_type) ? [{
+          name: 'File Size',
+          value: SteamUtil.formatFileSize(parseInt(file.file_size, 10)),
+          inline: true,
+        }] : []),
       {
         name: 'Steam Client Link',
         value: SteamUtil.BP.UGC(ugcId),
