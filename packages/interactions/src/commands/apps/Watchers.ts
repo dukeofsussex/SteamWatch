@@ -403,7 +403,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       return ctx.error(`Unable to parse UGC identifier: ${query}`);
     }
 
-    let ugc: UGC | undefined;
+    let ugc: UGC;
 
     try {
       ugc = (await db.select('*')
@@ -411,11 +411,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         .where('id', ugcId)
         .first()) || (await SteamUtil.persistUGC(ugcId));
     } catch (err) {
-      return ctx.error(`Unable to add watcher for UGC! ${(err as Error).message}`);
-    }
-
-    if (!ugc) {
-      return ctx.error(`Unable to find UGC with the id **${ugcId}**!`);
+      return ctx.error(`Unable to add UGC watcher! ${(err as Error).message}`);
     }
 
     const app = await db.select('*')

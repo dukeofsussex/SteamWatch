@@ -3,6 +3,7 @@ import SteamID from 'steamid';
 import { EResult } from 'steam-user';
 import SteamAPI, { AppType } from './SteamAPI';
 import steamClient from './SteamClient';
+import { FileType, PublishedFile } from './SteamWatchUser';
 import db, {
   App,
   CurrencyCode,
@@ -234,7 +235,8 @@ export default class SteamUtil {
   }
 
   static async persistUGC(ugcId: string) {
-    const file = (await SteamAPI.getPublishedFileDetails([ugcId]))?.[0];
+    const published = (await steamClient.getPublishedFileDetails([parseInt(ugcId, 10)])) as any;
+    const file = published?.files?.[ugcId] as PublishedFile;
 
     if (!file) {
       throw new Error(`Nothing found with the id **${ugcId}**`);
@@ -242,21 +244,23 @@ export default class SteamUtil {
       throw new Error(`File banned! Reason: ${file.ban_reason || 'Unknown'}`);
     } else if (file.result !== EResult.OK) {
       throw new Error(`Invalid result: **${EResult[file.result]}**`);
+    } else if (file.file_type !== FileType.Collection && !file.can_subscribe) {
+      throw new Error(`Cannot watch UGC of type ${FileType[file.file_type]}`);
     }
 
     const app = (await db.select('id')
       .from('app')
-      .where('id', file.consumer_app_id)
+      .where('id', file.consumer_appid)
       .first())
-      || (await SteamUtil.persistApp(file.consumer_app_id));
+      || (await SteamUtil.persistApp(file.consumer_appid));
 
     if (!app) {
-      throw new Error(`App not found with the id **${file.consumer_app_id}**`);
+      throw new Error(`App not found with the id **${file.consumer_appid}**`);
     }
 
     const ugc: UGC = {
       id: ugcId,
-      appId: file.consumer_app_id,
+      appId: file.consumer_appid,
       lastChecked: null,
       name: file.title,
     };
