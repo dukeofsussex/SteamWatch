@@ -198,6 +198,11 @@ export default class SearchCommand extends SlashCommand {
         name: `${EMOJIS.ALERT} Banned`,
         value: file.ban_reason,
       }] : []),
+      {
+        name: 'Type',
+        value: FileType[file.file_type] || 'Unknown',
+        inline: true,
+      },
       ...([
         FileType.Art,
         FileType.Item,

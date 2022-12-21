@@ -245,6 +245,11 @@ export default class EmbedBuilder {
         value: file.tags.map((tag) => tag.tag).join('\n') || 'None',
         inline: true,
       },
+      {
+        name: 'Type',
+        value: FileType[file.file_type] || 'Unknown',
+        inline: true,
+      },
       ...([
         FileType.Art,
         FileType.Item,
