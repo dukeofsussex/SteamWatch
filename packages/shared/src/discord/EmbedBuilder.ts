@@ -9,7 +9,7 @@ import DiscordUtil from './DiscordUtil';
 import { DEFAULT_CURRENCY, EMBED_COLOURS } from '../constants';
 import db, { App, Currency, CurrencyCode } from '../db';
 import SteamAPI, { NewsPost, PriceOverview, Tag } from '../steam/SteamAPI';
-import type { PublishedFile } from '../steam/SteamWatchUser';
+import { FileType, PublishedFile } from '../steam/SteamWatchUser';
 import SteamUtil from '../steam/SteamUtil';
 import transformArticle from '../transformers';
 
@@ -245,11 +245,12 @@ export default class EmbedBuilder {
         value: file.tags.map((tag) => tag.tag).join('\n') || 'None',
         inline: true,
       },
-      {
+      ...([FileType.Art, FileType.Normal, FileType.Screenshot].includes(file.file_type) ? [{
         name: 'File Size',
         value: SteamUtil.formatFileSize(parseInt(file.file_size, 10)),
         inline: true,
-      }, {
+      }] : []),
+      {
         name: 'Steam Client Link',
         value: SteamUtil.BP.UGC(file.publishedfileid),
       }],

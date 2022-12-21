@@ -53,6 +53,7 @@ export interface PublishedFile {
   banned: boolean;
   ban_reason: string;
   file_type: FileType;
+  can_subscribe: boolean;
   subscriptions: number;
   favorited: number;
   lifetime_subscriptions: number;

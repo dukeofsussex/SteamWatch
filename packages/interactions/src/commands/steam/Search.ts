@@ -11,6 +11,7 @@ import {
   EMBED_COLOURS,
   EMOJIS,
   env,
+  FileType,
   PublishedFile,
   SteamAPI,
   steamClient,
@@ -168,11 +169,13 @@ export default class SearchCommand extends SlashCommand {
         name: 'Favourites',
         value: file.favorited.toString(),
         inline: true,
-      }, {
+      },
+      ...(file.can_subscribe ? [{
         name: 'Subscriptions',
         value: file.subscriptions.toString(),
         inline: true,
-      }, {
+      }] : []),
+      {
         name: 'Views',
         value: file.views.toString(),
         inline: true,
@@ -180,11 +183,13 @@ export default class SearchCommand extends SlashCommand {
         name: 'Lifetime Favs',
         value: file.lifetime_favorited.toString(),
         inline: true,
-      }, {
+      },
+      ...(file.can_subscribe ? [{
         name: 'Lifetime Subs',
         value: file.lifetime_subscriptions.toString(),
         inline: true,
-      }, {
+      }] : []),
+      {
         name: 'Tags',
         value: file.tags.map((tag) => tag.tag).join('\n') || 'None',
         inline: true,
@@ -193,11 +198,11 @@ export default class SearchCommand extends SlashCommand {
         name: `${EMOJIS.ALERT} Banned`,
         value: file.ban_reason,
       }] : []),
-      {
+      ...([FileType.Art, FileType.Normal, FileType.Screenshot].includes(file.file_type) ? [{
         name: 'File Size',
         value: SteamUtil.formatFileSize(parseInt(file.file_size, 10)),
         inline: true,
-      },
+      }] : []),
       {
         name: 'Steam Client Link',
         value: SteamUtil.BP.UGC(ugcId),
