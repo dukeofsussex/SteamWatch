@@ -1,4 +1,4 @@
-import { stripIndents } from 'common-tags';
+import { oneLine, stripIndents } from 'common-tags';
 import {
   ButtonStyle,
   ComponentType,
@@ -6,10 +6,11 @@ import {
   MessageOptions,
 } from 'slash-create';
 import DiscordUtil from './DiscordUtil';
-import { DEFAULT_CURRENCY, EMBED_COLOURS } from '../constants';
+import { DEFAULT_CURRENCY, EMBED_COLOURS, EMOJIS } from '../constants';
 import db, { App, Currency, CurrencyCode } from '../db';
 import SteamAPI, { NewsPost, PriceOverview, Tag } from '../steam/SteamAPI';
-import { FileType, PublishedFile } from '../steam/SteamWatchUser';
+import steamClient from '../steam/SteamClient';
+import { FileType, PublishedFile, SteamDeckCompatibility } from '../steam/SteamWatchUser';
 import SteamUtil from '../steam/SteamUtil';
 import transformArticle from '../transformers';
 
@@ -110,7 +111,10 @@ export default class EmbedBuilder {
         .first();
     currency = currency || DEFAULT_CURRENCY;
 
-    const details = await SteamAPI.getAppDetails(appId, currency.countryCode);
+    const [details, steamdeck] = await Promise.all([
+      SteamAPI.getAppDetails(appId, currency.countryCode),
+      steamClient.getProductInfo([appId], []),
+    ]);
     let playerCount: number | null = null;
 
     if (details?.type === 'game') {
@@ -133,6 +137,15 @@ export default class EmbedBuilder {
         initial: details.price_overview.initial,
       });
     }
+
+    const steamdeckCompatibility = parseInt(
+      steamdeck.apps[appId]?.appinfo
+        .common
+        .steam_deck_compatibility
+        .category
+      ?? SteamDeckCompatibility.Unknown,
+      10,
+    );
 
     return {
       embeds: [{
@@ -196,6 +209,15 @@ export default class EmbedBuilder {
               ${DiscordUtil.getStateEmoji(details.platforms.linux)} **Linux**
             `,
             inline: true,
+          },
+          {
+            name: 'Steam Deck Compatibility',
+            value: oneLine`
+              ${steamdeckCompatibility === SteamDeckCompatibility.Verified ? EMOJIS.SUCCESS : ''}
+              ${steamdeckCompatibility === SteamDeckCompatibility.Playable ? EMOJIS.WARNING : ''}
+              ${steamdeckCompatibility === SteamDeckCompatibility.Unsupported ? EMOJIS.ERROR : ''}
+              ${SteamDeckCompatibility[steamdeckCompatibility] || 'Unknown'}
+            `,
           },
           {
             name: 'Steam Client Link',

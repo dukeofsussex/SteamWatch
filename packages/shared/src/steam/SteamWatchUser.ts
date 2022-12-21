@@ -72,6 +72,13 @@ export interface QueryFilesResponse {
   next_cursor: string;
 }
 
+export enum SteamDeckCompatibility {
+  Unknown = 0,
+  Unsupported = 1,
+  Playable = 2,
+  Verified = 3,
+}
+
 export default class SteamWatchUser extends SteamUser {
   connected = false;
 

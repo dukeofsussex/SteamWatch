@@ -26,6 +26,7 @@ export const EMOJIS = {
   PRICE_UP: '\uD83D\uDCC8',
   SUCCESS: '\u2705',
   TADA: '\uD83C\uDF89',
+  WARNING: '\u26A0',
 };
 
 const perms = new Permissions([
