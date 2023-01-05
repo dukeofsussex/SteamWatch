@@ -83,6 +83,7 @@ export default class SteamUtil {
     Community: () => SteamUtil.BP.Raw('url/CommunityHome'),
     EventAnnouncement: (appId: number, eventId: string) => SteamUtil.BP.Raw(`url/EventAnnouncementPage/${appId}/${eventId}`),
     GameHub: (id: string) => SteamUtil.BP.Raw(`url/GameHub/${id}`),
+    Group: (id: number) => SteamUtil.BP.Raw(`url/GroupSteamIDPage/${id}`),
     Profile: (id: string) => SteamUtil.BP.Raw(`url/SteamIDPage/${id}`),
     Raw: (path: string) => `steam://${path}`,
     Store: (id: number) => SteamUtil.BP.Raw(`store/${id}`),
@@ -93,10 +94,12 @@ export default class SteamUtil {
   static readonly REGEXPS = {
     AppNews: /news\/app\/(\d+)/,
     Community: /steamcommunity\.com/,
+    EventAnnouncement: /news\/app\/(\d+)\/view\/(\d+)/,
     GameHub: /steamcommunity\.com\/app\/(\d+)/,
+    Group: /steamcommunity\.com\/groups\/([^/]+)/,
     Profile: /steamcommunity\.com\/(?:profiles|id)\/(\d{17}|[\w-]{2,32})/,
     SteamId: /(STEAM_[0-5]:[01]:\d+)|(\[U:[10]:\d+\])|(\d{17})/i,
-    Store: /steampowered\.com\/app\/(\d+)/,
+    Store: /steampowered\.com(?:\/agecheck)?\/app\/(\d+)/,
     UGC: /filedetails\/\?id=(\d+)/,
     Workshop: /steamcommunity\.com\/app\/(\d+)\/workshop/,
   };

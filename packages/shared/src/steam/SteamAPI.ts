@@ -37,6 +37,24 @@ export interface AppNews {
   }
 }
 
+export interface GroupDetails {
+  success: 0 | 1;
+  appid: number;
+  clanAccountID: number;
+  clanSteamIDString: string;
+  member_count: number;
+  vanity_url: string;
+  is_ogg: boolean;
+  is_creator_home: 0 | 1;
+  is_curator: boolean;
+  has_visible_store_page: boolean;
+  avatar_full_url: string;
+  avatar_medium_url: string;
+  group_name: string;
+  partner_events_enabled: boolean;
+  creator_page_bg_url: string;
+}
+
 export interface KeyedAppDetails {
   [key: number]: {
     success: boolean;
@@ -196,6 +214,10 @@ export default class SteamAPI {
     const urlParts = res.url.split('/');
 
     return urlParts[urlParts.length - 1];
+  }
+
+  static getGroupDetails(name: string) {
+    return this.request<GroupDetails>(`https://steamcommunity.com/groups/${name}/ajaxgetvanityandclanid/`);
   }
 
   static async getNumberOfCurrentPlayers(appId: number) {
