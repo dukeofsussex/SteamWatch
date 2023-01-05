@@ -80,6 +80,6 @@ export default class OpenCommand extends GuildOnlyCommand {
       });
     }
 
-    return ctx.error('Unable to extract Steam Client Links.');
+    return ctx.error(urls.length === 0 ? 'No Steam links detected.' : 'Unable to extract Steam Client links.');
   }
 }
