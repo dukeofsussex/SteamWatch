@@ -26,11 +26,11 @@ export interface AppPrice {
   price: number;
   discountedPrice: number;
   discount: number;
-  lastChecked: Date;
+  lastChecked: Date | null;
 }
 
 export interface ChannelWebhook {
-  id: number;
+  id: string;
   guildId: string;
   webhookId: string;
   webhookToken: string;
@@ -47,7 +47,18 @@ export interface Guild {
   id: string;
   name: string;
   currencyId: number;
+  customWebhookName: string | null;
+  customWebhookAvatar: string | null;
   lastUpdate: Date;
+}
+
+export interface Patron {
+  id: number;
+  discordId: string | null;
+  email: string;
+  pledgeAmountCents: number;
+  pledgeTier: number;
+  guildId: string | null;
 }
 
 export interface UGC {
@@ -60,10 +71,11 @@ export interface UGC {
 export interface Watcher {
   id: number;
   appId: number;
-  ugcId: string;
+  ugcId: string | null;
   channelId: string;
   threadId: string | null;
   type: WatcherType;
+  inactive: boolean;
 }
 
 export interface WatcherMention {

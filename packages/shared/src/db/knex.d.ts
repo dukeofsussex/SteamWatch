@@ -7,6 +7,7 @@ import {
   ChannelWebhook,
   Currency,
   Guild,
+  Patron,
   UGC,
   Watcher,
   WatcherMention,
@@ -19,6 +20,7 @@ declare module 'knex/types/tables' {
     channel_webhook: ChannelWebhook;
     currency: Currency;
     guild: Guild;
+    patron: Patron;
     ugc: UGC;
     watcher: Watcher;
     watcher_mention: WatcherMention;
