@@ -29,6 +29,5 @@ exports.down = (knex: Knex) => knex.schema
   })
   .alterTable('ugc', (table) => {
     table.dateTime('last_update')
-      .notNullable()
       .after('name');
   });
