@@ -15,7 +15,7 @@
     "dotenv": "^16.0.1",
     "discord-api-types": "^0.37.2",
     "html-entities": "^2.3.3",
-    "knex": "^2.2.0",
+    "knex": "^2.4.0",
     "mysql": "^2.18.1",
     "node-fetch": "^2.6.7",
     "slash-create": "^5.7.1",

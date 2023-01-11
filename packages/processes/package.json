@@ -14,7 +14,7 @@
     "common-tags": "^1.8.2",
     "discord-api-types": "^0.37.2",
     "fastify": "^3.9.1",
-    "knex": "^2.2.0",
+    "knex": "^2.4.0",
     "markdown-table": "^2.0.0",
     "node-fetch": "^2.6.7",
     "slash-create": "^5.7.1",
