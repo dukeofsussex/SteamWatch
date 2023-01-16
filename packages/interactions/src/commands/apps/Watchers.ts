@@ -209,10 +209,9 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.sendResults(await SteamUtil.createAppAutocomplete(value));
   }
 
-  // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
     try {
-      await GuildOnlyCommand.setupGuild(ctx);
+      await this.setupGuild(ctx);
     } catch {
       return null;
     }

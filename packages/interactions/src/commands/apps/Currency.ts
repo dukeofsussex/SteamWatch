@@ -32,10 +32,9 @@ export default class CurrencyCommand extends GuildOnlyCommand {
     this.filePath = __filename;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
     try {
-      const setup = await GuildOnlyCommand.setupGuild(ctx);
+      const setup = await this.setupGuild(ctx);
 
       // Just selected a currency, no need to do it a second time
       if (setup) {

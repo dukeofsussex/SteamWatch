@@ -97,8 +97,8 @@ export default class GuildOnlyCommand extends SlashCommand {
   /**
    * @returns Boolean indicating whether the guild needed to be set up.
    */
-  protected static async setupGuild(ctx: CommandContext) {
-    await ctx.defer();
+  protected async setupGuild(ctx: CommandContext) {
+    await ctx.defer(this.deferEphemeral);
 
     const exists = await db.select('id')
       .from('guild')
