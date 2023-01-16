@@ -25,6 +25,7 @@ import {
   EMBED_COLOURS,
   env,
   logger,
+  PatreonUtils,
   SteamAPI,
   SteamUtil,
   STEAM_NEWS_APPID,
@@ -223,19 +224,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
     const { add, list, remove } = ctx.options as CommandArguments;
 
     if (add) {
-      // Check whether the guild has reached the max amount of watchers
-      const watchedCount = await db.count('* AS count')
-        .from('watcher')
-        .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-        .where('guild_id', ctx.guildID!)
-        .first()
-        .then((res: any) => parseInt(res.count, 10));
+      const error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
 
-      if (watchedCount >= env.settings.maxWatchersPerGuild) {
-        return ctx.error(oneLine`
-          Reached the maximum amount of watchers
-          [${watchedCount}/${env.settings.maxWatchersPerGuild}]!
-        `);
+      if (error) {
+        return ctx.error(error);
       }
 
       const addSub = add[ctx.subcommands[1]! as keyof AddArguments];
@@ -356,7 +348,13 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.registerComponent(
       'confirm',
       async () => {
-        let error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
+        let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
+
+        if (error) {
+          return ctx.error(error);
+        }
+
+        error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
 
         if (error) {
           return ctx.error(error);
@@ -456,7 +454,13 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.registerComponent(
       'confirm',
       async () => {
-        const error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
+        let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
+
+        if (error) {
+          return ctx.error(error);
+        }
+
+        error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
 
         if (error) {
           return ctx.error(error);
@@ -589,6 +593,26 @@ export default class WatchersCommand extends GuildOnlyCommand {
         url: SteamUtil.URLS.Icon(watcher.appId, watcher.icon),
       },
     });
+  }
+
+  private static async hasReachedMaxWatchers(guildId: string) {
+    const result = await db.select(db.raw('COUNT(*) AS count'), 'pledge_tier')
+      .from('watcher')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .leftJoin('patron', 'patron.guild_id', 'channel_webhook.guild_id')
+      .where('channel_webhook.guild_id', guildId)
+      .andWhere('inactive', false)
+      .groupBy('patron.id');
+    const { count } = result[0];
+    const max = env.settings.maxMentionsPerWatcher
+      + PatreonUtils.getExtraWatchers(result.map((watcher) => watcher.pledgeTier));
+
+    return (count >= max)
+      ? stripIndents`
+          Reached the maximum amount of watchers [${count}/${max}]!
+          Visit [Patreon](https://patreon.com/steamwatch) for subscriptions to increase your maximum.
+        `
+      : null;
   }
 
   private static async setWebhook(channelId: string, guildId: string) {
