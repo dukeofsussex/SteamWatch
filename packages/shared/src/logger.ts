@@ -1,5 +1,5 @@
-import { oneLine } from 'common-tags';
 import { inspect } from 'node:util';
+import { oneLine } from 'common-tags';
 import { createLogger, format, transports } from 'winston';
 import env from './env';
 

@@ -6,8 +6,8 @@ import {
   SlashCommand,
   SlashCreator,
 } from 'slash-create';
-import { EPrivacyState } from 'steam-user';
 import SteamID from 'steamid';
+import { EPrivacyState } from 'steam-user';
 import {
   DiscordUtil,
   env,

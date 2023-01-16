@@ -1,3 +1,4 @@
+import { stripIndents } from 'common-tags';
 import { CommandContext, SlashCommand, SlashCreator } from 'slash-create';
 import {
   db,
@@ -6,7 +7,6 @@ import {
   PatreonUtils,
   PATREON_ICON,
 } from '@steamwatch/shared';
-import { stripIndents } from 'common-tags';
 
 export default class PremiumCommand extends SlashCommand {
   constructor(creator: SlashCreator) {

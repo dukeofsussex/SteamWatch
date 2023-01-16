@@ -1,5 +1,5 @@
-import { oneLine, stripIndents } from 'common-tags';
 import type { DiscordAPIError } from '@discordjs/rest';
+import { oneLine, stripIndents } from 'common-tags';
 import {
   PermissionFlagsBits,
   RESTGetAPIChannelWebhooksResult,

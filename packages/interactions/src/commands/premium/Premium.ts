@@ -1,4 +1,4 @@
-import { stripIndents } from 'common-tags';
+import { oneLine, stripIndents } from 'common-tags';
 import {
   CommandContext,
   CommandOptionType,
@@ -12,7 +12,6 @@ import {
   PatreonUtils,
   PATREON_ICON,
 } from '@steamwatch/shared';
-import { oneLine } from 'slash-create/lib/util';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 
 interface CommandArguments {
