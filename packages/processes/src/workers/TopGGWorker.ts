@@ -1,10 +1,15 @@
 import fetch from 'node-fetch';
-import { db, logger } from '@steamwatch/shared';
+import { db, env, logger } from '@steamwatch/shared';
 import Worker from './Worker';
 
 interface TopGGResponse {
   error?: string;
 }
+
+const TOPGG_ENV = {
+  ...env,
+  topggToken: process.env['TOPGG_TOKEN'] || '',
+};
 
 export default class TopGGWorker extends Worker {
   constructor() {
@@ -12,7 +17,7 @@ export default class TopGGWorker extends Worker {
   }
 
   async work() {
-    if (!process.env['TOPGG_TOKEN']) {
+    if (!TOPGG_ENV.topggToken) {
       logger.warn('No token set for Top.gg, stopping...');
       this.stop();
       return;
@@ -26,7 +31,7 @@ export default class TopGGWorker extends Worker {
     try {
       const res = await fetch('https://top.gg/api/bots/stats', {
         headers: {
-          authorization: process.env['TOPGG_TOKEN'],
+          authorization: TOPGG_ENV.topggToken,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
