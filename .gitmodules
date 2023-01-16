@@ -1,0 +1,3 @@
+[submodule "packages/patreon"]
+	path = packages/patreon
+	url = https://github.com/dukeofsussex/SteamWatch-Patreon.git
