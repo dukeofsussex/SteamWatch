@@ -4,17 +4,21 @@ import {
   ChannelWebhook,
   Watcher as DBWatcher,
   WatcherMention,
+  Guild,
 } from '@steamwatch/shared';
 import type MessageQueue from '../MessageQueue';
 import Worker from '../workers/Worker';
 
 type WebhookedMentions = Pick<ChannelWebhook, 'webhookId' | 'webhookToken'>
 & Pick<DBWatcher, 'threadId'>
+& Pick<Guild, 'customWebhookAvatar' | 'customWebhookName'>
 & { mentions: string[] };
 
 type WebhookWatcher = Pick<WatcherMention, 'entityId' | 'type'>
 & Pick<ChannelWebhook, 'webhookId' | 'webhookToken' | 'guildId'>
-& Pick<DBWatcher, 'id' | 'threadId'>;
+& Pick<DBWatcher, 'id' | 'threadId'>
+& Pick<Guild, 'customWebhookAvatar' | 'customWebhookName'>
+& { maxPledgeTier: number };
 
 type KnexWhereObject = object;
 
@@ -31,15 +35,21 @@ export default abstract class Watcher extends Worker {
       'watcher.id',
       'thread_id',
       'entity_id',
-      'guild_id',
+      'channel_webhook.guild_id',
       'watcher_mention.type',
       'webhook_id',
       'webhook_token',
+      'custom_webhook_name',
+      'custom_webhook_avatar',
+      db.raw('MAX(pledge_tier) AS maxPledgeTier'),
     ).from('watcher')
       .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
-      .where(where);
+      .leftJoin('patron', 'patron.guild_id', 'guild.id')
+      .where(where)
+      .andWhere('inactive', false)
+      .groupBy('guild.id');
 
     const groupedWatchers = watchers.reduce((
       group: { [index: string]: WebhookedMentions },
@@ -47,6 +57,8 @@ export default abstract class Watcher extends Worker {
     ) => {
       // eslint-disable-next-line no-param-reassign
       group[watcher.id] = group[watcher.id] || {
+        customWebhookAvatar: watcher.maxPledgeTier > 0 ? watcher.customWebhookAvatar : null,
+        customWebhookName: watcher.maxPledgeTier > 0 ? watcher.customWebhookName : null,
         webhookId: watcher.webhookId,
         webhookToken: watcher.webhookToken,
         threadId: watcher.threadId,
@@ -65,15 +77,19 @@ export default abstract class Watcher extends Worker {
 
     for (let i = 0; i < keys.length; i += 1) {
       const watcher = groupedWatchers[keys[i]!] as WebhookedMentions;
-      this.queue.enqueue(
-        watcher.webhookId,
-        watcher.webhookToken,
-        watcher.threadId,
-        {
+      this.queue.enqueue({
+        id: watcher.webhookId,
+        token: watcher.webhookToken,
+        threadId: watcher.threadId,
+        message: {
           content: watcher.mentions.join(' ') || '',
           embeds,
         },
-      );
+        ...(watcher.customWebhookAvatar ? {
+          customWebhookAvatar: watcher.customWebhookAvatar!,
+          customWebhookName: watcher.customWebhookName!,
+        } : {}),
+      });
     }
   }
 

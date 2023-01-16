@@ -77,7 +77,7 @@ export default class BroadcastWorker extends Worker {
     }];
 
     const channels = await db.select('channel_webhook.*')
-      .from((fromBuilder: Knex.QueryBuilder) => fromBuilder.select('pg.guild_id', 'channel_id', db.raw('COUNT(channel_id) AS countPerChannel'), db.raw('maxPerGuild'))
+      .from((fromBuilder: Knex.QueryBuilder) => fromBuilder.select('pg.guild_id', 'channel_id', 'thread_id', db.raw('COUNT(channel_id) AS countPerChannel'), db.raw('maxPerGuild'))
         .from('watcher')
         .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
         .innerJoin(db.select('guild_id', db.raw('MAX(countPerChannel) AS maxPerGuild'))
@@ -99,7 +99,12 @@ export default class BroadcastWorker extends Worker {
     for (let i = 0; i < channels.length; i += 1) {
       const channel = channels[i];
 
-      this.messageQueue.enqueue(channel.webhookId, channel.webhookToken, message);
+      this.messageQueue.enqueue({
+        id: channel.webhookId,
+        threadId: channel.threadId,
+        token: channel.webhookToken,
+        message,
+      });
     }
 
     await writeFile(FILENAME, JSON.stringify({

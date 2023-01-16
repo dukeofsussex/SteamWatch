@@ -20,6 +20,8 @@ export interface QueuedItem {
   token: string;
   threadId: string | null;
   message: Pick<EditMessageOptions, 'content' | 'embeds' | 'components'>;
+  customWebhookAvatar?: string;
+  customWebhookName?: string;
 }
 
 export default class MessageQueue implements Manager {
@@ -41,13 +43,8 @@ export default class MessageQueue implements Manager {
     this.queueDelay = 250; // 0.25s
   }
 
-  enqueue(id: string, token: string, threadId: string | null, message: QueuedItem['message']) {
-    this.queue.push({
-      id,
-      token,
-      threadId,
-      message,
-    });
+  enqueue(item: QueuedItem) {
+    this.queue.push(item);
 
     if (!this.queueTimeout) {
       this.queueTimeout = setTimeout(() => this.notify(), this.queueDelay);
@@ -127,6 +124,8 @@ export default class MessageQueue implements Manager {
 
   private async notify() {
     const {
+      customWebhookAvatar,
+      customWebhookName,
       id,
       message,
       threadId,
@@ -142,8 +141,8 @@ export default class MessageQueue implements Manager {
         } : {}),
         body: {
           content: message.content,
-          username: this.user!.username,
-          avatar_url: this.user!.avatarUrl,
+          username: customWebhookName || this.user!.username,
+          avatar_url: customWebhookAvatar || this.user!.avatarUrl,
           embeds: message.embeds || [],
           components: message.components || [],
         },
