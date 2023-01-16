@@ -513,7 +513,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       const group = grouped[i];
       await ctx.send({
         content: `\`\`\`md\n${markdownTable([
-          ['Id', 'App/UGC Id', 'Name', 'Channel', 'Type'],
+          ['Id', 'App/UGC Id', 'Name', 'Channel', 'Type', 'Active'],
           ...(await Promise.all(group.map(async (w: any) => {
             const channelName = await DiscordAPI.getChannelName(w.channelId);
 
@@ -522,11 +522,12 @@ export default class WatchersCommand extends GuildOnlyCommand {
               w.ugcId || w.appId,
               w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName,
               channelName,
-              w.type.replace('_', ' '),
+              w.type,
+              !w.inactive ? 'X' : '',
             ];
           }))),
         ], {
-          align: 'r',
+          align: ['r', 'r', 'r', 'r', 'r', 'c'],
         })}\`\`\``,
       });
     }
