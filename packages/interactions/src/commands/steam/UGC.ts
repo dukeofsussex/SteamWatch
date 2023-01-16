@@ -1,5 +1,4 @@
 import {
-  AutocompleteContext,
   CommandContext,
   CommandOptionType,
   SlashCommand,
@@ -7,7 +6,6 @@ import {
 } from 'slash-create';
 import SteamUser from 'steam-user';
 import {
-  EmbedBuilder,
   EMBED_COLOURS,
   EMOJIS,
   env,
@@ -19,42 +17,21 @@ import {
   transformArticle,
 } from '@steamwatch/shared';
 
-interface Arguments {
-  query: string;
-}
-
 interface CommandArguments {
-  app?: Arguments;
-  ugc?: Arguments;
+  query: string;
 }
 
 export default class SearchCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
-      name: 'search',
-      description: 'Search Steam.',
+      name: 'ugc',
+      description: 'Search the Steam workshop.',
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
       options: [{
-        type: CommandOptionType.SUB_COMMAND,
-        name: 'app',
-        description: 'Search the store.',
-        options: [{
-          type: CommandOptionType.STRING,
-          name: 'query',
-          description: 'Search term or app id',
-          autocomplete: true,
-          required: true,
-        }],
-      }, {
-        type: CommandOptionType.SUB_COMMAND,
-        name: 'ugc',
-        description: 'Search the workshop.',
-        options: [{
-          type: CommandOptionType.STRING,
-          name: 'query',
-          description: 'UGC url or item id',
-          required: true,
-        }],
+        type: CommandOptionType.STRING,
+        name: 'query',
+        description: 'UGC url or item id',
+        required: true,
       }],
       throttling: {
         duration: 10,
@@ -66,41 +43,10 @@ export default class SearchCommand extends SlashCommand {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  override async autocomplete(ctx: AutocompleteContext) {
-    const value = ctx.options[ctx.subcommands[0]!][ctx.focused];
-
-    return ctx.sendResults(await SteamUtil.createAppAutocomplete(value));
-  }
-
-  // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
     await ctx.defer();
-    const { app, ugc } = ctx.options as CommandArguments;
+    const { query } = ctx.options as CommandArguments;
 
-    if (app) {
-      return SearchCommand.searchApp(ctx, app.query);
-    }
-
-    return SearchCommand.searchUGC(ctx, ugc!.query);
-  }
-
-  private static async searchApp(ctx: CommandContext, query: string) {
-    const appId = await SteamUtil.findAppId(query);
-
-    if (!appId) {
-      return ctx.error(`Unable to find an application with the id/name: ${query}`);
-    }
-
-    const message = await EmbedBuilder.createStore(appId, ctx.guildID);
-
-    if (!message) {
-      return ctx.error('Unable to fetch the application\'s details.');
-    }
-
-    return ctx.send(message);
-  }
-
-  private static async searchUGC(ctx: CommandContext, query: string) {
     if (!steamClient.connected) {
       return ctx.error('Currently not connected to Steam. Please try again in a few minutes');
     }
