@@ -70,6 +70,11 @@ export default class InfoCommand extends SlashCommand {
         }, {
           type: ComponentType.BUTTON,
           style: ButtonStyle.LINK,
+          label: 'Patreon',
+          url: 'https://patreon.com/steamwatch',
+        }, {
+          type: ComponentType.BUTTON,
+          style: ButtonStyle.LINK,
           label: 'Support',
           url: env.discord.invite,
         }, {
