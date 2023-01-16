@@ -195,6 +195,7 @@ export default class PriceWatcher extends Watcher {
       .from((builder: Knex.QueryBuilder) => builder.count('app_id AS count')
         .from('watcher')
         .where('watcher.type', WatcherType.PRICE)
+        .andWhere('inactive', false)
         .groupBy('app_id')
         .as('innerCount'))
       .first()
@@ -225,11 +226,10 @@ export default class PriceWatcher extends Watcher {
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
       .innerJoin('currency', 'currency.id', 'guild.currency_id')
-      .innerJoin('app_price', function appPriceInnerJoin() {
-        this.on('app_price.app_id', '=', 'app.id')
-          .andOn('currency.id', '=', 'app_price.currency_id');
-      })
+      .innerJoin('app_price', (builder) => builder.on('app_price.app_id', '=', 'app.id')
+        .andOn('currency.id', '=', 'app_price.currency_id'))
       .where((builder) => builder.where((innerBuilder) => innerBuilder.where('watcher.type', WatcherType.PRICE)
+        .andWhere('inactive', false)
         .andWhereRaw('last_checked <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [env.settings.watcherRunFrequency]))
         .orWhereNull('app_price.last_checked'))
       .groupBy('app.id', 'currency.code')
