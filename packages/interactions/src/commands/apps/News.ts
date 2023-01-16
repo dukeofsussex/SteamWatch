@@ -22,7 +22,7 @@ export default class NewsCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'news',
-      description: 'Fetch the latest cached news article for the specified app.',
+      description: 'Fetch the latest news article for the specified app.',
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
       options: [{
         type: CommandOptionType.STRING,

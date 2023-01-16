@@ -26,7 +26,7 @@ export default class PriceCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'price',
-      description: 'Fetch the currently cached price for the specified app.',
+      description: 'Fetch the current price for the specified app.',
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
       options: [{
         type: CommandOptionType.STRING,
