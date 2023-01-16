@@ -4,17 +4,17 @@ import { EPublishedFileQueryType, EPublishedFileVisibility, EResult } from 'stea
 import env from '../env';
 import logger from '../logger';
 
-export type AppType = 'application' | 'config' | 'dlc' | 'game' | 'music' | 'package' | 'series' | 'video';
+export type AppType = 'application' | 'config' | 'demo' | 'dlc' | 'game' | 'hardware' | 'music' | 'package' | 'series' | 'tool' | 'video';
 
 export interface AppDetails {
   achievements?: Total;
   categories?: Tag[];
-  developers: string[];
+  developers?: string[];
   genres?: Tag[];
   header_image: string;
   is_free: boolean;
   name: string;
-  platforms: {
+  platforms?: {
     windows: boolean;
     mac: boolean;
     linux: boolean;
@@ -22,13 +22,13 @@ export interface AppDetails {
   publishers?: string[];
   price_overview?: PriceOverview;
   recommendations?: Total;
-  release_date: {
+  release_date?: {
     coming_soon: boolean;
     date: string;
   }
-  short_description: string;
+  short_description?: string;
   type: AppType;
-  website: string | null;
+  website?: string | null;
 }
 
 export interface AppNews {

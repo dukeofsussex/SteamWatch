@@ -1,4 +1,5 @@
 import { oneLine, stripIndents } from 'common-tags';
+import { decode } from 'html-entities';
 import {
   ButtonStyle,
   ComponentType,
@@ -142,7 +143,7 @@ export default class EmbedBuilder {
       steamdeck.apps[appId]?.appinfo
         .common
         .steam_deck_compatibility
-        .category
+        ?.category
       ?? SteamDeckCompatibility.Unknown,
       10,
     );
@@ -150,7 +151,7 @@ export default class EmbedBuilder {
     return {
       embeds: [{
         color: EMBED_COLOURS.DEFAULT,
-        description: details.short_description,
+        description: decode(details.short_description) || '',
         title: details.name,
         image: {
           url: details.header_image,
@@ -163,45 +164,45 @@ export default class EmbedBuilder {
             value: price,
             inline: true,
           },
-          {
+          ...(details.developers?.length ? [{
             name: 'Developers',
-            value: details.developers.join('\n'),
+            value: details.developers.join('\n') || 'Unknown',
             inline: true,
-          },
-          {
+          }] : []),
+          ...(details.publishers?.length && details.publishers[0]?.length ? [{
             name: 'Publishers',
-            value: details.publishers?.join('\n') || 'None',
+            value: details.publishers.join('\n'),
             inline: true,
-          },
+          }] : []),
           ...(playerCount !== null ? [{
             name: 'Player Count',
             value: playerCount.toString(),
             inline: true,
           }] : []),
-          {
+          ...(details.release_date ? [{
             name: 'Release Date',
             value: details.release_date.date || 'Unknown',
             inline: true,
-          },
-          {
+          }] : []),
+          ...(details.achievements || details.recommendations ? [{
             name: 'Details',
             value: stripIndents`
               ${DiscordUtil.getStateEmoji(details.achievements)} **Achievements:** ${details.achievements?.total || 0}
               ${DiscordUtil.getStateEmoji(details.recommendations)} **Recommendations:** ${details.recommendations?.total || 0}
             `,
             inline: true,
-          },
-          ...(details.categories ? [{
+          }] : []),
+          ...(details.categories?.length ? [{
             name: 'Categories',
             value: details.categories.map((c: Tag) => c.description).join('\n'),
             inline: true,
           }] : []),
-          ...(details.genres ? [{
+          ...(details.genres?.length ? [{
             name: 'Genres',
             value: details.genres.map((g: Tag) => g.description).join('\n'),
             inline: true,
           }] : []),
-          {
+          ...(details.platforms ? [{
             name: 'Platforms',
             value: stripIndents`
               ${DiscordUtil.getStateEmoji(details.platforms.windows)} **Windows**
@@ -209,14 +210,14 @@ export default class EmbedBuilder {
               ${DiscordUtil.getStateEmoji(details.platforms.linux)} **Linux**
             `,
             inline: true,
-          },
+          }] : []),
           {
             name: 'Steam Deck Compatibility',
             value: oneLine`
               ${steamdeckCompatibility === SteamDeckCompatibility.Verified ? EMOJIS.SUCCESS : ''}
               ${steamdeckCompatibility === SteamDeckCompatibility.Playable ? EMOJIS.WARNING : ''}
               ${steamdeckCompatibility === SteamDeckCompatibility.Unsupported ? EMOJIS.ERROR : ''}
-              ${SteamDeckCompatibility[steamdeckCompatibility] || 'Unknown'}
+              **${SteamDeckCompatibility[steamdeckCompatibility] || 'Unknown'}**
             `,
           },
           {
