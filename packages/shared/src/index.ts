@@ -8,6 +8,7 @@ export { default as DiscordUtil } from './discord/DiscordUtil';
 export { default as EmbedBuilder } from './discord/EmbedBuilder';
 export { default as env } from './env';
 export { default as logger } from './logger';
+export { default as PatreonUtils } from './PatreonUtils';
 export { default as SteamAPI } from './steam/SteamAPI';
 export * from './steam/SteamAPI';
 export { default as steamClient } from './steam/SteamClient';

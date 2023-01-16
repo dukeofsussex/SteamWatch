@@ -13,6 +13,7 @@ export const DEFAULT_COMPONENT_EXPIRATION = 180000; // 3m
 export const EMBED_COLOURS = {
   DEFAULT: 0x00ADEE,
   ERROR: 0xed4245,
+  INACTIVE: 0x666666,
   PENDING: 0xe67e22,
   SUCCESS: 0x57f287,
 };
@@ -45,6 +46,8 @@ export const MAX_EMBEDS = 10;
 export const MAX_OPTIONS = 25;
 
 export const REPO_URL = homepage.split('#')[0]!;
+
+export const PATREON_ICON = 'https://cdn.discordapp.com/icons/501792035657744425/394208f8a574a62f40a60e577fc96f2e.png';
 
 export const STEAM_NEWS_APPID = 593110;
 
