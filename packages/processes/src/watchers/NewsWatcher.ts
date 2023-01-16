@@ -1,4 +1,5 @@
 import { oneLine } from 'common-tags';
+import { subHours } from 'date-fns';
 import type { Knex } from 'knex';
 import {
   App,
@@ -24,12 +25,12 @@ export default class NewsWatcher extends Watcher {
       return this.pause();
     }
 
-    let news;
-
     logger.info({
       message: 'Checking app news',
       app,
     });
+
+    let news;
 
     try {
       news = await SteamAPI.getAppNews(app.id);
@@ -43,11 +44,12 @@ export default class NewsWatcher extends Watcher {
 
     await db('app').update({
       lastCheckedNews: new Date(),
-      latestNews: news ? news.gid : app.latestNews,
     })
       .where('id', app.id);
 
-    if (news && app.latestNews !== news.gid) {
+    const lastCheckedMs = (app.lastCheckedNews ?? subHours(new Date(), 1)).getTime() / 1000;
+
+    if (news && lastCheckedMs <= news.date) {
       logger.info({
         message: 'Found new article',
         news,
