@@ -1,7 +1,7 @@
 import db from './db';
 import env from './env';
 
-const WATCHERS_PER_TIER = [0, 25, 50];
+const WATCHERS_PER_TIER = [0, 50, 100, 200];
 
 export default class PatreonUtils {
   static getExtraWatchers(pledgeTiers: number[]) {
