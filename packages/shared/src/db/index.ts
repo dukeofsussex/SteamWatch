@@ -92,6 +92,20 @@ export enum WatcherType {
   WORKSHOP = 'workshop',
 }
 
+declare module 'knex/types/tables' {
+  interface Tables {
+    app: App;
+    app_price: AppPrice;
+    channel_webhook: ChannelWebhook;
+    currency: Currency;
+    guild: Guild;
+    patron: Patron;
+    ugc: UGC;
+    watcher: Watcher;
+    watcher_mention: WatcherMention;
+  }
+}
+
 const convertCamelToSnake = (value: string) => value.replace(/[A-Z]/g, (char: string) => `_${char.toLowerCase()}`);
 
 const convertSnakeToCamel = (value: string) => value.replace(/([-_]\w)/g, (char: string) => char[1]!.toUpperCase());
