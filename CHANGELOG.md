@@ -1,5 +1,72 @@
 # Changelog
 
+## [4.0.0] Docker & Patreon
+
+- The entire project has now been converted to a monorepo and parts separated into packages for (easier) Docker support.
+- Patreon subscriptions have been integrated into the project, with the core logic for this residing in a separate private repository. This feature can be ignored entirely when self-hosting.
+
+### Added
+
+- Add support for custom fastify host and port
+- Expand Steam gateway functionality (add `CPublishedFile_GetChangeHistory` and `CPublishedFile_QueryFiles`)
+- Include changelog in UGC watcher embeds
+- Support forum channels for watchers
+- Add `filesize` and `tags` to UGC embeds
+- Add aliases to `/profile` command
+- Add SteamDeck compatibility to store embeds
+- Add Patreon database schema
+- Add Patreon link to `/info` command embed
+- Add `/subscription` and `/premium` commands
+- Support custom webhook message sender name and avatar
+- Add `active` column to `/watchers list` command embed
+- Support dynamic watcher amount thresholds
+  - Allow for more watchers via Patreon subscriptions
+- Add external private Patreon package
+
+### Changed
+
+- No longer throw an error if no `.env` can be found
+- Update repository support server link
+- Rework logging format for Docker
+- Update to Discord v10 endpoints
+- Have message components time out sooner
+- Move the Steam Gateway job to a single process
+- Remove some redundant database columns
+- Fetch more workshop submissions per cycle
+- Increase embed markdown length
+- Simplify `/watcher` commands
+- Have `/search` and `/workshop` commands use the Steam gateway
+- Hide some properties from UGC that cannot be subscribed to
+- Only allow watchers for subscribable UGC
+- Replace `/client` command with message context menu command
+- Only show relevant information in store embeds
+- Only run active watchers
+- Update project dependencies
+
+### Fixed
+
+- Handle error caused by the bot not having a custom avatar
+- Fix the Steam client link for news embeds
+  - No longer shown for external news posts from third-party websites
+  - Links to the correct event announcement if displayed
+- Fix interface inconsistencies
+- Fix `/news` and `/price` command descriptions (neither returns cached data anymore)
+
+### Removed
+
+- Remove the file logger (suboptimal in a Docker environment)
+- Remove useless `SETTINGS_MAX_ARTICLE_LENGTH` and `SETTINGS_MAX_ARTICLE_NEWLINES` environment variables
+
+## [3.3.3]
+
+### Added
+
+- Add small status endpoint to the interactions server
+
+### Changed
+
+- Improve command error responses
+
 ## [3.3.2]
 
 ### Fixed
