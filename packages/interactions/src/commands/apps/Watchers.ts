@@ -107,7 +107,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         options: [{
           type: CommandOptionType.SUB_COMMAND,
           name: 'news',
-          description: 'Watch a Steam app (game, dlc, etc.) for news',
+          description: 'Watch a Steam app for news',
           options: [
             QueryArg,
             ChannelArg,
@@ -117,7 +117,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         {
           type: CommandOptionType.SUB_COMMAND,
           name: 'price',
-          description: 'Watch a Steam app (game, dlc, etc.) for price changes',
+          description: 'Watch a Steam app for price changes',
           options: [
             QueryArg,
             ChannelArg,
@@ -148,7 +148,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'workshop',
-          description: 'Watch a Steam app\'s (game, dlc, etc.) workshop for new submissions',
+          description: 'Watch a Steam app\'s workshop for new submissions',
           options: [
             QueryArg,
             ChannelArg,

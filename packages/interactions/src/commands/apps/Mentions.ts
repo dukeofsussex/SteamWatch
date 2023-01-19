@@ -60,7 +60,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
       }, {
         type: CommandOptionType.SUB_COMMAND,
         name: 'list',
-        description: 'List mentions for the watcher',
+        description: 'List mentions for a watcher.',
         options: [{
           type: CommandOptionType.INTEGER,
           name: 'watcher_id',
