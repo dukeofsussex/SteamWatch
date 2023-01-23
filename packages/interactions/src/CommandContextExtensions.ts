@@ -8,7 +8,7 @@ declare module 'slash-create' {
     embed(embed: MessageEmbedOptions): Promise<boolean | Message>;
     success(message: string, embedOptions?: EmbedOptions): Promise<boolean | Message>;
     error(message: string, embedOptions?: EmbedOptions): Promise<boolean | Message>;
-    timeout(): Promise<boolean | Message>;
+    timeout(): Promise<void>;
   }
 }
 
@@ -41,6 +41,11 @@ Context.prototype.error = function sendErrorEmbed(
   });
 };
 
-Context.prototype.timeout = function sendTimeoutEmbed() {
-  return this.error('Interaction Timed Out! Please run the command again.');
+Context.prototype.timeout = async function sendTimeoutEmbed() {
+  try {
+    await this.error('Interaction timed out! Please run the command again.');
+  } catch {
+    // Interaction may have already been deleted by the user
+    // or expired before being able to send this message
+  }
 };
