@@ -18,6 +18,7 @@ import {
 } from 'slash-create';
 import {
   App,
+  AppType,
   capitalize,
   db,
   DEFAULT_COMPONENT_EXPIRATION,
@@ -283,15 +284,15 @@ export default class WatchersCommand extends GuildOnlyCommand {
     ctx: CommandContext,
     {
       channel: channelId,
-      query: name,
+      query,
       watcher_type: watcherType,
       thread_id: threadId,
     }: AddAppArguments,
   ) {
-    const appId = await SteamUtil.findAppId(name);
+    const appId = await SteamUtil.findAppId(query);
 
     if (!appId) {
-      return ctx.error(`Unable to find an application with the id/name: ${name}`);
+      return ctx.error(`Unable to find an application with the id/name: ${query}`);
     }
 
     const app = (await db.select('*')
@@ -306,7 +307,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       `);
     }
 
-    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase(), watcherType)) {
+    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase() as AppType, watcherType)) {
       return ctx.error(`${capitalize(watcherType)} watchers aren't supported for apps of type **${app.type}**!`);
     }
 

@@ -7,6 +7,7 @@ import {
   SlashCreator,
 } from 'slash-create';
 import {
+  AppType,
   CurrencyCode,
   db,
   EmbedBuilder,
@@ -92,7 +93,7 @@ export default class PriceCommand extends SlashCommand {
       return ctx.error(`Unable to find an application with the id/name: ${query}`);
     }
 
-    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase(), WatcherType.PRICE)) {
+    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase() as AppType, WatcherType.PRICE)) {
       return ctx.error(`Unable to fetch prices for apps of type **${app.type}**!`);
     }
 

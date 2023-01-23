@@ -199,8 +199,8 @@ export default class PremiumCommand extends GuildOnlyCommand {
     }
 
     await db('guild').update({
-      customWebhookAvatar: avatar,
-      customWebhookName: name,
+      customWebhookAvatar: avatar || null,
+      customWebhookName: name || null,
     })
       .where('id', ctx.guildID!);
 

@@ -6,6 +6,7 @@ import {
   SlashCreator,
 } from 'slash-create';
 import {
+  AppType,
   db,
   EmbedBuilder,
   env,
@@ -67,7 +68,7 @@ export default class WorkshopCommand extends SlashCommand {
       return ctx.error(`Unable to find an application with the id/name: ${query}`);
     }
 
-    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase(), WatcherType.WORKSHOP)) {
+    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase() as AppType, WatcherType.WORKSHOP)) {
       return ctx.error(`Unable to fetch workshop items for apps of type **${app.type}**!`);
     }
 

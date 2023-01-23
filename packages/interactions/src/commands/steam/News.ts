@@ -6,6 +6,7 @@ import {
   SlashCreator,
 } from 'slash-create';
 import {
+  AppType,
   db,
   EmbedBuilder,
   env,
@@ -62,7 +63,7 @@ export default class NewsCommand extends SlashCommand {
       return ctx.error(`Unable to find an application with the id/name: ${query}`);
     }
 
-    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase(), WatcherType.NEWS)) {
+    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase() as AppType, WatcherType.NEWS)) {
       return ctx.error(`Unable to fetch news for apps of type **${app.type}**!`);
     }
 
