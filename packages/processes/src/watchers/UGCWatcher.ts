@@ -9,6 +9,7 @@ import {
   logger,
   MAX_EMBEDS,
   steamClient,
+  SteamUtil,
   transformArticle,
   UGC,
   WatcherType,
@@ -89,7 +90,7 @@ export default class UGCWatcher extends Watcher {
       } else if (file.result !== EResult.OK) {
         message = stripIndents`
           ${EMOJIS.ALERT} UGC watcher removed!
-          Steam returned an invalid result: ${EResult[file.result]}
+          Steam returned an invalid result: **${EResult[file.result]}**
         `;
       }
 
@@ -101,22 +102,20 @@ export default class UGCWatcher extends Watcher {
         continue;
       }
 
-      // eslint-disable-next-line no-await-in-loop
-      const embed = await EmbedBuilder.createWorkshop(
-        {
-          icon: item.appIcon,
-          id: item.appId,
-          name: item.appName,
-        },
-        file,
-        'time_updated',
-      );
-
       if (message) {
-        embed.description = message;
-
         // eslint-disable-next-line no-await-in-loop
-        await this.enqueue([embed], {
+        await this.enqueue([
+          EmbedBuilder.createApp({
+            icon: item.appIcon,
+            id: item.appId,
+            name: item.appName,
+          }, {
+            description: message,
+            timestamp: new Date(),
+            title: item.name,
+            url: SteamUtil.URLS.UGC(file.publishedfileid),
+          }),
+        ], {
           ugcId: item.id,
           'watcher.type': WatcherType.UGC,
         });
@@ -148,7 +147,16 @@ export default class UGCWatcher extends Watcher {
 
           // eslint-disable-next-line no-await-in-loop
           await this.enqueue([{
-            ...embed,
+            // eslint-disable-next-line no-await-in-loop
+            ...(await EmbedBuilder.createWorkshop(
+              {
+                icon: item.appIcon,
+                id: item.appId,
+                name: item.appName,
+              },
+              file,
+              'time_updated',
+            )),
             description: transformArticle(entry.change_description).markdown || 'No changelog',
           }], {
             ugcId: item.id,
