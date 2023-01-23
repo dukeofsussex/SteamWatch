@@ -121,7 +121,7 @@ export default class GuildOnlyCommand extends SlashCommand {
       components: await GuildOnlyCommand.buildCurrencyComponents(page),
     });
 
-    return new Promise<boolean>((resolve) => {
+    return new Promise<boolean>((resolve, reject) => {
       // Change currency select options
       ctx.registerComponent(
         'currency_select_change',
@@ -167,7 +167,7 @@ export default class GuildOnlyCommand extends SlashCommand {
         DEFAULT_COMPONENT_EXPIRATION,
         () => {
           ctx.timeout();
-          throw new Error('Timed out');
+          reject(new Error('Timed out'));
         },
       );
     });
