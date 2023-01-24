@@ -604,7 +604,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       .where('channel_webhook.guild_id', guildId)
       .andWhere('inactive', false)
       .groupBy('patron.id');
-    const { count } = result[0];
+    const count = result[0]?.count ?? 0;
     const max = env.settings.maxWatchersPerGuild
       + PatreonUtils.getExtraWatchers(result.map((watcher) => watcher.pledgeTier || 0));
 
