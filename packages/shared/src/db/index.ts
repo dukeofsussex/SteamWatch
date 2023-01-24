@@ -70,7 +70,7 @@ export interface UGC {
 
 export interface Watcher {
   id: number;
-  appId: number;
+  appId: number | null;
   ugcId: string | null;
   channelId: string;
   threadId: string | null;

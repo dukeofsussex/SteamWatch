@@ -277,9 +277,10 @@ export default class MentionsCommand extends GuildOnlyCommand {
       { ugcName: 'ugc.name' },
     )
       .from('watcher')
-      .innerJoin('app', 'app.id', 'watcher.app_id')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
+      .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
+        .orOn('app.id', 'ugc.app_id'))
       .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
       .where({
         'watcher.id': watcherId,

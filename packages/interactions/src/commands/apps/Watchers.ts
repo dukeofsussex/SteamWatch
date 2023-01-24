@@ -468,7 +468,6 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }
 
         const ids = await db.insert({
-          appId: ugc!.appId,
           ugcId: ugc!.id,
           channelId,
           threadId,
@@ -488,10 +487,11 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
   private static async list(ctx: CommandContext, { channel: channelId }: ListArguments) {
     let dbQuery = db.select({ appName: 'app.name' }, { ugcName: 'ugc.name' }, 'watcher.*')
-      .from('app')
-      .innerJoin('watcher', 'app.id', 'watcher.app_id')
+      .from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
+      .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
+        .orOn('app.id', 'ugc.app_id'))
       .where('guild_id', ctx.guildID);
 
     if (channelId) {
@@ -550,9 +550,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
       'webhook_id',
       'webhook_token',
     ).from('watcher')
-      .innerJoin('app', 'app.id', 'watcher.app_id')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
+      .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
+        .orOn('app.id', 'ugc.app_id'))
       .where({
         'watcher.id': watcherId,
         guildId: ctx.guildID,
