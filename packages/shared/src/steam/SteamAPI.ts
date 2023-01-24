@@ -292,7 +292,7 @@ export default class SteamAPI {
     try {
       res = await fetch(url, options);
 
-      return await res.json() as T;
+      return await res.clone().json() as T;
     } catch (err) {
       logger.error({
         label: 'SteamAPI',
