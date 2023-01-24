@@ -212,7 +212,7 @@ export default class UGCWatcher extends Watcher {
     ).from('ugc')
       .innerJoin('app', 'ugc.app_id', 'app.id')
       .innerJoin(db.select('ugc_id', db.raw('COUNT(ugc_id) AS watcher_count')).from('watcher')
-        .whereNotNull('ugcId')
+        .where('watcher.type', WatcherType.UGC)
         .andWhere('inactive', false)
         .groupBy('ugcId')
         .as('watchers'), 'ugc.id', 'watchers.ugc_id')

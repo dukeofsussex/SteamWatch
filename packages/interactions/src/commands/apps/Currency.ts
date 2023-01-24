@@ -164,14 +164,10 @@ export default class CurrencyCommand extends GuildOnlyCommand {
       .innerJoin('channel_webhook', 'channel_webhook.guild_id', 'guild.id')
       .innerJoin('watcher', 'watcher.channel_id', 'channel_webhook.id')
       .innerJoin('app', 'app.id', 'watcher.app_id')
-      .innerJoin({ currentAppPrice: 'app_price' }, function appPriceInnerJoin() {
-        this.on('current_app_price.app_id', '=', 'watcher.app_id')
-          .andOn('current_app_price.currency_id', '=', 'guild.currency_id');
-      })
-      .leftJoin({ newAppPrice: 'app_price' }, function appPriceLeftJoin() {
-        this.on('new_app_price.app_id', '=', 'watcher.app_id')
-          .andOn('new_app_price.currency_id', '=', currencyId);
-      })
+      .innerJoin({ currentAppPrice: 'app_price' }, (builder) => builder.on('current_app_price.app_id', 'watcher.app_id')
+        .andOn('current_app_price.currency_id', 'guild.currency_id'))
+      .leftJoin({ newAppPrice: 'app_price' }, (builder) => builder.on('new_app_price.app_id', 'watcher.app_id')
+        .andOn('new_app_price.currency_id', currencyId))
       .whereNull('new_app_price.id')
       .andWhere('watcher.type', WatcherType.PRICE)
       .andWhere('guild.id', guildId);

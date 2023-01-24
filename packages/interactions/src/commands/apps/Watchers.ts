@@ -665,10 +665,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
       'currency.country_code',
     ).from('guild')
       .innerJoin('currency', 'currency.id', 'guild.currency_id')
-      .leftJoin('app_price', function appPriceLeftJoin() {
-        this.on('app_price.app_id', '=', app.id.toString())
-          .andOn('app_price.currency_id', '=', 'currency.id');
-      })
+      .leftJoin('app_price', (builder) => builder.on('app_price.app_id', app.id.toString())
+        .andOn('app_price.currency_id', 'currency.id'))
       .where('guild.id', guildId)
       .first();
 
