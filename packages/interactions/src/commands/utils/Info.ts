@@ -44,6 +44,12 @@ export default class InfoCommand extends SlashCommand {
         .then((res: any) => res.count),
       db.countDistinct('app_id AS count')
         .from('watcher')
+        .whereNotNull('appId')
+        .first()
+        .then((res: any) => res.count),
+      db.countDistinct('ugc_id AS count')
+        .from('watcher')
+        .whereNotNull('ugcId')
         .first()
         .then((res: any) => res.count),
       countQuery.clone()
@@ -108,8 +114,13 @@ export default class InfoCommand extends SlashCommand {
               inline: true,
             },
             {
-              name: 'Watchers',
+              name: 'UGC',
               value: counts[2],
+              inline: true,
+            },
+            {
+              name: 'Watchers',
+              value: counts[3],
               inline: true,
             },
             {
