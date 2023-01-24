@@ -18,7 +18,7 @@ type WebhookWatcher = Pick<WatcherMention, 'entityId' | 'type'>
 & Pick<ChannelWebhook, 'webhookId' | 'webhookToken' | 'guildId'>
 & Pick<DBWatcher, 'id' | 'threadId'>
 & Pick<Guild, 'customWebhookAvatar' | 'customWebhookName'>
-& { maxPledgeTier: number };
+& { maxPledgeTier: number | null };
 
 type KnexWhereObject = object;
 
@@ -57,8 +57,8 @@ export default abstract class Watcher extends Worker {
     ) => {
       // eslint-disable-next-line no-param-reassign
       group[watcher.id] = group[watcher.id] || {
-        customWebhookAvatar: watcher.maxPledgeTier > 0 ? watcher.customWebhookAvatar : null,
-        customWebhookName: watcher.maxPledgeTier > 0 ? watcher.customWebhookName : null,
+        customWebhookAvatar: watcher.maxPledgeTier ? watcher.customWebhookAvatar : null,
+        customWebhookName: watcher.maxPledgeTier ? watcher.customWebhookName : null,
         webhookId: watcher.webhookId,
         webhookToken: watcher.webhookToken,
         threadId: watcher.threadId,

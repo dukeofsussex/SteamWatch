@@ -5,7 +5,9 @@ const WATCHERS_PER_TIER = [0, 50, 100, 200];
 
 export default class PatreonUtils {
   static getExtraWatchers(pledgeTiers: number[]) {
-    return pledgeTiers.reduce((total, tier) => (total + WATCHERS_PER_TIER[tier - 1]!), 0);
+    return pledgeTiers.reduce((total, tier) => (
+      total + (tier > 0 ? WATCHERS_PER_TIER[tier - 1]! : 0)
+    ), 0);
   }
 
   static async setWatcherStates(guildId: string) {

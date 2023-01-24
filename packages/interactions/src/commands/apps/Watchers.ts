@@ -605,8 +605,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
       .andWhere('inactive', false)
       .groupBy('patron.id');
     const { count } = result[0];
-    const max = env.settings.maxMentionsPerWatcher
-      + PatreonUtils.getExtraWatchers(result.map((watcher) => watcher.pledgeTier));
+    const max = env.settings.maxWatchersPerGuild
+      + PatreonUtils.getExtraWatchers(result.map((watcher) => watcher.pledgeTier || 0));
 
     return (count >= max)
       ? stripIndents`

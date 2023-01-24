@@ -218,7 +218,6 @@ export default class PremiumCommand extends GuildOnlyCommand {
       .from('patron')
       .innerJoin('guild', 'guild.id', 'patron.guild_id')
       .where('guildId', ctx.guildID!);
-    const pledgeTiers = patrons.map((patron) => patron.pledgeTier);
 
     return ctx.send({
       embeds: [{
@@ -232,7 +231,7 @@ export default class PremiumCommand extends GuildOnlyCommand {
           name: 'Max Watchers',
           value: oneLine`
             ${env.settings.maxWatchersPerGuild}
-            ${patrons.length ? `(+ **${PatreonUtils.getExtraWatchers(pledgeTiers)}**)` : ''}
+            ${patrons.length ? `(+ **${PatreonUtils.getExtraWatchers(patrons.map((patron) => patron.pledgeTier))}**)` : ''}
           `,
         }, {
           name: 'Custom Webhook Name',
