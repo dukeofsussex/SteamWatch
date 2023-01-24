@@ -11,7 +11,7 @@ interface CommandArguments {
   query: string;
 }
 
-export default class SearchCommand extends SlashCommand {
+export default class StoreCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'store',
@@ -35,7 +35,7 @@ export default class SearchCommand extends SlashCommand {
 
   // eslint-disable-next-line class-methods-use-this
   override async autocomplete(ctx: AutocompleteContext) {
-    const value = ctx.options[ctx.subcommands[0]!][ctx.focused];
+    const value = ctx.options[ctx.focused];
 
     return ctx.sendResults(await SteamUtil.createAppAutocomplete(value));
   }
