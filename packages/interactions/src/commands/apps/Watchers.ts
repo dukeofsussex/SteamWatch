@@ -89,7 +89,7 @@ const ThreadArg = {
 const QueryArg = {
   type: CommandOptionType.STRING,
   name: 'query',
-  description: 'Search term or app id',
+  description: 'App id, name or url',
   autocomplete: true,
   required: true,
 };

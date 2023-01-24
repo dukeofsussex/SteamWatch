@@ -30,7 +30,7 @@ export default class SearchCommand extends SlashCommand {
       options: [{
         type: CommandOptionType.STRING,
         name: 'query',
-        description: 'UGC url or item id',
+        description: 'App id, name or url',
         required: true,
       }],
       throttling: {
