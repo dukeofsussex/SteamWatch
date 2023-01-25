@@ -388,6 +388,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           channelId,
           threadId,
           type: watcherType,
+          inactive: false,
         }).into('watcher');
 
         return ctx.success(`Added watcher (#${ids[0]}) for **${app!.name} (${app!.type})** to ${ctx.channels.get(channelId)!.mention}.`, {
@@ -486,6 +487,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           channelId,
           threadId,
           type: WatcherType.UGC,
+          inactive: false,
         }).into('watcher');
 
         return ctx.success(`Added watcher (#${ids[0]}) for **${ugc!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
