@@ -38,7 +38,7 @@ import GuildOnlyCommand from '../../GuildOnlyCommand';
 
 const markdownTable = require('markdown-table');
 
-const WATCHERS_PER_TABLE = 15;
+const MAX_MESSAGE_LENGTH = 2000;
 
 interface BaseArguments {
   query: string;
@@ -521,38 +521,53 @@ export default class WatchersCommand extends GuildOnlyCommand {
       return;
     }
 
-    /* eslint-disable no-param-reassign */
-    const grouped = watchers.reduce((prev, curr, idx) => {
-      const index = Math.floor(idx / WATCHERS_PER_TABLE);
-      (prev[index] = prev[index] || []).push(curr);
-      return prev;
-    }, []);
-    /* eslint-enable no-param-reassign */
+    const channelNames = new Map();
+    let batch = [];
+    let md = '';
 
-    /* eslint-disable no-await-in-loop */
-    for (let i = 0; i < grouped.length; i += 1) {
-      const group = grouped[i];
+    const createTable = (rows: any[]) => `\`\`\`md\n${markdownTable([
+      ['Id', 'App/UGC Id', 'Name', 'Channel', 'Type', 'Active'],
+      ...(rows.map((w: any) => [
+        w.id,
+        w.appId || w.ugcId,
+        w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName,
+        channelNames.get(w.channelId),
+        w.type,
+        !w.inactive ? 'X' : '',
+      ])),
+    ], {
+      align: ['r', 'r', 'r', 'r', 'r', 'c'],
+    })}\`\`\``;
+
+    for (let i = 0; i < watchers.length; i += 1) {
+      const watcher = watchers[i];
+
+      if (!channelNames.has(watcher.channelId)) {
+        // eslint-disable-next-line no-await-in-loop
+        channelNames.set(watcher.channelId, await DiscordAPI.getChannelName(watcher.channelId));
+      }
+
+      batch.push(watcher);
+
+      const newMd = createTable(batch);
+
+      if (newMd.length >= MAX_MESSAGE_LENGTH) {
+        // eslint-disable-next-line no-await-in-loop
+        await ctx.send({
+          content: md,
+        });
+        md = '';
+        batch = [watcher];
+      } else {
+        md = newMd;
+      }
+    }
+
+    if (batch.length) {
       await ctx.send({
-        content: `\`\`\`md\n${markdownTable([
-          ['Id', 'App/UGC Id', 'Name', 'Channel', 'Type', 'Active'],
-          ...(await Promise.all(group.map(async (w: any) => {
-            const channelName = await DiscordAPI.getChannelName(w.channelId);
-
-            return [
-              w.id,
-              w.ugcId || w.appId,
-              w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName,
-              channelName,
-              w.type,
-              !w.inactive ? 'X' : '',
-            ];
-          }))),
-        ], {
-          align: ['r', 'r', 'r', 'r', 'r', 'c'],
-        })}\`\`\``,
+        content: createTable(batch),
       });
     }
-    /* eslint-enable no-await-in-loop */
   }
 
   private static async remove(ctx: CommandContext, { watcher_id: watcherId }: RemoveArguments) {
