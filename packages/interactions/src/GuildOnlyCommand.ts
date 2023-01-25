@@ -103,7 +103,8 @@ export default class GuildOnlyCommand extends SlashCommand {
 
     const exists = await db.select('id')
       .from('guild')
-      .where('id', ctx.guildID)
+      .whereNotNull('currencyId')
+      .andWhere('id', ctx.guildID)
       .first()
       .then((res: any) => !!res);
 
@@ -156,7 +157,9 @@ export default class GuildOnlyCommand extends SlashCommand {
             id: ctx.guildID!,
             name: guild.name,
             currencyId: cctx.data.data.values![0],
-          }).into('guild');
+          }).into('guild')
+            .onConflict('id')
+            .merge(['currencyId']);
 
           logger.info({
             message: 'New guild set up',

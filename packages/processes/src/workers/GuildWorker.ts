@@ -43,11 +43,20 @@ export default class GuildWorker extends Worker {
       const guild = guilds[i] as RESTAPIPartialCurrentUserGuild;
 
       // eslint-disable-next-line no-await-in-loop
-      await db('guild').update({
+      const id = await db('guild').update({
         name: guild.name,
         lastUpdate: new Date(),
       })
         .where('id', guild.id);
+
+      if (!id) {
+        // eslint-disable-next-line no-await-in-loop
+        await db.insert({
+          id: guild.id,
+          name: guild.name,
+          lastUpdate: new Date(),
+        }).into('guild');
+      }
     }
 
     if (guilds.length >= 200) {

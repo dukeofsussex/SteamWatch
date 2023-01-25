@@ -46,7 +46,7 @@ export interface Currency {
 export interface Guild {
   id: string;
   name: string;
-  currencyId: number;
+  currencyId: number | null;
   customWebhookName: string | null;
   customWebhookAvatar: string | null;
   lastUpdate: Date;
