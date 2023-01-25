@@ -646,7 +646,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     if (webhooks.length >= 10) {
       return stripIndents`
-        ${channelId} already has the maximum amount of webhooks.
+        <#${channelId}> already has the maximum amount of webhooks.
         Please remove any unused webhooks and try again.
       `;
     }
