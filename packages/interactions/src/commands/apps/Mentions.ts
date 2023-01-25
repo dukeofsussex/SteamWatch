@@ -240,7 +240,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
   ) {
     const mentions = [role, user].filter((m) => m) as string[];
 
-    const dbWatcher = await db.select('id')
+    const dbWatcher = await db.select('watcher.id')
       .from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .where({
