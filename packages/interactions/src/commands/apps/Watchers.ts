@@ -28,6 +28,7 @@ import {
   logger,
   PatreonUtils,
   SteamAPI,
+  steamClient,
   SteamUtil,
   STEAM_NEWS_APPID,
   UGC,
@@ -353,6 +354,19 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
         if (error) {
           return ctx.error(error);
+        }
+
+        if (watcherType === WatcherType.WORKSHOP) {
+          const { total } = await steamClient.queryFiles(appId);
+
+          if (!total) {
+            return ctx.error(
+              stripIndents`
+                **${app.name}** doesn't have a workshop!
+                If this is an error, please try again later.
+              `,
+            );
+          }
         }
 
         error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
