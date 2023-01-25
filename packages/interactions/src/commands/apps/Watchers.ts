@@ -542,7 +542,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
   private static async remove(ctx: CommandContext, { watcher_id: watcherId }: RemoveArguments) {
     const watcher = await db.select(
       'watcher.id',
-      'watcher.app_id',
+      { appId: 'app.id' },
       { appName: 'app.name' },
       { ugcName: 'ugc.name' },
       'icon',
