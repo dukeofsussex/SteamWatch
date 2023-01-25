@@ -1,5 +1,33 @@
 # Changelog
 
+## [4.1.0]
+
+### Added
+
+- Log the response body for SteamAPI errors
+- Support storing all guilds the bot is in instead of only the guilds that have been set up
+
+### Changed
+
+- Improve handling of component timeout edge cases
+- Improve description of the command `query` parameter
+- No longer store the `app_id` in the watcher table for UGC watchers as the UGC table already contains a reference to the app
+- Changed `/info` command to properly include UGC watcher counts
+- Prevent workshop watchers for apps that don't have workshops
+- Improve watcher list generation
+
+### Fixed
+
+- Fix knex table typings not being available in other packages
+- Fix UGCWatcher erroring on invalid responses
+- Correctly reject expired interactions
+- Fix watcher insertion
+- Fix watcher maximum calculation (for new and existing guilds)
+- Fix autocompletion for the `/store` command
+- Fix some typings
+- Fix guild worker not processing all guilds
+- Clean up some queries
+
 ## [4.0.0] Docker & Patreon
 
 - The entire project has now been converted to a monorepo and parts separated into packages for (easier) Docker support.
