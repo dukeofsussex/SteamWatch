@@ -59,7 +59,7 @@ export default class GuildWorker extends Worker {
       }
     }
 
-    if (guilds.length >= 200) {
+    if (guilds.length) {
       await this.processGuilds(guilds[guilds.length - 1]!.id);
     }
   }
