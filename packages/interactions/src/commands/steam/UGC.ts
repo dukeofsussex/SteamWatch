@@ -21,7 +21,7 @@ interface CommandArguments {
   query: string;
 }
 
-export default class SearchCommand extends SlashCommand {
+export default class UGCCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'ugc',

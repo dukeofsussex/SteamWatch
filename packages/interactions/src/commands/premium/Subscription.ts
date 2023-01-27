@@ -8,7 +8,7 @@ import {
   PATREON_ICON,
 } from '@steamwatch/shared';
 
-export default class PremiumCommand extends SlashCommand {
+export default class SubscriptionCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'subscription',

@@ -29,14 +29,14 @@ const PROTOCOLS: Protocol[] = [
   {
     regex: SteamUtil.REGEXPS.Profile,
     command: async (id: string) => {
-      const steamid = await SteamUtil.findId(id);
+      const steamid = await SteamUtil.findSteamId(id);
       return SteamUtil.BP.Profile(steamid.getSteamID64());
     },
   },
   { regex: SteamUtil.REGEXPS.Community, command: SteamUtil.BP.Community },
 ];
 
-export default class OpenCommand extends GuildOnlyCommand {
+export default class ClientLinksCommand extends GuildOnlyCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'Get Client Links',

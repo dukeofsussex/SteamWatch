@@ -198,11 +198,7 @@ export default class SteamUtil {
     return appId;
   }
 
-  static findUGCId(id: string) {
-    return id.match(SteamUtil.REGEXPS.UGC)?.[1] ?? id.match(/\d+/)?.[0];
-  }
-
-  static async findId(id: string) {
+  static async findSteamId(id: string) {
     const match = id.match(SteamUtil.REGEXPS.SteamId);
     if (match) {
       return new SteamID(match[0]!);
@@ -211,6 +207,10 @@ export default class SteamUtil {
     const urlParts = id.split('/').filter((p) => p);
     const resolvedId = await SteamAPI.resolveVanityUrl(urlParts[urlParts.length - 1]!);
     return new SteamID(resolvedId!);
+  }
+
+  static findUGCId(id: string) {
+    return id.match(SteamUtil.REGEXPS.UGC)?.[1] ?? id.match(/\d+/)?.[0];
   }
 
   static async persistApp(appId: number) {

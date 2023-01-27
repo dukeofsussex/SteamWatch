@@ -85,7 +85,7 @@ export default class SuggestCommand extends SlashCommand {
   // eslint-disable-next-line class-methods-use-this
   private async owned(ctx: CommandContext, profiles: CommandArgumentsOwned) {
     const profileValues = Object.values(profiles);
-    const steamIds = await Promise.all(profileValues.map((p) => SteamUtil.findId(p)));
+    const steamIds = await Promise.all(profileValues.map((p) => SteamUtil.findSteamId(p)));
 
     if (steamIds.some((s) => !s)) {
       return ctx.error(`Unable to get Steam profile for ${profileValues[steamIds.findIndex((s) => !s)]}.`);

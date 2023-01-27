@@ -47,7 +47,7 @@ export default class ProfileCommand extends SlashCommand {
 
     const { profile } = ctx.options as CommandArguments;
 
-    const steamID = await SteamUtil.findId(profile);
+    const steamID = await SteamUtil.findSteamId(profile);
 
     if (steamID.type === SteamID.Type.INVALID) {
       return ctx.error(`Invalid Steam identifier: ${profile}`);

@@ -29,7 +29,7 @@ export default class EmbedBuilder {
   ): MessageEmbedOptions {
     return {
       color: EMBED_COLOURS.DEFAULT,
-      title: `**${title}**`,
+      title,
       description,
       footer: {
         icon_url: SteamUtil.URLS.Icon(app.id, app.icon),
