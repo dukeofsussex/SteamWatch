@@ -43,6 +43,14 @@ export interface Currency {
   countryCode: string;
 }
 
+export interface Group {
+  id: number;
+  name: string;
+  avatar: string;
+  vanityUrl: string;
+  lastChecked: Date | null;
+}
+
 export interface Guild {
   id: string;
   name: string;
@@ -86,6 +94,7 @@ export interface WatcherMention {
 }
 
 export enum WatcherType {
+  GROUP = 'group',
   NEWS = 'news',
   PRICE = 'price',
   UGC = 'ugc',
@@ -98,6 +107,7 @@ declare module 'knex/types/tables' {
     app_price: AppPrice;
     channel_webhook: ChannelWebhook;
     currency: Currency;
+    group: Group;
     guild: Guild;
     patron: Patron;
     ugc: UGC;

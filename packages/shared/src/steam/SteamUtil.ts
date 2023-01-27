@@ -7,6 +7,7 @@ import { FileType, PublishedFile } from './SteamWatchUser';
 import db, {
   App,
   CurrencyCode,
+  Group,
   UGC,
   WatcherType,
 } from '../db';
@@ -71,6 +72,7 @@ const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
 };
 
 const PermittedAppTypes: { [key in WatcherType]: AppType[]; } = {
+  [WatcherType.GROUP]: [],
   [WatcherType.NEWS]: ['application', 'game', 'config'],
   [WatcherType.PRICE]: ['application', 'dlc', 'game', 'music', 'video'],
   [WatcherType.UGC]: [],
@@ -84,6 +86,7 @@ export default class SteamUtil {
     EventAnnouncement: (appId: number, eventId: string) => SteamUtil.BP.Raw(`url/EventAnnouncementPage/${appId}/${eventId}`),
     GameHub: (id: string) => SteamUtil.BP.Raw(`url/GameHub/${id}`),
     Group: (id: number) => SteamUtil.BP.Raw(`url/GroupSteamIDPage/${id}`),
+    GroupEventsPage: (id: number) => SteamUtil.BP.Raw(`url/GroupEventsPage/${id}`),
     Profile: (id: string) => SteamUtil.BP.Raw(`url/SteamIDPage/${id}`),
     Raw: (path: string) => `steam://${path}`,
     Store: (id: number) => SteamUtil.BP.Raw(`store/${id}`),
@@ -106,7 +109,9 @@ export default class SteamUtil {
 
   static readonly URLS = {
     AppNews: (appId: number) => `https://store.steampowered.com/news/app/${appId}`,
-    EventAnnouncement: (appId: number, eventId: string) => `https://store.steampowered.com/news/app/${appId}/view/${eventId}`,
+    EventAnnouncement: (appId: number, eventId: string, type: 'app' | 'group') => `https://store.steampowered.com/news/${type}/${appId}/view/${eventId}`,
+    Group: (vanityUrl: string) => `https://steamcommunity.com/groups/${vanityUrl}`,
+    GroupAvatar: (avatar: string, size: 'full' | 'medium') => `https://avatars.akamai.steamstatic.com/${avatar}_${size}.jpg`,
     Icon: (appId: number, icon: string) => `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.jpg`,
     NewsImage: (imageUrl: string) => imageUrl.replace(/\{STEAM_CLAN(?:_LOC)?_IMAGE\}/, 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/clans'),
     Profile: (steamId: string) => `https://steamcommunity.com/profiles/${steamId}`,
@@ -209,6 +214,10 @@ export default class SteamUtil {
     return new SteamID(resolvedId!);
   }
 
+  static findGroupVanityUrl(id: string) {
+    return id.match(SteamUtil.REGEXPS.Group)?.[1] ?? id;
+  }
+
   static findUGCId(id: string) {
     return id.match(SteamUtil.REGEXPS.UGC)?.[1] ?? id.match(/\d+/)?.[0];
   }
@@ -235,6 +244,27 @@ export default class SteamUtil {
     await db.insert(app).into('app');
 
     return app;
+  }
+
+  static async persistGroup(vanityUrl: string) {
+    const details = await SteamAPI.getGroupDetails(vanityUrl);
+
+    if (!details) {
+      return null;
+    }
+
+    const group: Group = {
+      id: details.clanAccountID,
+      name: details.group_name,
+      avatar: SteamAPI.getGroupAvatarHash(details.avatar_full_url),
+      vanityUrl: details.vanity_url,
+      lastChecked: null,
+    };
+
+    await db.insert(group)
+      .into('`group`');
+
+    return group;
   }
 
   static async persistUGC(ugcId: string) {

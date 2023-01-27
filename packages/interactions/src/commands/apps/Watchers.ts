@@ -47,6 +47,7 @@ interface BaseArguments {
 }
 
 interface AddArguments {
+  group: BaseArguments;
   news: BaseArguments;
   price: BaseArguments;
   steam: Pick<BaseArguments, 'channel' | 'thread_id'>;
@@ -107,6 +108,19 @@ export default class WatchersCommand extends GuildOnlyCommand {
         name: 'add',
         description: 'Add a watcher for a Steam item.',
         options: [{
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'group',
+          description: 'Watch a Steam group for news',
+          options: [
+            {
+              ...QueryArg,
+              description: 'Group name or url',
+              autocomplete: false,
+            },
+            ChannelArg,
+            ThreadArg,
+          ],
+        }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'news',
           description: 'Watch a Steam app for news',
@@ -238,6 +252,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
       if (ctx.channels.get(addSub.channel)!.type === 15
           && !addSub.thread_id) {
         return ctx.error('A thread is required when using forum channels!');
+      }
+
+      if (add.group) {
+        return WatchersCommand.addGroup(ctx, add.group);
       }
 
       if (add.news) {
@@ -402,6 +420,94 @@ export default class WatchersCommand extends GuildOnlyCommand {
     );
   }
 
+  private static async addGroup(
+    ctx: CommandContext,
+    {
+      channel: channelId,
+      query,
+      thread_id: threadId,
+    }: BaseArguments,
+  ) {
+    const vanityUrl = SteamUtil.findGroupVanityUrl(query);
+
+    const group = (await db.select('*')
+      .from('`group`')
+      .where('vanityUrl', vanityUrl)
+      .first()) || (await SteamUtil.persistGroup(vanityUrl));
+
+    if (!group) {
+      return ctx.error(`Unable to find a group with the url ${SteamUtil.URLS.Group(vanityUrl)}`);
+    }
+
+    await ctx.editOriginal({
+      embeds: [{
+        color: EMBED_COLOURS.PENDING,
+        description: `Would you like to add the watcher for **${group.name}** to ${ctx.channels.get(channelId)!.mention}?`,
+        title: 'Confirmation',
+        thumbnail: {
+          url: SteamUtil.URLS.GroupAvatar(group.avatar, 'medium'),
+        },
+      }],
+      components: [{
+        type: ComponentType.ACTION_ROW,
+        components: [{
+          custom_id: 'cancel',
+          label: 'Cancel',
+          style: ButtonStyle.SECONDARY,
+          type: ComponentType.BUTTON,
+        }, {
+          custom_id: 'confirm',
+          label: 'Confirm',
+          style: ButtonStyle.PRIMARY,
+          type: ComponentType.BUTTON,
+        }],
+      }],
+    });
+
+    ctx.registerComponent(
+      'cancel',
+      () => ctx.error(`Cancelled watcher for **${group!.name}** on ${ctx.channels.get(channelId)!.mention}.`, {
+        thumbnail: {
+          url: SteamUtil.URLS.GroupAvatar(group.avatar, 'medium'),
+        },
+      }),
+      DEFAULT_COMPONENT_EXPIRATION,
+    );
+
+    return ctx.registerComponent(
+      'confirm',
+      async () => {
+        let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
+
+        if (error) {
+          return ctx.error(error);
+        }
+
+        error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
+
+        if (error) {
+          return ctx.error(error);
+        }
+
+        const ids = await db.insert({
+          groupId: group!.id,
+          channelId,
+          threadId,
+          type: WatcherType.GROUP,
+          inactive: false,
+        }).into('watcher');
+
+        return ctx.success(`Added watcher (#${ids[0]}) for **${group!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
+          thumbnail: {
+            url: SteamUtil.URLS.GroupAvatar(group.avatar, 'medium'),
+          },
+        });
+      },
+      DEFAULT_COMPONENT_EXPIRATION,
+      () => ctx.timeout(),
+    );
+  }
+
   private static async addUGC(
     ctx: CommandContext,
     {
@@ -502,9 +608,18 @@ export default class WatchersCommand extends GuildOnlyCommand {
   }
 
   private static async list(ctx: CommandContext, { channel: channelId }: ListArguments) {
-    let dbQuery = db.select({ appName: 'app.name' }, { ugcName: 'ugc.name' }, 'watcher.*')
-      .from('watcher')
+    let dbQuery = db.select(
+      db.raw(oneLine`
+        CASE
+          WHEN group_id IS NOT NULL THEN \`group\`.name
+          WHEN ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')
+          ELSE app.name
+        END AS name
+      `),
+      'watcher.*',
+    ).from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .leftJoin('`group`', '`group`.id', 'watcher.group_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
         .orOn('app.id', 'ugc.app_id'))
@@ -526,11 +641,11 @@ export default class WatchersCommand extends GuildOnlyCommand {
     let md = '';
 
     const createTable = (rows: any[]) => `\`\`\`md\n${markdownTable([
-      ['Id', 'App/UGC Id', 'Name', 'Channel', 'Type', 'Active'],
+      ['Id', 'Entity Id', 'Name', 'Channel', 'Type', 'Active'],
       ...(rows.map((w: any) => [
         w.id,
-        w.appId || w.ugcId,
-        w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName,
+        w.appId || w.groupId || w.ugcId,
+        w.name,
         channelNames.get(w.channelId),
         w.type,
         !w.inactive ? 'X' : '',
@@ -574,14 +689,17 @@ export default class WatchersCommand extends GuildOnlyCommand {
     const watcher = await db.select(
       'watcher.id',
       { appId: 'app.id' },
+      { appIcon: 'icon' },
       { appName: 'app.name' },
+      { groupAvatar: 'group.avatar' },
+      { groupName: 'group.name' },
       { ugcName: 'ugc.name' },
-      'icon',
       'channel_id',
       'webhook_id',
       'webhook_token',
     ).from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .leftJoin('`group`', '`group`.id', 'watcher.group_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
         .orOn('app.id', 'ugc.app_id'))
@@ -621,9 +739,11 @@ export default class WatchersCommand extends GuildOnlyCommand {
       }
     }
 
-    return ctx.success(`Removed watcher (#${watcherId}) for **${watcher.ugcName || watcher.appName}** from <#${watcher.channelId}>!`, {
+    return ctx.success(`Removed watcher (#${watcherId}) for **${watcher.groupName || watcher.ugcName || watcher.appName}** from <#${watcher.channelId}>!`, {
       thumbnail: {
-        url: SteamUtil.URLS.Icon(watcher.appId, watcher.icon),
+        url: watcher.groupName
+          ? SteamUtil.URLS.GroupAvatar(watcher.groupAvatar, 'medium')
+          : SteamUtil.URLS.Icon(watcher.appId, watcher.icon),
       },
     });
   }

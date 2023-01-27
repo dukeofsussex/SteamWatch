@@ -71,9 +71,18 @@ export default class GuildOnlyCommand extends SlashCommand {
   }
 
   protected static async createWatcherAutocomplete(value: string, guildId: string) {
-    const dbWatcher = await db.select({ appName: 'app.name' }, { ugcName: 'ugc.name' }, 'watcher.*')
-      .from('watcher')
+    const dbWatcher = await db.select(
+      db.raw(oneLine`
+        CASE
+          WHEN group_id IS NOT NULL THEN \`group\`.name
+          WHEN ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')
+          ELSE app.name
+        END AS name
+      `),
+      'watcher.*',
+    ).from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .leftJoin('`group`', '`group`.id', 'watcher.group_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
         .orOn('app.id', 'ugc.app_id'))
@@ -81,13 +90,14 @@ export default class GuildOnlyCommand extends SlashCommand {
       .andWhere((builder) => builder.where('watcher.id', value)
         .orWhere('watcher.type', 'LIKE', `${value}%`)
         .orWhere('app.name', 'LIKE', `${value}%`)
+        .orWhere('group.name', 'LIKE', `${value}%`)
         .orWhere('ugc.name', 'LIKE', `${value}%`))
       .limit(MAX_OPTIONS);
 
     return Promise.all(dbWatcher.map(async (w) => ({
       name: oneLine`
         [ID: ${w.id}]
-        ${w.ugcName ? `${w.ugcName} (${w.appName})` : w.appName}
+        ${w.name}
         (${capitalize(w.type)})
         on
         #${(await DiscordAPI.getChannelName(w.channelId))}

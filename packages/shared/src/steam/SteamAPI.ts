@@ -55,6 +55,18 @@ export interface GroupDetails {
   creator_page_bg_url: string;
 }
 
+export interface GroupSummary {
+  name: string;
+  title: string;
+  summary: string;
+  avatar: string;
+  memberCount: number;
+  membersInChat: number;
+  membersInGame: number;
+  membersOnline: number;
+  ownerId: string;
+}
+
 export interface KeyedAppDetails {
   [key: number]: {
     success: boolean;
@@ -86,6 +98,23 @@ export interface OwnedGame {
 
 export interface OwnedGames {
   games: OwnedGame[];
+}
+
+export interface PartnerEvent {
+  gid: string;
+  clanid: string;
+  posterid: string;
+  headline: string;
+  posttime: number;
+  body: string;
+  banned: boolean;
+}
+
+export interface PartnerEvents {
+  success: 0 | 1;
+  events: {
+    announcement_body: PartnerEvent;
+  }[];
 }
 
 export interface PlayerAlias {
@@ -216,8 +245,55 @@ export default class SteamAPI {
     return urlParts[urlParts.length - 1];
   }
 
-  static getGroupDetails(name: string) {
-    return this.request<GroupDetails>(`https://steamcommunity.com/groups/${name}/ajaxgetvanityandclanid/`);
+  static getGroupAvatarHash(avatar: string) {
+    return avatar.match(/\/(\w+?)_/)?.[1] ?? '';
+  }
+
+  static getGroupDetails(vanityUrl: string) {
+    return this.request<GroupDetails>(`https://steamcommunity.com/groups/${vanityUrl}/ajaxgetvanityandclanid/`);
+  }
+
+  static async getGroupNews(id: number) {
+    const res = await this.request<PartnerEvents>(`https://store.steampowered.com/events/ajaxgetpartnereventspageable/?clan_accountid=${id}&count=1`);
+
+    return res?.events?.[0]?.announcement_body ?? null;
+  }
+
+  static async getGroupSummary(vanityUrl: string) {
+    const url = `https://steamcommunity.com/groups/${vanityUrl}/memberslistxml/?xml=1`;
+    let res = null;
+    let text = '';
+
+    try {
+      res = await fetch(url);
+      text = await res.text();
+    } catch (err) {
+      logger.error({
+        label: 'SteamAPI',
+        message: (err as Error).message,
+        res: text,
+        err,
+        url,
+      });
+
+      return null;
+    }
+
+    if (!text.startsWith('<?xml')) {
+      return null;
+    }
+
+    return {
+      name: this.extractXmlValue('groupName', text),
+      title: this.extractXmlValue('headline', text),
+      summary: this.extractXmlValue('summary', text),
+      avatar: this.getGroupAvatarHash(this.extractXmlValue('avatarFull', text)),
+      memberCount: parseInt(this.extractXmlValue('memberCount', text), 10),
+      membersInChat: parseInt(this.extractXmlValue('membersInChat', text), 10),
+      membersInGame: parseInt(this.extractXmlValue('membersInGame', text), 10),
+      membersOnline: parseInt(this.extractXmlValue('membersOnline', text), 10),
+      ownerId: this.extractXmlValue('steamID64', text),
+    } as GroupSummary;
   }
 
   static async getNumberOfCurrentPlayers(appId: number) {
@@ -286,17 +362,23 @@ export default class SteamAPI {
     return res?.total ? res.items : null;
   }
 
+  private static extractXmlValue(key: string, text: string) {
+    const extracted = text.match(new RegExp(`<${key}>(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?<\\/${key}>`));
+    return extracted?.[1] ?? '';
+  }
+
   private static async request<T>(url: string, options?: RequestInit): Promise<T | null> {
     let res = null;
 
     try {
       res = await fetch(url, options);
 
-      return await res.clone().json() as T;
+      return await res.json() as T;
     } catch (err) {
       logger.error({
         label: 'SteamAPI',
         message: (err as Error).message,
+        // TODO Fix
         res: res?.text() ?? '',
         err,
         url,

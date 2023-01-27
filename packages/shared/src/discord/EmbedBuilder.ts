@@ -8,14 +8,25 @@ import {
 } from 'slash-create';
 import DiscordUtil from './DiscordUtil';
 import { DEFAULT_CURRENCY, EMBED_COLOURS, EMOJIS } from '../constants';
-import db, { App, Currency, CurrencyCode } from '../db';
-import SteamAPI, { NewsPost, PriceOverview, Tag } from '../steam/SteamAPI';
+import db, {
+  App,
+  Currency,
+  CurrencyCode,
+  Group,
+} from '../db';
+import SteamAPI, {
+  NewsPost,
+  PartnerEvent,
+  PriceOverview,
+  Tag,
+} from '../steam/SteamAPI';
 import steamClient from '../steam/SteamClient';
 import { FileType, PublishedFile, SteamDeckCompatibility } from '../steam/SteamWatchUser';
 import SteamUtil from '../steam/SteamUtil';
 import transformArticle from '../transformers';
 
 export type AppMinimal = Pick<App, 'icon' | 'id' | 'name'>;
+export type GroupMinimal = Pick<Group, 'avatar' | 'id' | 'name'>;
 
 export default class EmbedBuilder {
   static createApp(
@@ -43,6 +54,41 @@ export default class EmbedBuilder {
     };
   }
 
+  static async createGroupNews(
+    group: GroupMinimal,
+    news: PartnerEvent,
+  ): Promise<MessageEmbedOptions> {
+    const author = await SteamAPI.getPlayerSummary(news.posterid);
+    const transformed = transformArticle(news.body);
+
+    return {
+      color: EMBED_COLOURS.DEFAULT,
+      title: news.headline,
+      description: transformed.markdown,
+      footer: {
+        icon_url: SteamUtil.URLS.GroupAvatar(group.avatar, 'medium'),
+        text: group.name,
+      },
+      url: SteamUtil.URLS.EventAnnouncement(group.id, news.gid, 'group'),
+      timestamp: new Date(news.posttime * 1000),
+      thumbnail: {
+        url: SteamUtil.URLS.GroupAvatar(group.avatar, 'full'),
+      },
+      ...(author ? {
+        author: {
+          name: author.personaname,
+          icon_url: author.avatar,
+          url: SteamUtil.URLS.Profile(author.steamid),
+        },
+      } : {}),
+      ...(transformed.thumbnail ? {
+        image: {
+          url: SteamUtil.URLS.NewsImage(transformed.thumbnail),
+        },
+      } : {}),
+    };
+  }
+
   static async createNews(app: AppMinimal, news: NewsPost): Promise<MessageEmbedOptions> {
     const transformed = transformArticle(news.contents);
 
@@ -57,7 +103,7 @@ export default class EmbedBuilder {
         // Truncate long news titles
         title: news.title.length > 128 ? `${news.title.substring(0, 125)}...` : news.title,
         description: transformed.markdown,
-        url: eventId ? SteamUtil.URLS.EventAnnouncement(app.id, eventId) : news.url,
+        url: eventId ? SteamUtil.URLS.EventAnnouncement(app.id, eventId, 'app') : news.url,
         timestamp: new Date(news.date * 1000),
       }),
       ...(news.author ? {
