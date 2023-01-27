@@ -79,6 +79,7 @@ export default class GuildOnlyCommand extends SlashCommand {
         .orOn('app.id', 'ugc.app_id'))
       .where('guild_id', guildId)
       .andWhere((builder) => builder.where('watcher.id', value)
+        .orWhere('watcher.type', 'LIKE', `${value}%`)
         .orWhere('app.name', 'LIKE', `${value}%`)
         .orWhere('ugc.name', 'LIKE', `${value}%`))
       .limit(MAX_OPTIONS);
