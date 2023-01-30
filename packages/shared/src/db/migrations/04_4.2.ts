@@ -2,7 +2,7 @@
 import type { Knex } from 'knex';
 
 exports.up = (knex: Knex) => knex.schema
-  .createTable('group', (table) => {
+  .createTable('`group`', (table) => {
     table.integer('id')
       .unsigned()
       .primary();
@@ -22,13 +22,13 @@ exports.up = (knex: Knex) => knex.schema
       .after('app_id');
     table.foreign('group_id')
       .references('id')
-      .inTable('group')
+      .inTable('`group`')
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
   });
 
 exports.down = (knex: Knex) => knex.schema
-  .dropTable('group')
+  .dropTable('`group`')
   .alterTable('watcher', (table) => {
     table.dropForeign('group_id');
     table.dropColumn('group_id');
