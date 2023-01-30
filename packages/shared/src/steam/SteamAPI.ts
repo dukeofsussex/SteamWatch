@@ -369,17 +369,18 @@ export default class SteamAPI {
 
   private static async request<T>(url: string, options?: RequestInit): Promise<T | null> {
     let res = null;
+    let text = '';
 
     try {
       res = await fetch(url, options);
+      text = await res.text();
 
-      return await res.json() as T;
+      return JSON.parse(text) as T;
     } catch (err) {
       logger.error({
         label: 'SteamAPI',
         message: (err as Error).message,
-        // TODO Fix
-        res: res?.text() ?? '',
+        res: text,
         err,
         url,
         options,
