@@ -187,10 +187,11 @@
 
 ### Added
 
-- Add app workshop watching
+- Add `/workshop` command
 
 ### Changed
 
+- Rename `/open` to `/client` and improve response times
 - Standardise embeds
 - Changed command name for Steam browser protocol conversion command
 - Rework some commands to interface with Steam instead of the local app cache
@@ -209,7 +210,7 @@
 - Fix guild currency not being used by default
 - Fix Steam browser protocol conversion not recognising all workshop items
 
-## [3.1.0]
+## [3.1.0] Workshop
 
 ### Added
 
@@ -229,7 +230,7 @@
 - Fix broadcasting feature always sending out the latest update news
 - Fix guild currency not being used by default
 
-## [3.0.0]
+## [3.0.0] UGC
 
 ### Added
 
