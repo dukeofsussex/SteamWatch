@@ -73,8 +73,8 @@ const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
 
 const PermittedAppTypes: { [key in WatcherType]: AppType[]; } = {
   [WatcherType.GROUP]: [],
-  [WatcherType.NEWS]: ['application', 'game', 'config'],
-  [WatcherType.PRICE]: ['application', 'dlc', 'game', 'music', 'video'],
+  [WatcherType.NEWS]: ['application', 'game', 'config', 'hardware'],
+  [WatcherType.PRICE]: ['application', 'dlc', 'game', 'hardware', 'music', 'video'],
   [WatcherType.UGC]: [],
   [WatcherType.WORKSHOP]: ['game'],
 };
