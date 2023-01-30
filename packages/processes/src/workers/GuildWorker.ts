@@ -55,6 +55,8 @@ export default class GuildWorker extends Worker {
           name: guild.name,
           lastUpdate: new Date(),
         }).into('guild');
+
+        logger.info('Joined guild');
       }
     }
 
