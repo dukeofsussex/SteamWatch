@@ -71,27 +71,35 @@ export default class GuildOnlyCommand extends SlashCommand {
   }
 
   protected static async createWatcherAutocomplete(value: string, guildId: string) {
-    const dbWatcher = await db.select(
-      db.raw(oneLine`
-        CASE
-          WHEN group_id IS NOT NULL THEN \`group\`.name
-          WHEN ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')
-          ELSE app.name
-        END AS name
-      `),
-      'watcher.*',
-    ).from('watcher')
+    const dbWatcher = await db.select('app.name', 'watcher.*')
+      .from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-      .leftJoin('`group`', '`group`.id', 'watcher.group_id')
-      .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
-      .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
-        .orOn('app.id', 'ugc.app_id'))
+      .innerJoin('app', 'app.id', 'watcher.app_id')
       .where('guild_id', guildId)
       .andWhere((builder) => builder.where('watcher.id', value)
         .orWhere('watcher.type', 'LIKE', `${value}%`)
-        .orWhere('app.name', 'LIKE', `${value}%`)
-        .orWhere('group.name', 'LIKE', `${value}%`)
-        .orWhere('ugc.name', 'LIKE', `${value}%`))
+        .orWhere('app.name', 'LIKE', `${value}%`))
+      .union(
+        db.select('`group`.name', 'watcher.*')
+          .from('watcher')
+          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+          .innerJoin('`group`', '`group`.id', 'watcher.group_id')
+          .where('guild_id', guildId)
+          .andWhere((builder) => builder.where('watcher.id', value)
+            .orWhere('watcher.type', 'LIKE', `${value}%`)
+            .orWhere('group.name', 'LIKE', `${value}%`)),
+        db.select(db.raw('CONCAT(ugc.name, \' (\', app.name, \')\') AS name'), 'watcher.*')
+          .from('watcher')
+          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+          .innerJoin('ugc', 'ugc.id', 'watcher.ugc_id')
+          .innerJoin('app', 'app.id', 'ugc.app_id')
+          .where('guild_id', guildId)
+          .andWhere((builder) => builder.where('watcher.id', value)
+            .orWhere('watcher.type', 'LIKE', `${value}%`)
+            .orWhere('app.name', 'LIKE', `${value}%`)
+            .orWhere('ugc.name', 'LIKE', `${value}%`)),
+      )
+      .orderBy('id')
       .limit(MAX_OPTIONS);
 
     return Promise.all(dbWatcher.map(async (w) => ({
