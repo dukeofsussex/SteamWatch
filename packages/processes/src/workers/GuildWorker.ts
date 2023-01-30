@@ -38,7 +38,6 @@ export default class GuildWorker extends Worker {
       query: new URLSearchParams(after ? [['after', after]] : undefined),
     }) as RESTGetAPICurrentUserGuildsResult;
 
-    // TODO Set up guilds that haven't been set up by users
     for (let i = 0; i < guilds.length; i += 1) {
       const guild = guilds[i] as RESTAPIPartialCurrentUserGuild;
 

@@ -96,10 +96,8 @@ export default class InfoCommand extends SlashCommand {
           url: WEBSITE_URL,
           color: EMBED_COLOURS.DEFAULT,
           timestamp: new Date(),
-          // TODO Account for missing avatar
-          // @ts-ignore
           footer: {
-            icon_url: (await DiscordAPI.getCurrentUser()).avatarUrl,
+            icon_url: (await DiscordAPI.getCurrentUser()).avatarUrl || '',
             text: `SteamWatch v${VERSION}`,
           },
           fields: [
