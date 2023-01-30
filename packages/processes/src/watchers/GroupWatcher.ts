@@ -49,7 +49,7 @@ export default class GroupWatcher extends Watcher {
 
     const lastCheckedMs = (group.lastChecked ?? subHours(new Date(), 1)).getTime() / 1000;
 
-    if (news && lastCheckedMs <= news.posttime) {
+    if (news && !news.banned && lastCheckedMs <= news.posttime) {
       logger.info({
         message: 'Found new group post',
         news,
