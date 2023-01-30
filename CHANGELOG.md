@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.2.0] Groups
+
+### Added
+
+- Support group name, vanity url, and watcher type in watcher autocompletion
+- Add group news watching
+- Add `/group` commands to interact with groups
+- Add logging for joins via the guild worker
+- Support watching `hardware` news and prices
+
+### Fixed
+
+- Fix SteamAPI logging hanging for large responses
+
 ## [4.1.0]
 
 ### Added
