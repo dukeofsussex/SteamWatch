@@ -119,7 +119,7 @@ export default class GroupCommand extends SlashCommand {
     const owner = await SteamAPI.getPlayerSummary(summary.ownerId);
 
     return ctx.embed({
-      title: summary.title,
+      title: details.group_name,
       description: transformArticle(summary.summary).markdown,
       color: EMBED_COLOURS.DEFAULT,
       timestamp: new Date(),
@@ -132,11 +132,11 @@ export default class GroupCommand extends SlashCommand {
         },
       } : {}),
       thumbnail: {
-        url: SteamUtil.URLS.GroupAvatar(summary.avatar, 'full'),
+        url: details.avatar_full_url,
       },
       footer: {
         text: summary.name,
-        icon_url: SteamUtil.URLS.GroupAvatar(summary.avatar, 'medium'),
+        icon_url: details.avatar_medium_url,
       },
       fields: [{
         name: 'Member Count',
