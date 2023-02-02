@@ -6,7 +6,7 @@ import {
 } from '@steamwatch/shared';
 
 export default class SteamGatewayManager implements Manager {
-  async start() {
+  start() {
     steamClient.addListener('changelist', this.onChangeListReceived);
   }
 
@@ -24,7 +24,10 @@ export default class SteamGatewayManager implements Manager {
       return;
     }
 
-    logger.info(`Updating ${storedApps.length} apps...`);
+    logger.info({
+      message: 'Updating apps...',
+      count: storedApps.length,
+    });
 
     const { apps } = await steamClient.getProductInfo(storedApps.map((app) => app.id), [], true);
 
