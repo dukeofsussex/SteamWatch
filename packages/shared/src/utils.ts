@@ -18,6 +18,19 @@ export function onShutdown(callback: () => void) {
   }
 }
 
+export function partition<T>(
+  array: T[],
+  callback: (element: T, index: number, array: T[]) => boolean,
+) {
+  return array.reduce(
+    (result, element, i) => {
+      result[callback(element, i, array) ? 0 : 1]!.push(element);
+      return result;
+    },
+    [[], []] as [T[], T[]],
+  );
+}
+
 export function run(Manager: new() => Manager) {
   const manager = new Manager();
 

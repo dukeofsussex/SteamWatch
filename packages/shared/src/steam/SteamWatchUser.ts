@@ -2,6 +2,7 @@
 import SteamUser from 'steam-user';
 import EMsg from 'steam-user/enums/EMsg';
 import Schema from 'steam-user/protobufs/generated/_load';
+import type { AppType } from '../db';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 declare module 'steam-user' {
@@ -9,6 +10,28 @@ declare module 'steam-user' {
   function _decodeProto(proto: object, encoded: Buffer | ByteBuffer): object;
 }
 /* eslint-enable @typescript-eslint/naming-convention */
+
+// Not exposed by node-steam-user typings
+export interface AppChanges {
+  appid: number;
+  change_number: number;
+  needs_token: boolean;
+}
+
+// Not exposed by node-steam-user typings
+export interface AppInfo {
+  changenumber: number;
+  missingToken: boolean;
+  appinfo: {
+    appid: string;
+    common?: {
+      name: string;
+      icon: string;
+      logo_small: string;
+      type: Capitalize<AppType>;
+    }
+  };
+}
 
 export interface ChangeHistory {
   changes: ChangeLog[];
@@ -86,6 +109,20 @@ export enum EPublishedFileQueryType {
   RankedByInappropriateContentRating = 19,
   RankedByBanContentCheck = 20,
   RankedByLastUpdatedDate = 21,
+}
+
+// Not exposed by node-steam-user typings
+export interface PackageChanges {
+  packageid: number;
+  change_number: number;
+  needs_token: boolean;
+}
+
+// Not exposed by node-steam-user typings
+export interface PackageInfo {
+  changenumber: number;
+  missingToken: boolean;
+  packageinfo?: any;
 }
 
 export interface PublishedFile {

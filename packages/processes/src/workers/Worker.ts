@@ -3,7 +3,7 @@ import type { Manager } from '@steamwatch/shared';
 export default abstract class Worker implements Manager {
   protected readonly breakMs: number;
 
-  protected timeout?: NodeJS.Timeout;
+  protected timeout?: NodeJS.Timeout | undefined;
 
   constructor(breakMs: number) {
     this.breakMs = breakMs;

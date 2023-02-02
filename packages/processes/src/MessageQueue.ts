@@ -1,7 +1,5 @@
 import type { DiscordAPIError } from '@discordjs/rest';
 import { RESTJSONErrorCodes, RESTPostAPIWebhookWithTokenResult, Routes } from 'discord-api-types/v10';
-import { R_OK, W_OK } from 'node:constants';
-import { access, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Response } from 'node-fetch';
 import type { EditMessageOptions } from 'slash-create';
@@ -10,13 +8,12 @@ import {
   DiscordAPI,
   DiscordUser,
   logger,
-  Manager,
 } from '@steamwatch/shared';
+import Queue from './Queue';
 
-const FILE = join('data', 'queue.json');
 const SLOWMODE_DELAY = 300000; // 5m
 
-export interface QueuedItem {
+export interface QueuedMessage {
   id: string;
   token: string;
   threadId: string | null;
@@ -25,105 +22,33 @@ export interface QueuedItem {
   customWebhookName?: string;
 }
 
-export default class MessageQueue implements Manager {
-  private backupInterval?: NodeJS.Timeout;
+export default class MessageQueue extends Queue<QueuedMessage[]> {
+  protected filePath;
 
-  private offset: number;
+  protected offset: number;
 
-  private queue: QueuedItem[];
-
-  private queueDelay: number;
-
-  private queueTimeout?: NodeJS.Timeout | null;
+  protected queue: QueuedMessage[];
 
   private user?: DiscordUser;
 
   constructor() {
+    super();
+    this.filePath = join('data', 'message.queue.json');
     this.offset = 0;
     this.queue = [];
-    this.queueDelay = 250; // 0.25s
   }
 
-  enqueue(item: QueuedItem) {
+  enqueue(item: QueuedMessage) {
     this.queue.push(item);
-
-    if (!this.queueTimeout) {
-      this.queueTimeout = setTimeout(() => this.notify(), this.queueDelay);
-    }
+    this.run();
   }
 
-  async start() {
+  override async start() {
     this.user = await DiscordAPI.getCurrentUser();
-
-    try {
-      // eslint-disable-next-line no-bitwise
-      await access(FILE, R_OK | W_OK);
-      const { offset, queue } = JSON.parse((await readFile(FILE)).toString());
-      this.offset = offset;
-      this.queue = queue;
-
-      if (this.queueSize()) {
-        this.queueTimeout = setTimeout(() => this.notify(), this.queueDelay);
-      }
-
-      logger.info({
-        message: 'Queue file found',
-        length: this.queueSize(),
-      });
-    } catch {
-      logger.warn('No queue file found');
-    }
-
-    this.backupInterval = setInterval(() => this.backupQueue(), 60000); // 1m
+    super.start();
   }
 
-  async stop() {
-    logger.info({
-      message: 'Stopping queue',
-      length: this.queueSize(),
-    });
-
-    await this.backupQueue();
-
-    if (this.backupInterval) {
-      clearInterval(this.backupInterval);
-    }
-
-    if (this.queueTimeout) {
-      clearTimeout(this.queueTimeout);
-      this.queueTimeout = null;
-    }
-  }
-
-  backupQueue() {
-    logger.info({
-      message: 'Backing up queue',
-      length: this.queueSize(),
-    });
-
-    return writeFile(FILE, JSON.stringify({
-      offset: this.offset,
-      queue: this.queue,
-    }));
-  }
-
-  private dequeue() {
-    if (this.queueSize() === 0) {
-      return null;
-    }
-
-    const item = this.queue[this.offset];
-    this.offset += 1;
-
-    if (this.offset * 2 >= this.queue.length) {
-      this.queue = this.queue.slice(this.offset);
-      this.offset = 0;
-    }
-
-    return item;
-  }
-
-  private async notify() {
+  protected async work() {
     const {
       customWebhookAvatar,
       customWebhookName,
@@ -175,21 +100,37 @@ export default class MessageQueue implements Manager {
             res,
           });
 
-          this.queueTimeout = setTimeout(() => this.notify(), SLOWMODE_DELAY);
+          this.timeout = setTimeout(() => this.work(), SLOWMODE_DELAY);
           return;
         }
       }
     }
 
-    if (this.queueSize()) {
-      this.queueTimeout = setTimeout(() => this.notify(), this.queueDelay);
-    } else if (this.queueTimeout) {
-      clearTimeout(this.queueTimeout);
-      this.queueTimeout = null;
+    if (this.size()) {
+      this.timeout = setTimeout(() => this.work(), this.queueDelay);
+    } else if (this.timeout) {
+      clearTimeout(this.timeout);
+      this.timeout = undefined;
     }
   }
 
-  private queueSize() {
+  protected dequeue() {
+    if (this.size() === 0) {
+      return null;
+    }
+
+    const item = this.queue[this.offset]!;
+    this.offset += 1;
+
+    if (this.offset * 2 >= this.queue.length) {
+      this.queue = this.queue.slice(this.offset);
+      this.offset = 0;
+    }
+
+    return item;
+  }
+
+  protected size() {
     return this.queue.length - this.offset;
   }
 

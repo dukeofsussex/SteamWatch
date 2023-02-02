@@ -5,8 +5,8 @@ import {
   Manager,
 } from '@steamwatch/shared';
 import MessageQueue from './MessageQueue';
-import SteamGatewayManager from './managers/SteamGatewayManager';
 import CuratorWatcher from './watchers/CuratorWatcher';
+import FreeWatcher from './watchers/FreeWatcher';
 import ForumWatcher from './watchers/ForumWatcher';
 import GroupWatcher from './watchers/GroupWatcher';
 import NewsWatcher from './watchers/NewsWatcher';
@@ -14,6 +14,7 @@ import PriceWatcher from './watchers/PriceWatcher';
 import UGCWatcher from './watchers/UGCWatcher';
 import WorkshopWatcher from './watchers/WorkshopWatcher';
 import GuildWorker from './workers/GuildWorker';
+import SteamGatewayWorker from './workers/SteamGatewayWorker';
 import TopGGWorker from './workers/TopGGWorker';
 
 export default class ProcessManager implements Manager {
@@ -25,6 +26,7 @@ export default class ProcessManager implements Manager {
     this.processes = [
       messageQueue,
       new CuratorWatcher(messageQueue),
+      new FreeWatcher(messageQueue),
       new ForumWatcher(messageQueue),
       new GroupWatcher(messageQueue),
       new NewsWatcher(messageQueue),
@@ -32,8 +34,8 @@ export default class ProcessManager implements Manager {
       new UGCWatcher(messageQueue),
       new WorkshopWatcher(messageQueue),
       new GuildWorker(),
+      new SteamGatewayWorker(),
       new TopGGWorker(),
-      new SteamGatewayManager(),
     ];
   }
 

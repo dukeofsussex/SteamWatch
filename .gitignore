@@ -1,5 +1,5 @@
-# Queue backup
-queue.json
+# Queue backups
+*.queue.json
 
 # Broadcast
 broadcast.json

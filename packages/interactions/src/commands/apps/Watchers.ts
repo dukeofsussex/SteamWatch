@@ -22,6 +22,7 @@ import {
   capitalize,
   db,
   DEFAULT_COMPONENT_EXPIRATION,
+  DEFAULT_STEAM_ICON,
   DiscordAPI,
   EmbedBuilder,
   EMBED_COLOURS,
@@ -101,6 +102,7 @@ interface AddWorkshopArguments extends AddAppArguments {
 interface AddArguments {
   curator: Omit<AddGroupArguments, 'group'>;
   forum: AddForumArguments;
+  free: BaseArguments;
   group: Omit<AddGroupArguments, 'curator'>;
   news: AddAppArguments;
   price: AddAppArguments;
@@ -152,6 +154,14 @@ export default class WatchersCommand extends GuildOnlyCommand {
               description: 'Forum url',
               required: true,
             },
+            ChannelArg,
+            ThreadArg,
+          ],
+        }, {
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'free',
+          description: 'Watch Steam for free promotions',
+          options: [
             ChannelArg,
             ThreadArg,
           ],
@@ -315,6 +325,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
       if (add.forum) {
         return WatchersCommand.addForum(ctx, add.forum);
+      }
+
+      if (add.free) {
+        return WatchersCommand.addFree(ctx, add.free);
       }
 
       if (add.group) {
@@ -679,6 +693,79 @@ export default class WatchersCommand extends GuildOnlyCommand {
     );
   }
 
+  private static async addFree(
+    ctx: CommandContext,
+    {
+      channel: channelId,
+      thread: threadId,
+    }: BaseArguments,
+  ) {
+    await ctx.editOriginal({
+      embeds: [{
+        color: EMBED_COLOURS.PENDING,
+        description: `Would you like to add the watcher for **free promotions** to ${ctx.channels.get(channelId)!.mention}?`,
+        title: 'Confirmation',
+        thumbnail: {
+          url: DEFAULT_STEAM_ICON,
+        },
+      }],
+      components: [{
+        type: ComponentType.ACTION_ROW,
+        components: [{
+          custom_id: 'cancel',
+          label: 'Cancel',
+          style: ButtonStyle.SECONDARY,
+          type: ComponentType.BUTTON,
+        }, {
+          custom_id: 'confirm',
+          label: 'Confirm',
+          style: ButtonStyle.PRIMARY,
+          type: ComponentType.BUTTON,
+        }],
+      }],
+    });
+
+    ctx.registerComponent(
+      'cancel',
+      () => ctx.error(`Cancelled watcher for **free promotions** on ${ctx.channels.get(channelId)!.mention}.`),
+      DEFAULT_COMPONENT_EXPIRATION,
+    );
+
+    return ctx.registerComponent(
+      'confirm',
+      async () => {
+        ctx.unregisterComponent('confirm');
+
+        let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
+
+        if (error) {
+          return ctx.error(error);
+        }
+
+        error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
+
+        if (error) {
+          return ctx.error(error);
+        }
+
+        const [id] = await db.insert({
+          channelId,
+          threadId,
+          type: WatcherType.Free,
+          inactive: false,
+        }).into('watcher');
+
+        return ctx.success(`Added **${WatcherType.Free}** watcher (#${id}) for **free promotions** to ${ctx.channels.get(channelId)!.mention}.`, {
+          thumbnail: {
+            url: DEFAULT_STEAM_ICON,
+          },
+        });
+      },
+      DEFAULT_COMPONENT_EXPIRATION,
+      () => ctx.timeout(),
+    );
+  }
+
   private static async addGroup(
     ctx: CommandContext,
     {
@@ -887,6 +974,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
     let dbQuery = db.select(
       db.raw(oneLine`
         CASE
+          WHEN watcher.type = 'free' THEN "Free Promotions"
           WHEN watcher.forum_id IS NOT NULL THEN CONCAT(forum.name, ' (', IF(forum.app_id IS NOT NULL, app.name, \`group\`.name), ')')
           WHEN watcher.group_id IS NOT NULL THEN \`group\`.name
           WHEN watcher.ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')
@@ -927,7 +1015,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       ['Id', 'Entity Id', 'Name', 'Channel', 'Type', 'Active'],
       ...(rows.map((w: any) => [
         w.id,
-        w.appId || w.forumId || w.groupId || w.ugcId || w.workshopId,
+        w.appId || w.forumId || w.groupId || w.ugcId || w.workshopId || '-',
         w.name,
         channelNames.get(w.channelId),
         oneLine`
@@ -983,6 +1071,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       'webhook_token',
       db.raw(oneLine`
         CASE
+          WHEN watcher.type = 'free' THEN "Free Promotions"
           WHEN watcher.forum_id IS NOT NULL THEN CONCAT(forum.name, ' (', IF(forum.app_id IS NOT NULL, app.name, \`group\`.name), ')')
           WHEN watcher.group_id IS NOT NULL THEN \`group\`.name
           WHEN watcher.ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')

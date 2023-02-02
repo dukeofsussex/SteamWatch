@@ -7,13 +7,20 @@ import {
   MessageOptions,
 } from 'slash-create';
 import DiscordUtil from './DiscordUtil';
-import { DEFAULT_CURRENCY, EMBED_COLOURS, EMOJIS } from '../constants';
+import {
+  DEFAULT_CURRENCY,
+  DEFAULT_STEAM_ICON,
+  EMBED_COLOURS,
+  EMOJIS,
+} from '../constants';
 import db, {
   App,
   Currency,
   CurrencyCode,
-  Group,
   Forum,
+  FreePackage,
+  FreePackageType,
+  Group,
   WatcherType,
 } from '../db';
 import SteamAPI, {
@@ -140,6 +147,30 @@ export default class EmbedBuilder {
       fields: [{
         name: 'Steam Client Link',
         value: SteamUtil.BP.OpenUrl(post.url),
+      }],
+    };
+  }
+
+  static createFreePackage(
+    app: AppMinimal,
+    pkg: FreePackage,
+  ) {
+    return {
+      ...EmbedBuilder.createApp(app, {
+        description: `**${(pkg.type === FreePackageType.Promo ? 'Free To Keep' : 'Free Weekend')}**`,
+        timestamp: new Date(),
+        title: app.name,
+        url: SteamUtil.URLS.Store(app.id),
+      }),
+      fields: [{
+        name: 'Starts',
+        value: `<t:${pkg.startTime!.getTime()}:F>`,
+      }, {
+        name: 'Ends',
+        value: `<t:${pkg.endTime!.getTime()}:F>`,
+      }, {
+        name: 'Steam Client Link',
+        value: SteamUtil.BP.Store(app.id),
       }],
     };
   }
@@ -433,6 +464,8 @@ export default class EmbedBuilder {
         return options.appId
           ? SteamUtil.URLS.Icon(options.appId, options.appIcon)
           : SteamUtil.URLS.GroupAvatar(options.groupAvatar, options.groupAvatarSize);
+      case WatcherType.Free:
+        return DEFAULT_STEAM_ICON;
       case WatcherType.Curator:
       case WatcherType.Group:
         return SteamUtil.URLS.GroupAvatar(options.groupAvatar, options.groupAvatarSize);

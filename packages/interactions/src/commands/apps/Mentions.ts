@@ -300,6 +300,9 @@ export default class MentionsCommand extends GuildOnlyCommand {
         );
         bp = SteamUtil.BP.OpenUrl(url);
         break;
+      case WatcherType.Free:
+        title = 'Free Promotions';
+        break;
       case WatcherType.Group:
         url = SteamUtil.URLS.Group(mentions[0].groupId);
         bp = SteamUtil.BP.Group(parseInt(mentions[0].groupId, 10));
@@ -335,10 +338,10 @@ export default class MentionsCommand extends GuildOnlyCommand {
           groupAvatarSize: 'medium',
         }),
       },
-      url,
+      ...(url ? { url } : {}),
       timestamp: new Date(),
       footer: {
-        text: mentions[0].groupName || mentions[0].appName,
+        text: mentions[0].groupName || mentions[0].appName || title,
         icon_url: EmbedBuilder.getImage(mentions[0].type, {
           ...mentions[0],
           groupAvatarSize: 'medium',
@@ -359,10 +362,13 @@ export default class MentionsCommand extends GuildOnlyCommand {
           ${(mentions[0].workshopId ? `(${EPFIMFileType[mentions[0].workshopFiletype]})` : '')}
         `,
         inline: true,
-      }, {
-        name: 'Steam Client Link',
-        value: bp,
-      }],
+      },
+      ...(bp ? [
+        {
+          name: 'Steam Client Link',
+          value: bp,
+        }] : []),
+      ],
     });
   }
 

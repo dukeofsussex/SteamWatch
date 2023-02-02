@@ -13,20 +13,20 @@ import {
 } from '@steamwatch/shared';
 import Worker from './Worker';
 import type MessageQueue from '../MessageQueue';
-import type { QueuedItem } from '../MessageQueue';
+import type { QueuedMessage } from '../MessageQueue';
 
 const FILE = join('data', 'broadcast.json');
 
 export default class BroadcastWorker extends Worker {
   private messageQueue: MessageQueue;
 
-  constructor(messageQueue: MessageQueue) {
+  constructor(queue: MessageQueue) {
     super(3600000); // 60m
-    this.messageQueue = messageQueue;
+    this.messageQueue = queue;
   }
 
   async work(): Promise<void> {
-    let message: QueuedItem['message'];
+    let message: QueuedMessage['message'];
     let active: boolean;
 
     try {
@@ -112,8 +112,6 @@ export default class BroadcastWorker extends Worker {
       active: false,
       message,
     }, null, 2));
-
-    await this.messageQueue.backupQueue();
 
     logger.info('Broadcast queued, stopping...');
 

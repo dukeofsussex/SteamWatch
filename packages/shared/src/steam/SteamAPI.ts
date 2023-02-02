@@ -7,10 +7,9 @@ import {
   EPublishedFileVisibility,
   EResult,
 } from 'steam-user';
+import type { AppType } from '../db';
 import env from '../env';
 import logger from '../logger';
-
-export type AppType = 'application' | 'config' | 'demo' | 'dlc' | 'game' | 'hardware' | 'music' | 'package' | 'series' | 'tool' | 'video';
 
 export interface AppDetails {
   achievements?: Total;

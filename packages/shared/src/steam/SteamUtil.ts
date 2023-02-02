@@ -1,18 +1,25 @@
 import { oneLine } from 'common-tags';
 import SteamID from 'steamid';
 import { EResult } from 'steam-user';
-import SteamAPI, { AppType } from './SteamAPI';
+import SteamAPI from './SteamAPI';
 import steamClient from './SteamClient';
-import { EWorkshopFileType, PublishedFile } from './SteamWatchUser';
+import {
+  AppInfo,
+  EWorkshopFileType,
+  PackageInfo,
+  PublishedFile,
+} from './SteamWatchUser';
 import db, {
   App,
+  AppType,
   CurrencyCode,
   Group,
   ForumType,
+  FreePackage,
+  FreePackageType,
   UGC,
   WatcherType,
 } from '../db';
-import { capitalize } from '../utils';
 
 interface CurrencyFormatOptions {
   append?: string;
@@ -72,15 +79,30 @@ const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
   ZAR: { prepend: 'R ' },
 };
 
+const TrackedAppTypes = new Set(Object.values(AppType));
 const PermittedAppTypes: Record<WatcherType, AppType[]> = {
   [WatcherType.Curator]: [],
+  [WatcherType.Free]: [],
   [WatcherType.Forum]: [],
   [WatcherType.Group]: [],
-  [WatcherType.News]: ['application', 'game', 'config', 'hardware'],
-  [WatcherType.Price]: ['application', 'dlc', 'game', 'hardware', 'music', 'video'],
+  [WatcherType.News]: [
+    AppType.Application,
+    AppType.Config,
+    AppType.Game,
+    AppType.Hardware,
+  ],
+  [WatcherType.Price]: [
+    AppType.Application,
+    AppType.Config,
+    AppType.DLC,
+    AppType.Game,
+    AppType.Hardware,
+    AppType.Music,
+    AppType.Video,
+  ],
   [WatcherType.UGC]: [],
-  [WatcherType.WorkshopNew]: ['game'],
-  [WatcherType.WorkshopUpdate]: ['game'],
+  [WatcherType.WorkshopNew]: [AppType.Game],
+  [WatcherType.WorkshopUpdate]: [AppType.Game],
 };
 
 export default class SteamUtil {
@@ -275,28 +297,40 @@ export default class SteamUtil {
     return id.match(SteamUtil.REGEXPS.UGC)?.[1] ?? id.match(/\d+/)?.[0];
   }
 
-  static async persistApp(appId: number) {
-    const appInfo = (await steamClient.getProductInfo([appId], [], true))
-      .apps[appId]?.appinfo;
+  static isTrackedAppType(appType: string) {
+    return TrackedAppTypes.has(appType.toLowerCase() as AppType);
+  }
 
-    if (!appInfo || !appInfo.common) {
+  static async persistApp(appId: number) {
+    const { apps } = await steamClient.getProductInfo([appId], [], true);
+
+    if (!apps || !Object.hasOwn(apps, appId)) {
       return null;
     }
 
-    const type = capitalize(appInfo.common.type);
+    return (await this.persistApps([apps[appId]!]))[0] || null;
+  }
 
-    const app: App = {
-      id: appId,
+  static async persistApps(apps: AppInfo[]) {
+    const dbApps = apps.filter(({ appinfo }) => SteamUtil.isTrackedAppType(
+      appinfo.common?.type ?? 'Unknown',
+    )).map(({ appinfo }) => ({
+      id: parseInt(appinfo.appid, 10),
       oggId: null,
-      name: appInfo.common.name,
-      icon: appInfo.common.icon || '',
-      type,
+      name: appinfo.common!.name,
+      icon: appinfo.common!.icon,
+      type: appinfo.common!.type.toLowerCase() as AppType,
       lastCheckedNews: null,
-    };
+    })) as App[];
 
-    await db.insert(app).into('app');
+    if (dbApps.length) {
+      await db.insert(dbApps)
+        .into('app')
+        .onConflict('id')
+        .merge(['icon', 'name']);
+    }
 
-    return app;
+    return dbApps;
   }
 
   static async persistGroup(identifier: string | number) {
@@ -320,6 +354,83 @@ export default class SteamUtil {
       .into('`group`');
 
     return group;
+  }
+
+  static async persistFreePackages(packages: [string, PackageInfo][], isUpdate: boolean) {
+    let freePackages: FreePackage[] = [];
+
+    for (let i = 0; i < packages.length; i += 1) {
+      const [id, pkg] = packages[i]!;
+
+      // Ignore unrelated packages
+      if (pkg.packageinfo && !pkg.packageinfo.extended.dontgrantifappidowned) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      const endTime = pkg.packageinfo?.extended?.expirytime
+        ? new Date(pkg.packageinfo.extended.expirytime * 1000)
+        : null;
+
+      // Ignore expired packages
+      if (endTime && endTime < new Date()) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      let type = null;
+
+      if (pkg.packageinfo?.extended?.freepromotion) {
+        type = FreePackageType.Promo;
+      } else if (pkg.packageinfo?.extended?.freeweekend) {
+        type = FreePackageType.Weekend;
+      }
+
+      freePackages.push({
+        id: parseInt(id, 10),
+        appId: pkg.packageinfo?.extended?.dontgrantifappidowned,
+        type,
+        startTime: pkg.packageinfo?.extended?.starttime
+          ? new Date(pkg.packageinfo.extended.starttime * 1000)
+          : null,
+        endTime,
+        active: false,
+        lastChecked: new Date(),
+        lastUpdate: new Date(),
+      });
+    }
+
+    if (!freePackages.length) {
+      return;
+    }
+
+    // Check related apps
+    const res = await steamClient.getProductInfo(
+      freePackages.reduce((ids, pkg) => {
+        if (pkg.appId) {
+          ids.push(pkg.appId);
+        }
+
+        return ids;
+      }, [] as number[]),
+      [],
+      true,
+    );
+
+    const apps = await SteamUtil.persistApps(Object.values(res.apps));
+    const storedAppids = apps.map((app) => app.id);
+
+    // Filter out packages for ignored app types
+    freePackages = freePackages.filter((pkg) => !pkg.appId || storedAppids.includes(pkg.appId!));
+
+    const cols = ['appId', 'endTime', 'lastChecked', 'startTime', 'type', ...(isUpdate ? ['lastUpdate'] : [])];
+
+    if (freePackages.length) {
+      await db.insert([...freePackages.values()])
+        .into('free_package')
+        .onConflict('id')
+        .merge(cols as any);
+    }
   }
 
   static async persistUGC(ugcId: string) {

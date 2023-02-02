@@ -10,14 +10,15 @@ import {
 } from 'slash-create';
 import {
   db,
+  DEFAULT_COMPONENT_EXPIRATION,
+  DiscordAPI,
+  DiscordUtil,
   EMBED_COLOURS,
   EMOJIS,
   EPublishedFileInfoMatchingFileType as EPFIMFileType,
-  DiscordAPI,
-  DiscordUtil,
   logger,
   MAX_OPTIONS,
-  DEFAULT_COMPONENT_EXPIRATION,
+  WatcherType,
 } from '@steamwatch/shared';
 
 export default class GuildOnlyCommand extends SlashCommand {
@@ -107,6 +108,15 @@ export default class GuildOnlyCommand extends SlashCommand {
               .orWhere('app.name', 'LIKE', `${value}%`)
               .orWhere('`group`.name', 'LIKE', `${value}%`)
               .orWhere('forum.name', 'LIKE', `${value}%`)
+            : builder)),
+        db.select(db.raw('"Free Promotions" AS name'), 'null AS filetype', 'watcher.*')
+          .from('watcher')
+          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+          .where('guild_id', guildId)
+          .andWhere('watcher.type', WatcherType.Free)
+          .andWhere((builder) => (value
+            ? builder.where('watcher.id', value)
+              .orWhere('watcher.type', 'LIKE', `${value}%`)
             : builder)),
         db.select('`group`.name', 'null AS filetype', 'watcher.*')
           .from('watcher')

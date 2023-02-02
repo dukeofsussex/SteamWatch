@@ -16,8 +16,18 @@ export interface App {
   oggId: number | null;
   name: string;
   icon: string;
-  type: string;
+  type: AppType;
   lastCheckedNews: Date | null;
+}
+
+export enum AppType {
+  Application = 'application',
+  Config = 'config',
+  DLC = 'dlc',
+  Game = 'game',
+  Hardware = 'hardware',
+  Music = 'music',
+  Video = 'video',
 }
 
 export interface AppPrice {
@@ -50,6 +60,22 @@ export interface Currency {
   name: string;
   code: CurrencyCode;
   countryCode: string;
+}
+
+export interface FreePackage {
+  id: number;
+  appId: number | null;
+  type: FreePackageType | null;
+  startTime: Date | null;
+  endTime: Date | null;
+  active: boolean;
+  lastChecked: Date;
+  lastUpdate: Date;
+}
+
+export enum FreePackageType {
+  Promo = 'promo',
+  Weekend = 'weekend',
 }
 
 export interface Forum {
@@ -126,6 +152,7 @@ export interface WatcherMention {
 
 export enum WatcherType {
   Curator = 'curator',
+  Free = 'free',
   Forum = 'forum',
   Group = 'group',
   News = 'news',
@@ -143,6 +170,7 @@ declare module 'knex/types/tables' {
     channel_webhook: ChannelWebhook;
     currency: Currency;
     forum: Forum;
+    free_package: FreePackage;
     group: Group;
     guild: Guild;
     patron: Patron;
