@@ -18,18 +18,43 @@ interface WatcherArgument {
   watcher_id: number;
 }
 
-interface MentionModification {
+interface MentionModificationArguments {
   role?: string;
   user?: string;
 }
 
-type EditArguments = WatcherArgument & MentionModification;
+type SingleModificationArgument = WatcherArgument & MentionModificationArguments;
+
+interface EditArguments {
+  all: MentionModificationArguments;
+  single: SingleModificationArgument;
+}
 
 interface CommandArguments {
   add?: EditArguments;
   list?: WatcherArgument;
   remove?: EditArguments;
 }
+
+const RoleArg = {
+  type: CommandOptionType.ROLE,
+  name: 'role',
+  description: 'Role to mention',
+};
+
+const UserArg = {
+  type: CommandOptionType.USER,
+  name: 'user',
+  description: 'User to mention',
+};
+
+const WatcherArg = {
+  type: CommandOptionType.INTEGER,
+  name: 'watcher_id',
+  description: 'The watcher\'s id',
+  autocomplete: true,
+  required: true,
+};
 
 export default class MentionsCommand extends GuildOnlyCommand {
   constructor(creator: SlashCreator) {
@@ -39,53 +64,55 @@ export default class MentionsCommand extends GuildOnlyCommand {
       dmPermission: false,
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
       options: [{
-        type: CommandOptionType.SUB_COMMAND,
+        type: CommandOptionType.SUB_COMMAND_GROUP,
         name: 'add',
         description: 'Role and/or user to add to a watcher.',
         options: [{
-          type: CommandOptionType.INTEGER,
-          name: 'watcher_id',
-          description: 'The watcher\'s id',
-          autocomplete: true,
-          required: true,
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'all',
+          description: 'Role and/or user to add to all watchers.',
+          options: [
+            RoleArg,
+            UserArg,
+          ],
         }, {
-          type: CommandOptionType.USER,
-          name: 'user',
-          description: 'User to mention',
-        }, {
-          type: CommandOptionType.ROLE,
-          name: 'role',
-          description: 'Role to mention',
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'single',
+          description: 'Role and/or user to add to a single watcher.',
+          options: [
+            WatcherArg,
+            RoleArg,
+            UserArg,
+          ],
         }],
       }, {
         type: CommandOptionType.SUB_COMMAND,
         name: 'list',
         description: 'List mentions for a watcher.',
-        options: [{
-          type: CommandOptionType.INTEGER,
-          name: 'watcher_id',
-          description: 'The watcher\'s id',
-          autocomplete: true,
-          required: true,
-        }],
+        options: [
+          WatcherArg,
+        ],
       }, {
-        type: CommandOptionType.SUB_COMMAND,
+        type: CommandOptionType.SUB_COMMAND_GROUP,
         name: 'remove',
         description: 'Role and/or user to remove from a watcher.',
         options: [{
-          type: CommandOptionType.INTEGER,
-          name: 'watcher_id',
-          description: 'The watcher\'s id',
-          autocomplete: true,
-          required: true,
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'all',
+          description: 'Role and/or user to remove from all watchers.',
+          options: [
+            RoleArg,
+            UserArg,
+          ],
         }, {
-          type: CommandOptionType.USER,
-          name: 'user',
-          description: 'User to remove',
-        }, {
-          type: CommandOptionType.ROLE,
-          name: 'role',
-          description: 'Role to remove',
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'single',
+          description: 'Role and/or user to remove from  a single watcher.',
+          options: [
+            WatcherArg,
+            RoleArg,
+            UserArg,
+          ],
         }],
       }],
       requiredPermissions: ['MANAGE_CHANNELS'],
@@ -123,19 +150,65 @@ export default class MentionsCommand extends GuildOnlyCommand {
     } = ctx.options as CommandArguments;
 
     if (add) {
-      return MentionsCommand.add(ctx, add);
+      if (add.all) {
+        return MentionsCommand.addAll(ctx, add.all);
+      }
+
+      return MentionsCommand.addSingle(ctx, add.single);
     }
 
     if (list) {
       return MentionsCommand.list(ctx, list.watcher_id);
     }
 
-    return MentionsCommand.remove(ctx, remove!);
+    if (remove!.all) {
+      return MentionsCommand.removeAll(ctx, remove!.all);
+    }
+
+    return MentionsCommand.removeSingle(ctx, remove!.single);
   }
 
-  private static async add(
+  private static async addAll(ctx: CommandContext, { role, user }: MentionModificationArguments) {
+    const mentions = [role, user].filter((m) => m) as string[];
+
+    const max = await db.count('* AS count')
+      .from('watcher')
+      .innerJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
+      .orderBy('count', 'desc')
+      .first()
+      .then((res: any) => parseInt(res.count, 10) || 0);
+
+    if (max && max >= env.settings.maxMentionsPerWatcher) {
+      return ctx.error(`Reached the maximum amount of ${env.settings.maxMentionsPerWatcher} mentions for one or more watchers!`);
+    }
+
+    if (env.settings.maxMentionsPerWatcher < (max + mentions.length)) {
+      return ctx.error(`Adding ${mentions.length} mention(s) would exceed the maximum of ${env.settings.maxMentionsPerWatcher} mentions for one or more watchers!`);
+    }
+
+    const createInsertQuery = (entityId: string, type: string) => db.insert(
+      db.select(db.raw('watcher.id, ?, ?', [entityId, type]))
+        .from('watcher')
+        .leftJoin('watcher_mention', (builder) => builder.on('watcher_mention.watcher_id', 'watcher.id')
+          .andOn('watcher_mention.entity_id', entityId))
+        .whereNull('watcher_mention.watcher_id'),
+    )
+      .into(db.raw('?? (??, ??, ??)', ['watcher_mention', 'watcher_id', 'entity_id', 'type']));
+
+    if (role) {
+      await createInsertQuery(role, 'role');
+    }
+
+    if (user) {
+      await createInsertQuery(user, 'member');
+    }
+
+    return ctx.success(`Added ${mentions.length} mention(s) to all watchers`);
+  }
+
+  private static async addSingle(
     ctx: CommandContext,
-    { role, user, watcher_id: watcherId }: EditArguments,
+    { role, user, watcher_id: watcherId }: SingleModificationArgument,
   ) {
     let mentions = [role, user].filter((m) => m);
 
@@ -234,9 +307,29 @@ export default class MentionsCommand extends GuildOnlyCommand {
     });
   }
 
-  private static async remove(
+  private static async removeAll(
     ctx: CommandContext,
-    { role, user, watcher_id: watcherId }: EditArguments,
+    { role, user }: MentionModificationArguments,
+  ) {
+    const mentions = [role, user].filter((m) => m) as string[];
+
+    const removed = await db.delete()
+      .from('watcher_mention')
+      .innerJoin('watcher', 'watcher.id', 'watcher_mention.watcher_id')
+      .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .whereIn('entity_id', mentions)
+      .andWhere('guild_id', ctx.guildID!);
+
+    if (removed === 0) {
+      return ctx.error('None of the provided mentions can be removed!');
+    }
+
+    return ctx.success(`Removed ${mentions.length} mention(s) from ${removed} watcher(s)`);
+  }
+
+  private static async removeSingle(
+    ctx: CommandContext,
+    { role, user, watcher_id: watcherId }: SingleModificationArgument,
   ) {
     const mentions = [role, user].filter((m) => m) as string[];
 
