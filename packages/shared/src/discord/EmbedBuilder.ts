@@ -91,12 +91,7 @@ export default class EmbedBuilder {
 
   static async createNews(app: AppMinimal, news: NewsPost): Promise<MessageEmbedOptions> {
     const transformed = transformArticle(news.contents);
-
-    let eventId = null;
-
-    if (news.feedname === 'steam_community_announcements') {
-      eventId = await SteamAPI.getEventIdForArticle(news.url);
-    }
+    const eventId = await SteamAPI.getEventIdForArticle(news.url);
 
     return {
       ...this.createApp(app, {
