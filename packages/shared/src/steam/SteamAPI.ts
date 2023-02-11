@@ -220,7 +220,7 @@ export default class SteamAPI {
   }
 
   static async getAppNews(appId: number) {
-    const res = await this.request<AppNews>(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2?appid=${appId}&count=1&feeds=steam_community_announcements`);
+    const res = await this.request<AppNews>(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2?appid=${appId}&count=1&feeds=steam_community_announcements,steam_community_blog`);
 
     if (!res?.appnews?.newsitems?.[0]) {
       return null;
