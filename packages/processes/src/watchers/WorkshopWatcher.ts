@@ -62,6 +62,11 @@ export default class WorkshopWatcher extends Watcher {
       }
 
       cursor = response.next_cursor;
+
+      if (cursor === '*' || response.total === 0) {
+        break;
+      }
+
       index = response.publishedfiledetails.findIndex((file) => file.time_created <= lastCheckedMs);
       files = files.concat(
         response.publishedfiledetails.slice(0, index !== -1 ? index : undefined),
