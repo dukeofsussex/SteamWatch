@@ -47,6 +47,7 @@ interface BaseArguments {
 }
 
 interface AddArguments {
+  curator: BaseArguments;
   group: BaseArguments;
   news: BaseArguments;
   price: BaseArguments;
@@ -55,7 +56,7 @@ interface AddArguments {
   workshop: BaseArguments;
 }
 
-interface AddAppArguments extends BaseArguments {
+interface AddTypeArguments extends BaseArguments {
   watcher_type: WatcherType
 }
 
@@ -109,12 +110,25 @@ export default class WatchersCommand extends GuildOnlyCommand {
         description: 'Add a watcher for a Steam item.',
         options: [{
           type: CommandOptionType.SUB_COMMAND,
+          name: 'curator',
+          description: 'Watch a Steam curator for reviews',
+          options: [
+            {
+              ...QueryArg,
+              description: 'Curator id, name or url',
+              autocomplete: false,
+            },
+            ChannelArg,
+            ThreadArg,
+          ],
+        }, {
+          type: CommandOptionType.SUB_COMMAND,
           name: 'group',
           description: 'Watch a Steam group for news',
           options: [
             {
               ...QueryArg,
-              description: 'Group name or url',
+              description: 'Group id, name or url',
               autocomplete: false,
             },
             ChannelArg,
@@ -239,6 +253,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     const { add, list, remove } = ctx.options as CommandArguments;
 
+    if (!steamClient.connected) {
+      return ctx.error('Currently not connected to Steam. Please try again in a few minutes');
+    }
+
     if (add) {
       const error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
 
@@ -254,8 +272,18 @@ export default class WatchersCommand extends GuildOnlyCommand {
         return ctx.error('A thread is required when using forum channels!');
       }
 
+      if (add.curator) {
+        return WatchersCommand.addGroup(ctx, {
+          ...add.curator,
+          watcher_type: WatcherType.CURATOR,
+        });
+      }
+
       if (add.group) {
-        return WatchersCommand.addGroup(ctx, add.group);
+        return WatchersCommand.addGroup(ctx, {
+          ...add.group,
+          watcher_type: WatcherType.GROUP,
+        });
       }
 
       if (add.news) {
@@ -306,7 +334,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       query,
       watcher_type: watcherType,
       thread_id: threadId,
-    }: AddAppArguments,
+    }: AddTypeArguments,
   ) {
     const appId = await SteamUtil.findAppId(query);
 
@@ -428,17 +456,28 @@ export default class WatchersCommand extends GuildOnlyCommand {
       channel: channelId,
       query,
       thread_id: threadId,
-    }: BaseArguments,
+      watcher_type: watcherType,
+    }: AddTypeArguments,
   ) {
-    const vanityUrl = SteamUtil.findGroupVanityUrl(query);
+    const identifier = SteamUtil.findGroupIdentifier(query);
+
+    if (watcherType === WatcherType.CURATOR) {
+      const details = await SteamAPI.getGroupDetails(identifier);
+
+      if (!details || !details.is_curator) {
+        return ctx.error(`Unable to find a curator page for ${SteamUtil.URLS.Group(identifier)}`);
+      }
+    }
 
     const group = (await db.select('*')
       .from('`group`')
-      .where('vanityUrl', vanityUrl)
-      .first()) || (await SteamUtil.persistGroup(vanityUrl));
+      .where('id', identifier)
+      .orWhere('name', identifier)
+      .orWhere('vanityUrl', identifier)
+      .first()) || (await SteamUtil.persistGroup(identifier));
 
     if (!group) {
-      return ctx.error(`Unable to find a group with the url ${SteamUtil.URLS.Group(vanityUrl)}`);
+      return ctx.error(`Unable to find a group with the url ${SteamUtil.URLS.Group(identifier)}`);
     }
 
     await ctx.editOriginal({
@@ -497,7 +536,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           groupId: group!.id,
           channelId,
           threadId,
-          type: WatcherType.GROUP,
+          type: watcherType,
           inactive: false,
         }).into('watcher');
 

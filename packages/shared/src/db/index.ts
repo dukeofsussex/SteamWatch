@@ -48,7 +48,9 @@ export interface Group {
   name: string;
   avatar: string;
   vanityUrl: string;
-  lastChecked: Date | null;
+  lastCheckedNews: Date | null;
+  lastReviewedAppId: number | null;
+  lastCheckedReviews: Date | null;
 }
 
 export interface Guild {
@@ -94,6 +96,7 @@ export interface WatcherMention {
 }
 
 export enum WatcherType {
+  CURATOR = 'curator',
   GROUP = 'group',
   NEWS = 'news',
   PRICE = 'price',

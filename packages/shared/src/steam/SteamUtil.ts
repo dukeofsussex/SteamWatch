@@ -72,6 +72,7 @@ const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
 };
 
 const PermittedAppTypes: { [key in WatcherType]: AppType[]; } = {
+  [WatcherType.CURATOR]: [],
   [WatcherType.GROUP]: [],
   [WatcherType.NEWS]: ['application', 'game', 'config', 'hardware'],
   [WatcherType.PRICE]: ['application', 'dlc', 'game', 'hardware', 'music', 'video'],
@@ -97,6 +98,7 @@ export default class SteamUtil {
   static readonly REGEXPS = {
     AppNews: /news\/app\/(\d+)/,
     Community: /steamcommunity\.com/,
+    Curator: /steampowered\.com\/curator\/(\d+)/,
     EventAnnouncement: /news\/app\/(\d+)\/view\/(\d+)/,
     GameHub: /steamcommunity\.com\/app\/(\d+)/,
     Group: /steamcommunity\.com\/groups\/([^/]+)/,
@@ -110,7 +112,8 @@ export default class SteamUtil {
   static readonly URLS = {
     AppNews: (appId: number) => `https://store.steampowered.com/news/app/${appId}`,
     EventAnnouncement: (appId: number, eventId: string, type: 'app' | 'group') => `https://store.steampowered.com/news/${type}/${appId}/view/${eventId}`,
-    Group: (vanityUrl: string) => `https://steamcommunity.com/groups/${vanityUrl}`,
+    Curator: (id: number) => `https://store.steampowered.com/curator/${id}`,
+    Group: (identifier: string | number) => `https://steamcommunity.com/${(typeof identifier === 'number' ? 'gid' : 'groups')}/${identifier}`,
     GroupAvatar: (avatar: string, size: 'full' | 'medium') => `https://avatars.akamai.steamstatic.com/${avatar}_${size}.jpg`,
     Icon: (appId: number, icon: string) => `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.jpg`,
     NewsImage: (imageUrl: string) => imageUrl.replace(/\{STEAM_CLAN(?:_LOC)?_IMAGE\}/, 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/clans'),
@@ -214,8 +217,26 @@ export default class SteamUtil {
     return new SteamID(resolvedId!);
   }
 
-  static findGroupVanityUrl(id: string) {
-    return id.match(SteamUtil.REGEXPS.Group)?.[1] ?? id;
+  static findGroupIdentifier(id: string) {
+    const groupId = Number.parseInt(id, 10);
+
+    if (!Number.isNaN(groupId) && Number.isFinite(groupId)) {
+      return groupId;
+    }
+
+    let match = id.match(SteamUtil.REGEXPS.Curator);
+
+    if (match) {
+      return parseInt(match[1]!, 10);
+    }
+
+    match = id.match(SteamUtil.REGEXPS.Group);
+
+    if (match) {
+      return match[1]!;
+    }
+
+    return id;
   }
 
   static findUGCId(id: string) {
@@ -246,8 +267,8 @@ export default class SteamUtil {
     return app;
   }
 
-  static async persistGroup(vanityUrl: string) {
-    const details = await SteamAPI.getGroupDetails(vanityUrl);
+  static async persistGroup(identifier: string | number) {
+    const details = await SteamAPI.getGroupDetails(identifier);
 
     if (!details) {
       return null;
@@ -258,7 +279,9 @@ export default class SteamUtil {
       name: details.group_name,
       avatar: SteamAPI.getGroupAvatarHash(details.avatar_full_url),
       vanityUrl: details.vanity_url,
-      lastChecked: null,
+      lastCheckedNews: null,
+      lastReviewedAppId: null,
+      lastCheckedReviews: null,
     };
 
     await db.insert(group)

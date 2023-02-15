@@ -16,7 +16,7 @@ import {
 } from '@steamwatch/shared';
 
 interface GroupArgument {
-  group: string;
+  group: string | number;
 }
 
 interface CommandArguments {
@@ -67,12 +67,12 @@ export default class GroupCommand extends SlashCommand {
 
     if (news) {
       return this.news(ctx, {
-        group: SteamUtil.findGroupVanityUrl(news.group),
+        group: SteamUtil.findGroupIdentifier(news.group.toString()),
       });
     }
 
     return this.profile(ctx, {
-      group: SteamUtil.findGroupVanityUrl(profile!.group),
+      group: SteamUtil.findGroupIdentifier(profile!.group.toString()),
     });
   }
 

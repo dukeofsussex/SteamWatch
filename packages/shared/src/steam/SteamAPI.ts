@@ -37,6 +37,19 @@ export interface AppNews {
   }
 }
 
+export interface CuratorReview {
+  appId: number;
+  status: 'Recommended' | 'Informational' | 'Not Recommended';
+  date: Date;
+  description: string;
+}
+
+export interface CuratorReviewResponse {
+  success: 0 | 1;
+  total_count: number;
+  results_html: string;
+}
+
 export interface GroupDetails {
   success: 0 | 1;
   appid: number;
@@ -235,6 +248,20 @@ export default class SteamAPI {
     return this.request<KeyedAppDetails>(`https://store.steampowered.com/api/appdetails?appids=${appIds.join(',')}&filters=price_overview&cc=${cc}`);
   }
 
+  static async getCuratorReviews(curatorId: number) {
+    const res = await this.request<CuratorReviewResponse>(`https://store.steampowered.com/curator/${curatorId}/ajaxgetfilteredrecommendations/?count=15&sort=newreleases`);
+    const reviews = res?.results_html.matchAll(/data-ds-itemkey=.*?(\d+).*?((?:Not\s)?Recommended|Informational).*?curator_review_date">(.*?)<\/.*?recommendation_desc">(.*?)<\//gs);
+
+    return reviews
+      ? [...reviews].map((review) => ({
+        appId: parseInt(review[1]!, 10),
+        status: review[2]!,
+        date: new Date(`${review[3]!}${review[3]!.includes(',') ? '' : new Date().getFullYear()}`),
+        description: review[4]!,
+      })) as CuratorReview[]
+      : null;
+  }
+
   static async getEventIdForArticle(externalUrl: string) {
     const res = await fetch(externalUrl, {
       method: 'HEAD',
@@ -249,8 +276,8 @@ export default class SteamAPI {
     return avatar.match(/\/(\w+?)_/)?.[1] ?? '';
   }
 
-  static getGroupDetails(vanityUrl: string) {
-    return this.request<GroupDetails>(`https://steamcommunity.com/groups/${vanityUrl}/ajaxgetvanityandclanid/`);
+  static getGroupDetails(identifier: string | number) {
+    return this.request<GroupDetails>(`https://steamcommunity.com/${(typeof identifier === 'number' ? 'gid' : 'groups')}/${identifier}/ajaxgetvanityandclanid/`);
   }
 
   static async getGroupNews(id: number) {
@@ -259,8 +286,8 @@ export default class SteamAPI {
     return res?.events?.[0]?.announcement_body ?? null;
   }
 
-  static async getGroupSummary(vanityUrl: string) {
-    const url = `https://steamcommunity.com/groups/${vanityUrl}/memberslistxml/?xml=1`;
+  static async getGroupSummary(identifier: string | number) {
+    const url = `https://steamcommunity.com/${(typeof identifier === 'number' ? 'gid' : 'groups')}/${identifier}/memberslistxml/?xml=1`;
     let res = null;
     let text = '';
 

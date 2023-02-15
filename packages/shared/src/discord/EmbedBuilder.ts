@@ -15,6 +15,7 @@ import db, {
   Group,
 } from '../db';
 import SteamAPI, {
+  CuratorReview,
   NewsPost,
   PartnerEvent,
   PriceOverview,
@@ -51,6 +52,43 @@ export default class EmbedBuilder {
       thumbnail: {
         url: SteamUtil.URLS.Icon(app.id, app.icon),
       },
+    };
+  }
+
+  static createCuratorReview(
+    app: AppMinimal,
+    curator: GroupMinimal,
+    review: CuratorReview,
+  ): MessageEmbedOptions {
+    let color = EMBED_COLOURS.DEFAULT;
+    if (review.status === 'Not Recommended') {
+      color = EMBED_COLOURS.ERROR;
+    } else if (review.status === 'Informational') {
+      color = EMBED_COLOURS.PENDING;
+    }
+
+    return {
+      author: {
+        name: curator.name,
+        icon_url: SteamUtil.URLS.GroupAvatar(curator.avatar, 'medium'),
+        url: SteamUtil.URLS.Curator(curator.id),
+      },
+      title: app!.name,
+      color,
+      description: `> "${review.description.trim() || 'N/A'}"`,
+      url: `${SteamUtil.URLS.Store(review.appId)}?curator_clanid=${curator.id}`,
+      timestamp: review.date,
+      thumbnail: {
+        url: SteamUtil.URLS.Icon(review.appId, app!.icon),
+      },
+      footer: {
+        text: review.status,
+        icon_url: SteamUtil.URLS.Icon(review.appId, app!.icon),
+      },
+      fields: [{
+        name: 'Steam Client Link',
+        value: SteamUtil.BP.Store(review.appId),
+      }],
     };
   }
 

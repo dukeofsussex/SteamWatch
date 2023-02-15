@@ -43,11 +43,11 @@ export default class GroupWatcher extends Watcher {
     }
 
     await db('`group`').update({
-      lastChecked: new Date(),
+      lastCheckedNews: new Date(),
     })
       .where('id', group.id);
 
-    const lastCheckedMs = (group.lastChecked ?? subHours(new Date(), 1)).getTime() / 1000;
+    const lastCheckedMs = (group.lastCheckedNews ?? subHours(new Date(), 1)).getTime() / 1000;
 
     if (news && !news.banned && lastCheckedMs <= news.posttime) {
       logger.info({
@@ -80,7 +80,7 @@ export default class GroupWatcher extends Watcher {
       db.raw(
         oneLine`
         watcher_count
-        + (TIMESTAMPDIFF(HOUR, IFNULL(last_checked, UTC_TIMESTAMP() - INTERVAL 1 YEAR), UTC_TIMESTAMP()) DIV ?) * ?
+        + (TIMESTAMPDIFF(HOUR, IFNULL(last_checked_news, UTC_TIMESTAMP() - INTERVAL 1 YEAR), UTC_TIMESTAMP()) DIV ?) * ?
         AS priority
       `,
         [env.settings.watcherRunFrequency, watcherAverage],
@@ -91,8 +91,8 @@ export default class GroupWatcher extends Watcher {
         .andWhere('inactive', false)
         .groupBy('groupId')
         .as('watchers'), 'group.id', 'watchers.group_id')
-      .whereRaw('last_checked <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [env.settings.watcherRunFrequency])
-      .orWhereNull('last_checked')
+      .whereRaw('last_checked_news <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [env.settings.watcherRunFrequency])
+      .orWhereNull('last_checked_news')
       .orderBy('priority', 'desc')
       .first();
   }
