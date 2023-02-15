@@ -1,3 +1,4 @@
+import { oneLine } from 'common-tags';
 import {
   CommandContext,
   CommandOptionType,
@@ -8,8 +9,10 @@ import {
   EmbedBuilder,
   env,
   SteamAPI,
+  steamClient,
   SteamUtil,
 } from '@steamwatch/shared';
+import { EResult } from 'steam-user';
 
 interface CommandArgumentsOwned {
   profile: string;
@@ -22,6 +25,26 @@ interface CommandArgumentsOwned {
 interface CommandArguments {
   owned?: CommandArgumentsOwned;
   random?: {};
+}
+
+// Bad/Not exposed typings
+
+interface OwnedApp {
+  appid: number;
+  name: string;
+  playtime_2weeks: number | null;
+  playtime_forever: number;
+  img_icon_url: string;
+  img_logo_url: string;
+  has_community_visible_stats: boolean;
+  playtime_windows_forever: number;
+  playtime_mac_forever: number;
+  playtime_linux_forever: number;
+}
+
+interface UserOwnedApps {
+  app_count: number;
+  apps: OwnedApp[];
 }
 
 export default class SuggestCommand extends SlashCommand {
@@ -91,13 +114,25 @@ export default class SuggestCommand extends SlashCommand {
       return ctx.error(`Unable to get Steam profile for ${profileValues[steamIds.findIndex((s) => !s)]}.`);
     }
 
-    const games = await Promise.all(steamIds.map((p) => SteamAPI.getOwnedGames(p.getSteamID64())));
+    const apps: UserOwnedApps[] = [];
 
-    if (games.some((s) => !s)) {
-      return ctx.error(`Unable to get games for ${profileValues[games.findIndex((g) => !g)]}. Please make sure game details are visible to the public!`);
+    for (let i = 0; i < steamIds.length; i += 1) {
+      const steamId = steamIds[i];
+
+      try {
+        apps.push(
+          // eslint-disable-next-line no-await-in-loop
+          await steamClient.getUserOwnedApps(steamId!.getSteamID64()) as unknown as UserOwnedApps,
+        );
+      } catch (err: any) {
+        return ctx.error(oneLine`
+          Unable to get games for **${profileValues[i]}**: **${(err.eresult ? EResult[err.eresult] : 'Unknown')}**.
+          Please make sure game details are visible to the public!
+        `);
+      }
     }
 
-    const appIds = games.map((gs) => gs!.map((g) => g.appid));
+    const appIds = apps.map((gs) => gs.apps.map((g) => g.appid));
     const sharedAppIds = appIds.reduce((p, c) => p.filter((pg) => c.includes(pg)));
 
     if (!sharedAppIds) {
