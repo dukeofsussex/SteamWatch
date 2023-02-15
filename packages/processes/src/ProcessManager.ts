@@ -11,7 +11,6 @@ import NewsWatcher from './watchers/NewsWatcher';
 import PriceWatcher from './watchers/PriceWatcher';
 import UGCWatcher from './watchers/UGCWatcher';
 import WorkshopWatcher from './watchers/WorkshopWatcher';
-import BroadcastWorker from './workers/BroadcastWorker';
 import GuildWorker from './workers/GuildWorker';
 import TopGGWorker from './workers/TopGGWorker';
 
@@ -28,7 +27,6 @@ export default class ProcessManager implements Manager {
       new PriceWatcher(messageQueue),
       new UGCWatcher(messageQueue),
       new WorkshopWatcher(messageQueue),
-      new BroadcastWorker(messageQueue),
       new GuildWorker(),
       new TopGGWorker(),
       new SteamGatewayManager(),
