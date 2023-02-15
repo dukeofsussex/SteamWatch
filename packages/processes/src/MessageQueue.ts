@@ -2,6 +2,7 @@ import type { DiscordAPIError } from '@discordjs/rest';
 import { RESTJSONErrorCodes, RESTPostAPIWebhookWithTokenResult, Routes } from 'discord-api-types/v10';
 import { R_OK, W_OK } from 'node:constants';
 import { access, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { Response } from 'node-fetch';
 import type { EditMessageOptions } from 'slash-create';
 import {
@@ -12,7 +13,7 @@ import {
   Manager,
 } from '@steamwatch/shared';
 
-const FILENAME = 'queue.json';
+const FILE = join('data', 'queue.json');
 const SLOWMODE_DELAY = 300000; // 5m
 
 export interface QueuedItem {
@@ -56,8 +57,8 @@ export default class MessageQueue implements Manager {
 
     try {
       // eslint-disable-next-line no-bitwise
-      await access(FILENAME, R_OK | W_OK);
-      const { offset, queue } = JSON.parse((await readFile(FILENAME)).toString());
+      await access(FILE, R_OK | W_OK);
+      const { offset, queue } = JSON.parse((await readFile(FILE)).toString());
       this.offset = offset;
       this.queue = queue;
 
@@ -100,7 +101,7 @@ export default class MessageQueue implements Manager {
       length: this.queueSize(),
     });
 
-    return writeFile(FILENAME, JSON.stringify({
+    return writeFile(FILE, JSON.stringify({
       offset: this.offset,
       queue: this.queue,
     }));

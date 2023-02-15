@@ -1,5 +1,6 @@
 import { R_OK, W_OK } from 'node:constants';
 import { access, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { Knex } from 'knex';
 import { ButtonStyle, ComponentType } from 'slash-create';
 import {
@@ -14,7 +15,7 @@ import Worker from './Worker';
 import type MessageQueue from '../MessageQueue';
 import type { QueuedItem } from '../MessageQueue';
 
-const FILENAME = 'broadcast.json';
+const FILE = join('data', 'broadcast.json');
 
 export default class BroadcastWorker extends Worker {
   private messageQueue: MessageQueue;
@@ -30,8 +31,8 @@ export default class BroadcastWorker extends Worker {
 
     try {
       // eslint-disable-next-line no-bitwise
-      await access(FILENAME, R_OK | W_OK);
-      ({ active, message } = JSON.parse((await readFile(FILENAME)).toString()));
+      await access(FILE, R_OK | W_OK);
+      ({ active, message } = JSON.parse((await readFile(FILE)).toString()));
     } catch {
       logger.warn('No broadcast found');
       return;
@@ -107,7 +108,7 @@ export default class BroadcastWorker extends Worker {
       });
     }
 
-    await writeFile(FILENAME, JSON.stringify({
+    await writeFile(FILE, JSON.stringify({
       active: false,
       message,
     }, null, 2));
