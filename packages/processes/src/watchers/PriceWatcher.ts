@@ -1,4 +1,5 @@
 import { oneLine, stripIndents } from 'common-tags';
+import { addDays } from 'date-fns';
 import type { Knex } from 'knex';
 import {
   App,
@@ -126,7 +127,7 @@ export default class PriceWatcher extends Watcher {
       price: priceOverview.initial,
       discountedPrice: priceOverview.final,
       discount: priceOverview.discount_percent,
-      lastChecked: new Date(),
+      lastChecked: addDays(new Date(), 1),
     })
       .where({
         appId: app.id,
