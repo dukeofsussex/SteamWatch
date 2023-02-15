@@ -161,6 +161,8 @@ export default class GuildOnlyCommand extends SlashCommand {
       ctx.registerComponent(
         'currency_select',
         async (cctx: ComponentContext) => {
+          ctx.unregisterComponent('currency_select');
+
           await cctx.editOriginal({
             embeds: [{
               color: EMBED_COLOURS.SUCCESS,

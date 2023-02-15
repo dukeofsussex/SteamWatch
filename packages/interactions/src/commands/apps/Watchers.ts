@@ -368,6 +368,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.registerComponent(
       'confirm',
       async () => {
+        ctx.unregisterComponent('confirm');
+
         let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
 
         if (error) {
@@ -477,6 +479,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.registerComponent(
       'confirm',
       async () => {
+        ctx.unregisterComponent('confirm');
+
         let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
 
         if (error) {
@@ -576,6 +580,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.registerComponent(
       'confirm',
       async () => {
+        ctx.unregisterComponent('confirm');
+
         let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
 
         if (error) {
