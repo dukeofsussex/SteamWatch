@@ -108,6 +108,11 @@ export default class SuggestCommand extends SlashCommand {
   // eslint-disable-next-line class-methods-use-this
   private async owned(ctx: CommandContext, profiles: CommandArgumentsOwned) {
     const profileValues = Object.values(profiles);
+
+    if (!steamClient.connected) {
+      return ctx.error('Currently not connected to Steam. Please try again in a few minutes');
+    }
+
     const steamIds = await Promise.all(profileValues.map((p) => SteamUtil.findSteamId(p)));
 
     if (steamIds.some((s) => !s)) {
