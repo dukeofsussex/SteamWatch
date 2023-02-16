@@ -46,7 +46,7 @@ export default class CurrencyCommand extends GuildOnlyCommand {
 
     let page = 0;
 
-    let dbCurrency = await db.select<Currency>('currency.*')
+    let dbCurrency = await db.select('currency.*')
       .from('guild')
       .innerJoin('currency', 'currency.id', 'guild.currency_id')
       .where('guild.id', ctx.guildID)

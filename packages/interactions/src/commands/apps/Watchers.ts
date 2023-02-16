@@ -23,6 +23,7 @@ import {
   db,
   DEFAULT_COMPONENT_EXPIRATION,
   DiscordAPI,
+  EmbedBuilder,
   EMBED_COLOURS,
   env,
   logger,
@@ -733,15 +734,20 @@ export default class WatchersCommand extends GuildOnlyCommand {
   private static async remove(ctx: CommandContext, { watcher_id: watcherId }: RemoveArguments) {
     const watcher = await db.select(
       'watcher.id',
+      'watcher.type',
       { appId: 'app.id' },
       { appIcon: 'icon' },
-      { appName: 'app.name' },
       { groupAvatar: '`group`.avatar' },
-      { groupName: '`group`.name' },
-      { ugcName: 'ugc.name' },
       'channel_id',
       'webhook_id',
       'webhook_token',
+      db.raw(oneLine`
+        CASE
+          WHEN group_id IS NOT NULL THEN \`group\`.name
+          WHEN ugc_id IS NOT NULL THEN ugc.name
+          ELSE app.name
+        END AS name
+      `),
     ).from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .leftJoin('`group`', '`group`.id', 'watcher.group_id')
@@ -784,11 +790,12 @@ export default class WatchersCommand extends GuildOnlyCommand {
       }
     }
 
-    return ctx.success(`Removed watcher (#${watcherId}) for **${watcher.groupName || watcher.ugcName || watcher.appName}** from <#${watcher.channelId}>!`, {
+    return ctx.success(`Removed watcher (#${watcherId}) for **${watcher.name}** from <#${watcher.channelId}>!`, {
       thumbnail: {
-        url: watcher.groupName
-          ? SteamUtil.URLS.GroupAvatar(watcher.groupAvatar, 'medium')
-          : SteamUtil.URLS.Icon(watcher.appId, watcher.icon),
+        url: EmbedBuilder.getImage(watcher.type, {
+          ...watcher,
+          groupAvatarSize: 'medium',
+        }),
       },
     });
   }
