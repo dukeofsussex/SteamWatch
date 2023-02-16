@@ -1,4 +1,3 @@
-import { oneLine } from 'common-tags';
 import {
   AutocompleteContext,
   CommandContext,
@@ -55,10 +54,7 @@ export default class PriceCommand extends SlashCommand {
       .limit(MAX_OPTIONS);
 
     return currencies.map((currency) => ({
-      name: oneLine`
-        [${currency.code}]
-        ${currency.name}
-      `,
+      name: `[${currency.code}] ${currency.name}`,
       value: currency.id,
     }));
   }

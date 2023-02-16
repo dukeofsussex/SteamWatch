@@ -1,6 +1,11 @@
 import { URLSearchParams } from 'node:url';
 import fetch, { RequestInit } from 'node-fetch';
-import { EPublishedFileQueryType, EPublishedFileVisibility, EResult } from 'steam-user';
+import {
+  ECurrencyCode,
+  EPublishedFileQueryType,
+  EPublishedFileVisibility,
+  EResult,
+} from 'steam-user';
 import env from '../env';
 import logger from '../logger';
 
@@ -85,6 +90,37 @@ export interface KeyedAppDetails {
     success: boolean;
     data: AppDetails;
   }
+}
+
+export interface MarketListing {
+  name: string;
+  hash_name: string;
+  sell_listings: number;
+  sell_price: number;
+  app_icon: string;
+  app_name: string;
+  asset_description: {
+    appid: number;
+    icon_url: string;
+    tradable: 0 | 1;
+    name_color: string;
+    type: string;
+    market_name: string;
+    market_hash_name: string;
+    commodity: 0 | 1;
+  }
+}
+
+export interface MarketListingPriceOverview {
+  success: boolean;
+  lowest_price: string;
+  volume?: string;
+  median_price?: string;
+}
+
+export interface MarketSearchResult {
+  success: boolean;
+  results: MarketListing[];
 }
 
 export interface NewsPost {
@@ -323,6 +359,15 @@ export default class SteamAPI {
     } as GroupSummary;
   }
 
+  static async getMarketListingPriceOverview(
+    appId: number,
+    marketHashName: string,
+    cc: ECurrencyCode,
+  ) {
+    const res = await this.request<MarketListingPriceOverview>(`https://steamcommunity.com/market/priceoverview/?appid=${appId}&market_hash_name=${marketHashName}&currency=${cc}`);
+    return res || null;
+  }
+
   static async getNumberOfCurrentPlayers(appId: number) {
     const res = await this.request<Response<NumberOfCurrentPlayers>>(`https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${appId}`);
     return res?.response.player_count || null;
@@ -382,6 +427,11 @@ export default class SteamAPI {
   static async resolveVanityUrl(vanityUrlName: string) {
     const res = await this.request<Response<VanityURLResolve>>(`https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=${env.steamWebApiKey}&vanityurl=${vanityUrlName}`);
     return res?.response.steamid || null;
+  }
+
+  static async searchMarket(term: string, appId?: number) {
+    const res = await this.request<MarketSearchResult>(`https://steamcommunity.com/market/search/render?norender=1&count=25&query=${term}${(appId ? `&appid=${appId}` : '')}`);
+    return res?.results || null;
   }
 
   static async searchStore(term: string) {
