@@ -6,7 +6,9 @@ import {
   SlashCreator,
 } from 'slash-create';
 import {
+  capitalize,
   db,
+  EmbedBuilder,
   EMBED_COLOURS,
   EMOJIS,
   env,
@@ -131,7 +133,8 @@ export default class MentionsCommand extends GuildOnlyCommand {
       return ctx.sendResults([]);
     }
 
-    const value = ctx.options[ctx.subcommands[0]!][ctx.focused];
+    const value = (ctx.options[ctx.subcommands[0]!][ctx.subcommands[1]!]
+        || ctx.options[ctx.subcommands[0]!])[ctx.focused];
 
     return ctx.sendResults(await GuildOnlyCommand.createWatcherAutocomplete(value, ctx.guildID!));
   }
@@ -174,36 +177,47 @@ export default class MentionsCommand extends GuildOnlyCommand {
     const max = await db.count('* AS count')
       .from('watcher')
       .innerJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
+      .groupBy('watcher.id')
       .orderBy('count', 'desc')
       .first()
-      .then((res: any) => parseInt(res.count, 10) || 0);
+      .then((res: any) => parseInt(res?.count || '0', 10));
 
     if (max && max >= env.settings.maxMentionsPerWatcher) {
       return ctx.error(`Reached the maximum amount of ${env.settings.maxMentionsPerWatcher} mentions for one or more watchers!`);
     }
 
     if (env.settings.maxMentionsPerWatcher < (max + mentions.length)) {
-      return ctx.error(`Adding ${mentions.length} mention(s) would exceed the maximum of ${env.settings.maxMentionsPerWatcher} mentions for one or more watchers!`);
+      return ctx.error(`Adding ${mentions.length} mention(s) would exceed the maximum amount of ${env.settings.maxMentionsPerWatcher} mentions for one or more watchers!`);
     }
 
-    const createInsertQuery = (entityId: string, type: string) => db.insert(
-      db.select(db.raw('watcher.id, ?, ?', [entityId, type]))
+    const bulkInsert = async (entityId: string, type: string) => {
+      const watchers = await db.select('watcher.id AS id')
         .from('watcher')
         .leftJoin('watcher_mention', (builder) => builder.on('watcher_mention.watcher_id', 'watcher.id')
           .andOn('watcher_mention.entity_id', entityId))
-        .whereNull('watcher_mention.watcher_id'),
-    )
-      .into(db.raw('?? (??, ??, ??)', ['watcher_mention', 'watcher_id', 'entity_id', 'type']));
+        .whereNull('watcher_mention.watcher_id');
+
+      if (!watchers.length) {
+        return [];
+      }
+
+      return db.insert(watchers.map((w: any) => ({ watcherId: w.id, entityId, type })))
+        .into('watcher_mention');
+    };
+
+    let total = 0;
 
     if (role) {
-      await createInsertQuery(role, 'role');
+      total += (await bulkInsert(role, 'role')).length;
     }
 
     if (user) {
-      await createInsertQuery(user, 'member');
+      total += (await bulkInsert(user, 'member')).length;
     }
 
-    return ctx.success(`Added ${mentions.length} mention(s) to all watchers`);
+    return ctx.success(total
+      ? `Added ${mentions.length} mention(s) to all watchers`
+      : 'Mentions have already been assigned');
   }
 
   private static async addSingle(
@@ -238,9 +252,9 @@ export default class MentionsCommand extends GuildOnlyCommand {
 
       if (mentions.length === 0) {
         return ctx.error(stripIndents`
-            Nothing to add!
-            Use \`/mentions list watcher_id: ${watcherId}\` to view already added mentions.
-          `);
+          Nothing to add!
+          Use \`/mentions list watcher_id: ${watcherId}\` to view already added mentions.
+        `);
       }
     }
 
@@ -266,29 +280,36 @@ export default class MentionsCommand extends GuildOnlyCommand {
     for (let i = 0; i < mentions.length; i += 1) {
       const mention = mentions[i];
 
-      if (mention.type === 'role') {
+      if (mention.entityType === 'role') {
         roles.push(mention.entityId === ctx.guildID ? '@everyone' : `<@&${mention.entityId}>`);
-      } else if (mention.type === 'member') {
+      } else if (mention.entityType === 'member') {
         users.push(`<@${mention.entityId}>`);
       }
     }
 
     return ctx.embed({
       color: EMBED_COLOURS.SUCCESS,
-      title: mentions[0].ugcName || mentions[0].appName,
+      title: mentions[0].groupName || mentions[0].ugcName || mentions[0].appName,
       ...(description ? {
         description,
       } : {}),
       thumbnail: {
-        url: SteamUtil.URLS.Icon(mentions[0].id, mentions[0].icon),
+        url: EmbedBuilder.getImage(mentions[0].type, {
+          ...mentions[0],
+          groupAvatarSize: 'medium',
+        }),
       },
-      url: mentions[0].ugcId
-        ? SteamUtil.URLS.UGC(mentions[0].ugcId)
-        : SteamUtil.URLS.Store(mentions[0].id),
+      url: SteamUtil.URLS.FromType(
+        mentions[0].groupId || mentions[0].ugcId || mentions[0].appId,
+        mentions[0].type,
+      ),
       timestamp: new Date(),
       footer: {
-        text: mentions[0].appName,
-        icon_url: SteamUtil.URLS.Icon(mentions[0].id, mentions[0].icon),
+        text: mentions[0].groupName || mentions[0].appName,
+        icon_url: EmbedBuilder.getImage(mentions[0].type, {
+          ...mentions[0],
+          groupAvatarSize: 'medium',
+        }),
       },
       fields: [{
         name: 'Roles',
@@ -299,10 +320,15 @@ export default class MentionsCommand extends GuildOnlyCommand {
         value: users.join('\n') || 'None',
         inline: true,
       }, {
+        name: 'Type',
+        value: capitalize(mentions[0].type),
+        inline: true,
+      }, {
         name: 'Steam Client Link',
-        value: mentions[0].ugcId
-          ? SteamUtil.BP.UGC(mentions[0].ugcId)
-          : SteamUtil.BP.Store(mentions[0].id),
+        value: SteamUtil.BP.FromType(
+          mentions[0].groupId || mentions[0].ugcId || mentions[0].appId,
+          mentions[0].type,
+        ),
       }],
     });
   }
@@ -320,11 +346,9 @@ export default class MentionsCommand extends GuildOnlyCommand {
       .whereIn('entity_id', mentions)
       .andWhere('guild_id', ctx.guildID!);
 
-    if (removed === 0) {
-      return ctx.error('None of the provided mentions can be removed!');
-    }
-
-    return ctx.success(`Removed ${mentions.length} mention(s) from ${removed} watcher(s)`);
+    return ctx.success(removed === 0
+      ? 'None of the provided mentions needed to be removed'
+      : `Removed ${mentions.length} mention(s) from ${removed} watcher(s)`);
   }
 
   private static async removeSingle(
@@ -360,16 +384,21 @@ export default class MentionsCommand extends GuildOnlyCommand {
 
   private static fetchMentions(guildId: string, watcherId: number) {
     return db.select(
-      'watcher_mention.entity_id',
-      'watcher_mention.type',
-      'app.id',
+      'watcher.*',
+      { entityId: 'watcher_mention.entity_id' },
+      { entityType: 'watcher_mention.type' },
+      { appId: 'app.id' },
+      { appIcon: 'icon' },
       { appName: 'app.name' },
-      'app.icon',
+      { groupId: '`group`.id' },
+      { groupAvatar: '`group`.avatar' },
+      { groupName: '`group`.name' },
       { ugcId: 'ugc.id' },
       { ugcName: 'ugc.name' },
     )
       .from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .leftJoin('`group`', '`group`.id', 'watcher.group_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
         .orOn('app.id', 'ugc.app_id'))

@@ -71,7 +71,7 @@ const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
   ZAR: { prepend: 'R ' },
 };
 
-const PermittedAppTypes: { [key in WatcherType]: AppType[]; } = {
+const PermittedAppTypes: Record<WatcherType, AppType[]> = {
   [WatcherType.CURATOR]: [],
   [WatcherType.GROUP]: [],
   [WatcherType.NEWS]: ['application', 'game', 'config', 'hardware'],
@@ -93,6 +93,21 @@ export default class SteamUtil {
     Store: (id: number) => SteamUtil.BP.Raw(`store/${id}`),
     UGC: (id: string) => SteamUtil.BP.Raw(`url/CommunityFilePage/${id}`),
     Workshop: (id: number) => SteamUtil.BP.Raw(`url/SteamWorkshopPage/${id}`),
+    FromType: (id: string, type: WatcherType) => {
+      switch (type) {
+        case WatcherType.CURATOR:
+        case WatcherType.GROUP:
+          return SteamUtil.BP.Group(parseInt(id, 10));
+        case WatcherType.NEWS:
+          return SteamUtil.BP.AppNews(parseInt(id, 10));
+        case WatcherType.UGC:
+          return SteamUtil.BP.UGC(id);
+        case WatcherType.WORKSHOP:
+          return SteamUtil.BP.Workshop(parseInt(id, 10));
+        default:
+          return SteamUtil.BP.Store(parseInt(id, 10));
+      }
+    },
   };
 
   static readonly REGEXPS = {
@@ -124,6 +139,22 @@ export default class SteamUtil {
     Store: (appId: number) => `https://store.steampowered.com/app/${appId}`,
     UGC: (ugcId: string) => `https://steamcommunity.com/sharedfiles/filedetails/?id=${ugcId}`,
     Workshop: (appId: number) => `https://store.steampowered.com/app/${appId}/workshop`,
+    FromType: (id: string, type: WatcherType) => {
+      switch (type) {
+        case WatcherType.CURATOR:
+          return SteamUtil.URLS.Curator(parseInt(id, 10));
+        case WatcherType.GROUP:
+          return SteamUtil.URLS.Group(id);
+        case WatcherType.NEWS:
+          return SteamUtil.URLS.AppNews(parseInt(id, 10));
+        case WatcherType.UGC:
+          return SteamUtil.URLS.UGC(id);
+        case WatcherType.WORKSHOP:
+          return SteamUtil.URLS.Workshop(parseInt(id, 10));
+        default:
+          return SteamUtil.URLS.Store(parseInt(id, 10));
+      }
+    },
   };
 
   static canHaveWatcher(appType: AppType, watcherType: WatcherType) {

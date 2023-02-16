@@ -13,6 +13,7 @@ import db, {
   Currency,
   CurrencyCode,
   Group,
+  WatcherType,
 } from '../db';
 import SteamAPI, {
   CuratorReview,
@@ -368,5 +369,20 @@ export default class EmbedBuilder {
         value: SteamUtil.BP.UGC(file.publishedfileid),
       }],
     };
+  }
+
+  static getImage(type: WatcherType, options: {
+    appId: number,
+    appIcon: string,
+    groupAvatar: string,
+    groupAvatarSize: 'full' | 'medium'
+  }) {
+    switch (type) {
+      case WatcherType.CURATOR:
+      case WatcherType.GROUP:
+        return SteamUtil.URLS.GroupAvatar(options.groupAvatar, options.groupAvatarSize);
+      default:
+        return SteamUtil.URLS.Icon(options.appId, options.appIcon);
+    }
   }
 }
