@@ -76,32 +76,41 @@ export default class GuildOnlyCommand extends SlashCommand {
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .innerJoin('app', 'app.id', 'watcher.app_id')
       .where('guild_id', guildId)
-      .andWhere((builder) => builder.where('watcher.id', value)
-        .orWhere('watcher.type', 'LIKE', `${value}%`)
-        .orWhere('app.name', 'LIKE', `${value}%`))
+      .andWhere((builder) => (value
+        ? builder.where('watcher.id', value)
+          .orWhere('watcher.type', 'LIKE', `${value}%`)
+          .orWhere('app.name', 'LIKE', `${value}%`)
+        : builder))
       .union(
         db.select('`group`.name', 'watcher.*')
           .from('watcher')
           .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
           .innerJoin('`group`', '`group`.id', 'watcher.group_id')
           .where('guild_id', guildId)
-          .andWhere((builder) => builder.where('watcher.id', value)
-            .orWhere('watcher.type', 'LIKE', `${value}%`)
-            .orWhere('`group`.name', 'LIKE', `${value}%`)
-            .orWhere('`group`.vanity_url', 'LIKE', `${value}%`)),
+          .andWhere((builder) => (value
+            ? builder.where('watcher.id', value)
+              .orWhere('watcher.type', 'LIKE', `${value}%`)
+              .orWhere('`group`.name', 'LIKE', `${value}%`)
+              .orWhere('`group`.vanity_url', 'LIKE', `${value}%`)
+            : builder)),
         db.select(db.raw('CONCAT(ugc.name, \' (\', app.name, \')\') AS name'), 'watcher.*')
           .from('watcher')
           .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
           .innerJoin('ugc', 'ugc.id', 'watcher.ugc_id')
           .innerJoin('app', 'app.id', 'ugc.app_id')
           .where('guild_id', guildId)
-          .andWhere((builder) => builder.where('watcher.id', value)
-            .orWhere('watcher.type', 'LIKE', `${value}%`)
-            .orWhere('app.name', 'LIKE', `${value}%`)
-            .orWhere('ugc.name', 'LIKE', `${value}%`)),
+          .andWhere((builder) => (value
+            ? builder.where('watcher.id', value)
+              .orWhere('watcher.type', 'LIKE', `${value}%`)
+              .orWhere('app.name', 'LIKE', `${value}%`)
+              .orWhere('ugc.name', 'LIKE', `${value}%`)
+            : builder)),
       )
       .orderBy('id')
       .limit(MAX_OPTIONS);
+
+    const channelIds = [...new Set(dbWatcher.map((w) => w.channelId))];
+    const channelNames = await Promise.all(channelIds.map((c) => DiscordAPI.getChannelName(c)));
 
     return Promise.all(dbWatcher.map(async (w) => ({
       name: oneLine`
@@ -109,7 +118,7 @@ export default class GuildOnlyCommand extends SlashCommand {
         ${w.name}
         (${capitalize(w.type)})
         on
-        #${(await DiscordAPI.getChannelName(w.channelId))}
+        #${channelNames[channelIds.indexOf(w.channelId)]}
       `,
       value: w.id,
     })));
