@@ -149,6 +149,12 @@ export default class MarketCommand extends SlashCommand {
         name: 'Lowest Price',
         value: priceOverview?.lowest_price,
         inline: true,
+      }, {
+        name: 'Steam Client Link',
+        value: SteamUtil.BP.MarketListing(
+          asset.asset_description.appid,
+          asset.asset_description.market_hash_name,
+        ),
       }],
     });
   }
