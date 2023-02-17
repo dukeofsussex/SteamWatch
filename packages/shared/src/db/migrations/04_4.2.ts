@@ -29,11 +29,12 @@ exports.up = (knex: Knex) => knex.schema
   });
 
 exports.down = (knex: Knex) => knex.schema
-  .dropTable('`group`')
+  .raw('DELETE FROM watcher WHERE type = "group"')
   .alterTable('watcher', (table) => {
     table.dropForeign('group_id');
     table.dropColumn('group_id');
     table.enum('type', ['news', 'price', 'ugc', 'workshop'])
       .notNullable()
       .alter();
-  });
+  })
+  .dropTable('group');
