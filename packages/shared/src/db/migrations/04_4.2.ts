@@ -16,6 +16,7 @@ exports.up = (knex: Knex) => knex.schema
   })
   .alterTable('watcher', (table) => {
     table.enum('type', ['group', 'news', 'price', 'ugc', 'workshop'])
+      .notNullable()
       .alter();
     table.integer('group_id')
       .unsigned()
@@ -33,5 +34,6 @@ exports.down = (knex: Knex) => knex.schema
     table.dropForeign('group_id');
     table.dropColumn('group_id');
     table.enum('type', ['news', 'price', 'ugc', 'workshop'])
+      .notNullable()
       .alter();
   });
