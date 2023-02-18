@@ -6,12 +6,12 @@ import {
   SlashCreator,
 } from 'slash-create';
 import {
-  capitalize,
   db,
   EmbedBuilder,
   EMBED_COLOURS,
   EMOJIS,
   env,
+  EPublishedFileInfoMatchingFileType as EPFIMFileType,
   SteamUtil,
 } from '@steamwatch/shared';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
@@ -321,7 +321,10 @@ export default class MentionsCommand extends GuildOnlyCommand {
         inline: true,
       }, {
         name: 'Type',
-        value: capitalize(mentions[0].type),
+        value: oneLine`
+          ${mentions[0].type}
+          ${(mentions[0].workshopId ? `(${EPFIMFileType[mentions[0].workshopFiletype]})` : '')}
+        `,
         inline: true,
       }, {
         name: 'Steam Client Link',
@@ -395,12 +398,15 @@ export default class MentionsCommand extends GuildOnlyCommand {
       { groupName: '`group`.name' },
       { ugcId: 'ugc.id' },
       { ugcName: 'ugc.name' },
+      { workshopFiletype: 'app_workshop.filetype' },
     )
       .from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .leftJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
       .leftJoin('`group`', '`group`.id', 'watcher.group_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
+        .orOn('app.id', 'app_workshop.app_id')
         .orOn('app.id', 'ugc.app_id'))
       .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
       .where({

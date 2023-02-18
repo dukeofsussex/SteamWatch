@@ -22,7 +22,7 @@ export interface ChangeLog {
 
 // EWorkshopFileType is lacking
 // https://partner.steamgames.com/doc/api/ISteamRemoteStorage#EWorkshopFileType
-export enum FileType {
+export enum EWorkshopFileType {
   Item = 0,
   Microtransaction = 1,
   Collection = 2,
@@ -39,6 +39,55 @@ export enum FileType {
   GameManagedItem = 15,
 }
 
+// https://partner.steamgames.com/doc/webapi/IPublishedFileService#EPublishedFileInfoMatchingFileType
+export enum EPublishedFileInfoMatchingFileType {
+  Items = 0,
+  Collections = 1,
+  Art = 2,
+  Videos = 3,
+  Screenshots = 4,
+  CollectionEligible = 5,
+  // skip 6-9: unused
+  Guides = 10,
+  WebGuides = 11,
+  IntegratedGuides = 12,
+  UsableInGame = 13,
+  Merch = 14,
+  ControllerBindings = 15,
+  // skip 16: internal
+  Microtransaction = 17,
+  ReadyToUse = 18,
+  WorkshopShowcase = 19,
+  GameManagedItems = 20,
+}
+
+// EPublishedFileQueryType is lacking
+// https://partner.steamgames.com/doc/webapi/IPublishedFileService#EPublishedFileQueryType
+export enum EPublishedFileQueryType {
+  RankedByVote = 0,
+  RankedByPublicationDate = 1,
+  AcceptedForGameRankedByAcceptanceDate = 2,
+  RankedByTrend = 3,
+  FavoritedByFriendsRankedByPublicationDate = 4,
+  CreatedByFriendsRankedByPublicationDate = 5,
+  RankedByNumTimesReported = 6,
+  CreatedByFollowedUsersRankedByPublicationDate = 7,
+  NotYetRated = 8,
+  RankedByTotalUniqueSubscriptions = 9,
+  RankedByTotalVotesAsc = 10,
+  RankedByVotesUp = 11,
+  RankedByTextSearch = 12,
+  RankedByPlaytimeTrend = 13,
+  RankedByTotalPlaytime = 14,
+  RankedByAveragePlaytimeTrend = 15,
+  RankedByLifetimeAveragePlaytime = 16,
+  RankedByPlaytimeSessionsTrend = 17,
+  RankedByLifetimePlaytimeSessions = 18,
+  RankedByInappropriateContentRating = 19,
+  RankedByBanContentCheck = 20,
+  RankedByLastUpdatedDate = 21,
+}
+
 export interface PublishedFile {
   result: SteamUser.EResult;
   publishedfileid: string;
@@ -53,7 +102,7 @@ export interface PublishedFile {
   visibility: SteamUser.EPublishedFileVisibility
   banned: boolean;
   ban_reason: string;
-  file_type: FileType;
+  file_type: EWorkshopFileType;
   can_subscribe: boolean;
   subscriptions: number;
   favorited: number;
@@ -122,13 +171,19 @@ export default class SteamWatchUser extends SteamUser {
     });
   }
 
-  queryFiles(appId: number, cursor = '*'): Promise<QueryFilesResponse> {
+  queryFiles(
+    appId: number,
+    queryType: EPublishedFileQueryType,
+    filetype: EPublishedFileInfoMatchingFileType,
+    cursor = '*',
+  ): Promise<QueryFilesResponse> {
     return this.request('CPublishedFile_QueryFiles', {
       appid: appId,
       cursor,
       numperpage: 25,
-      query_type: SteamUser.EPublishedFileQueryType.RankedByPublicationDate,
+      query_type: queryType,
       return_details: true,
+      filetype,
     });
   }
 

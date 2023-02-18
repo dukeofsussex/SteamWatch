@@ -89,7 +89,7 @@ export default class PriceCommand extends SlashCommand {
       return ctx.error(`Unable to find an application with the id/name: ${query}`);
     }
 
-    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase() as AppType, WatcherType.PRICE)) {
+    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase() as AppType, WatcherType.Price)) {
       return ctx.error(`Unable to fetch prices for apps of type **${app.type}**!`);
     }
 

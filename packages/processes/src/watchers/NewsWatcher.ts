@@ -57,7 +57,7 @@ export default class NewsWatcher extends Watcher {
 
       await this.enqueue([await EmbedBuilder.createNews(app, news)], {
         appId: app.id,
-        'watcher.type': WatcherType.NEWS,
+        'watcher.type': WatcherType.News,
       });
     }
 
@@ -68,7 +68,7 @@ export default class NewsWatcher extends Watcher {
     const watcherAverage = await db.avg('count AS average')
       .from((builder: Knex.QueryBuilder) => builder.count('app_id AS count')
         .from('watcher')
-        .where('watcher.type', WatcherType.NEWS)
+        .where('watcher.type', WatcherType.News)
         .andWhere('inactive', false)
         .groupBy('app_id')
         .as('innerCount'))
@@ -87,7 +87,7 @@ export default class NewsWatcher extends Watcher {
       ),
     ).from('app')
       .innerJoin(db.select('app_id', db.raw('COUNT(app_id) AS watcher_count')).from('watcher')
-        .where('watcher.type', WatcherType.NEWS)
+        .where('watcher.type', WatcherType.News)
         .andWhere('inactive', false)
         .groupBy('app_id')
         .as('watchers'), 'app.id', 'watchers.app_id')

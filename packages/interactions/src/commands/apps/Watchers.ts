@@ -26,6 +26,8 @@ import {
   EmbedBuilder,
   EMBED_COLOURS,
   env,
+  EPublishedFileInfoMatchingFileType as EPFIMFileType,
+  EPublishedFileQueryType,
   logger,
   PatreonUtils,
   SteamAPI,
@@ -47,6 +49,11 @@ interface BaseArguments {
   thread_id?: string;
 }
 
+interface WorkshopArguments extends BaseArguments {
+  filetype: EPFIMFileType;
+  type: WatcherType.WorkshopNew | WatcherType.WorkshopUpdate;
+}
+
 interface AddArguments {
   curator: BaseArguments;
   group: BaseArguments;
@@ -54,11 +61,11 @@ interface AddArguments {
   price: BaseArguments;
   steam: Pick<BaseArguments, 'channel' | 'thread_id'>;
   ugc: BaseArguments;
-  workshop: BaseArguments;
+  workshop: WorkshopArguments;
 }
 
 interface AddTypeArguments extends BaseArguments {
-  watcher_type: WatcherType
+  watcherType: WatcherType
 }
 
 type ListArguments = BaseArguments;
@@ -96,6 +103,28 @@ const QueryArg = {
   description: 'App id, name or url',
   autocomplete: true,
   required: true,
+};
+
+const WorkshopFileTypeArg = {
+  type: CommandOptionType.INTEGER,
+  name: 'filetype',
+  description: 'The type of workshop submissions to watch',
+  required: true,
+  choices: Object.keys(EPFIMFileType)
+    .filter((ft) => [
+      'Items',
+      'Collections',
+      'Art',
+      'Videos',
+      'Screenshots',
+      'Guides',
+      'Merch',
+      'Microtransaction',
+    ].includes(ft))
+    .map((ft) => ({
+      name: ft,
+      value: EPFIMFileType[ft as keyof typeof EPFIMFileType],
+    })),
 };
 
 export default class WatchersCommand extends GuildOnlyCommand {
@@ -179,8 +208,22 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'workshop',
-          description: 'Watch a Steam app\'s workshop for new submissions',
+          description: 'Watch a Steam app\'s workshop',
           options: [
+            {
+              type: CommandOptionType.STRING,
+              name: 'type',
+              description: 'The type of workshop changes to watch',
+              required: true,
+              choices: [{
+                name: 'New submissions',
+                value: WatcherType.WorkshopNew,
+              }, {
+                name: 'Updates to existing submissions',
+                value: WatcherType.WorkshopUpdate,
+              }],
+            },
+            WorkshopFileTypeArg,
             QueryArg,
             ChannelArg,
             ThreadArg,
@@ -276,28 +319,28 @@ export default class WatchersCommand extends GuildOnlyCommand {
       if (add.curator) {
         return WatchersCommand.addGroup(ctx, {
           ...add.curator,
-          watcher_type: WatcherType.CURATOR,
+          watcherType: WatcherType.Curator,
         });
       }
 
       if (add.group) {
         return WatchersCommand.addGroup(ctx, {
           ...add.group,
-          watcher_type: WatcherType.GROUP,
+          watcherType: WatcherType.Group,
         });
       }
 
       if (add.news) {
         return WatchersCommand.addApp(ctx, {
           ...add.news,
-          watcher_type: WatcherType.NEWS,
+          watcherType: WatcherType.News,
         });
       }
 
       if (add.price) {
         return WatchersCommand.addApp(ctx, {
           ...add.price,
-          watcher_type: WatcherType.PRICE,
+          watcherType: WatcherType.Price,
         });
       }
 
@@ -305,7 +348,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         return WatchersCommand.addApp(ctx, {
           channel: add.steam.channel,
           query: STEAM_NEWS_APPID.toString(),
-          watcher_type: WatcherType.NEWS,
+          watcherType: WatcherType.News,
         });
       }
 
@@ -316,7 +359,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       if (add.workshop) {
         return WatchersCommand.addApp(ctx, {
           ...add.workshop,
-          watcher_type: WatcherType.WORKSHOP,
+          watcherType: add.workshop.type,
         });
       }
     }
@@ -333,9 +376,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
     {
       channel: channelId,
       query,
-      watcher_type: watcherType,
+      watcherType,
       thread_id: threadId,
-    }: AddTypeArguments,
+      filetype,
+    }: AddTypeArguments & Partial<WorkshopArguments>,
   ) {
     const appId = await SteamUtil.findAppId(query);
 
@@ -405,16 +449,42 @@ export default class WatchersCommand extends GuildOnlyCommand {
           return ctx.error(error);
         }
 
-        if (watcherType === WatcherType.WORKSHOP) {
-          const { total } = await steamClient.queryFiles(appId);
+        let workshopId = null;
+
+        if (watcherType === WatcherType.WorkshopNew || watcherType === WatcherType.WorkshopUpdate) {
+          const { total } = await steamClient.queryFiles(
+            appId,
+            watcherType === WatcherType.WorkshopNew
+              ? EPublishedFileQueryType.RankedByPublicationDate
+              : EPublishedFileQueryType.RankedByLastUpdatedDate,
+            filetype!,
+          );
 
           if (!total) {
             return ctx.error(
               stripIndents`
-                **${app.name}** doesn't have a workshop!
+                **${app.name}** doesn't have any submissions of type **${EPFIMFileType[filetype!]}**!
                 If this is an error, please try again later.
               `,
             );
+          }
+
+          workshopId = await db.select('id')
+            .from('app_workshop')
+            .where({
+              appId: 1,
+              filetype: filetype!,
+            })
+            .first()
+            .then((res) => res?.id);
+
+          if (!workshopId) {
+            [workshopId] = await db.insert({
+              appId,
+              filetype,
+              lastCheckedNew: null,
+              lastCheckedUpdate: null,
+            }).into('app_workshop');
           }
         }
 
@@ -424,7 +494,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           return ctx.error(error);
         }
 
-        if (watcherType === WatcherType.PRICE) {
+        if (watcherType === WatcherType.Price) {
           error = await WatchersCommand.setAppPrice(app, ctx.guildID!);
         }
 
@@ -433,14 +503,15 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }
 
         const ids = await db.insert({
-          appId,
+          appId: !workshopId ? appId : null,
           channelId,
           threadId,
           type: watcherType,
+          workshopId,
           inactive: false,
         }).into('watcher');
 
-        return ctx.success(`Added watcher (#${ids[0]}) for **${app!.name} (${app!.type})** to ${ctx.channels.get(channelId)!.mention}.`, {
+        return ctx.success(`Added **${watcherType}** watcher (#${ids[0]}) for **${app!.name} (${app!.type})** to ${ctx.channels.get(channelId)!.mention}.`, {
           thumbnail: {
             url: SteamUtil.URLS.Icon(app!.id, app!.icon),
           },
@@ -457,12 +528,12 @@ export default class WatchersCommand extends GuildOnlyCommand {
       channel: channelId,
       query,
       thread_id: threadId,
-      watcher_type: watcherType,
+      watcherType,
     }: AddTypeArguments,
   ) {
     const identifier = SteamUtil.findGroupIdentifier(query);
 
-    if (watcherType === WatcherType.CURATOR) {
+    if (watcherType === WatcherType.Curator) {
       const details = await SteamAPI.getGroupDetails(identifier);
 
       if (!details || !details.is_curator) {
@@ -541,7 +612,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           inactive: false,
         }).into('watcher');
 
-        return ctx.success(`Added watcher (#${ids[0]}) for **${group!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
+        return ctx.success(`Added **${watcherType}** watcher (#${ids[0]}) for **${group!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
           thumbnail: {
             url: SteamUtil.URLS.GroupAvatar(group.avatar, 'medium'),
           },
@@ -642,7 +713,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           inactive: false,
         }).into('watcher');
 
-        return ctx.success(`Added watcher (#${ids[0]}) for **${ugc!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
+        return ctx.success(`Added **${WatcherType.UGC}** watcher (#${ids[0]}) for **${ugc!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
           thumbnail: {
             url: SteamUtil.URLS.Icon(app!.id, app!.icon),
           },
@@ -662,12 +733,15 @@ export default class WatchersCommand extends GuildOnlyCommand {
           ELSE app.name
         END AS name
       `),
+      'app_workshop.filetype',
       'watcher.*',
     ).from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+      .leftJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
       .leftJoin('`group`', '`group`.id', 'watcher.group_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
+        .orOn('app.id', 'app_workshop.app_id')
         .orOn('app.id', 'ugc.app_id'))
       .where('guild_id', ctx.guildID);
 
@@ -693,7 +767,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
         w.appId || w.groupId || w.ugcId,
         w.name,
         channelNames.get(w.channelId),
-        w.type,
+        oneLine`
+          ${w.type}
+          ${(w.workshopId ? `(${EPFIMFileType[w.filetype]})` : '')}
+        `,
         !w.inactive ? 'X' : '',
       ])),
     ], {

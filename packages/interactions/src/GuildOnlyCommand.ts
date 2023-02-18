@@ -9,10 +9,10 @@ import {
   SlashCommand,
 } from 'slash-create';
 import {
-  capitalize,
   db,
   EMBED_COLOURS,
   EMOJIS,
+  EPublishedFileInfoMatchingFileType as EPFIMFileType,
   DiscordAPI,
   DiscordUtil,
   logger,
@@ -71,7 +71,7 @@ export default class GuildOnlyCommand extends SlashCommand {
   }
 
   protected static async createWatcherAutocomplete(value: string, guildId: string) {
-    const dbWatcher = await db.select('app.name', 'watcher.*')
+    const dbWatcher = await db.select('app.name', 'null AS filetype', 'watcher.*')
       .from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .innerJoin('app', 'app.id', 'watcher.app_id')
@@ -82,7 +82,7 @@ export default class GuildOnlyCommand extends SlashCommand {
           .orWhere('app.name', 'LIKE', `${value}%`)
         : builder))
       .union(
-        db.select('`group`.name', 'watcher.*')
+        db.select('`group`.name', 'null AS filetype', 'watcher.*')
           .from('watcher')
           .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
           .innerJoin('`group`', '`group`.id', 'watcher.group_id')
@@ -93,7 +93,7 @@ export default class GuildOnlyCommand extends SlashCommand {
               .orWhere('`group`.name', 'LIKE', `${value}%`)
               .orWhere('`group`.vanity_url', 'LIKE', `${value}%`)
             : builder)),
-        db.select(db.raw('CONCAT(ugc.name, \' (\', app.name, \')\') AS name'), 'watcher.*')
+        db.select(db.raw('CONCAT(ugc.name, \' (\', app.name, \')\') AS name'), 'null AS filetype', 'watcher.*')
           .from('watcher')
           .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
           .innerJoin('ugc', 'ugc.id', 'watcher.ugc_id')
@@ -104,6 +104,18 @@ export default class GuildOnlyCommand extends SlashCommand {
               .orWhere('watcher.type', 'LIKE', `${value}%`)
               .orWhere('app.name', 'LIKE', `${value}%`)
               .orWhere('ugc.name', 'LIKE', `${value}%`)
+            : builder)),
+        db.select('app.name', 'app_workshop.filetype', 'watcher.*')
+          .from('watcher')
+          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+          .innerJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
+          .innerJoin('app', 'app.id', 'app_workshop.app_id')
+          .where('guild_id', guildId)
+          .andWhere((builder) => (value
+            ? builder.where('watcher.id', value)
+              .orWhere('watcher.type', 'LIKE', `${value}%`)
+              .orWhere('app.name', 'LIKE', `${value}%`)
+              .orWhere('app_workshop.filetype', 'LIKE', `${value}%`)
             : builder)),
       )
       .orderBy('id')
@@ -116,7 +128,10 @@ export default class GuildOnlyCommand extends SlashCommand {
       name: oneLine`
         [ID: ${w.id}]
         ${w.name}
-        (${capitalize(w.type)})
+        (${oneLine`
+          ${w.type}
+          ${(w.workshopId ? `(${EPFIMFileType[w.filetype]})` : '')}
+        `})
         on
         #${channelNames[channelIds.indexOf(w.channelId)]}
       `,

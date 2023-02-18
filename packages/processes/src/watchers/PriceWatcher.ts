@@ -113,7 +113,7 @@ export default class PriceWatcher extends Watcher {
 
       await db('watcher').delete()
         .whereIn('app_id', ids)
-        .andWhere('type', WatcherType.PRICE);
+        .andWhere('type', WatcherType.Price);
 
       await db('app_price').delete()
         .whereIn('appId', ids);
@@ -187,7 +187,7 @@ export default class PriceWatcher extends Watcher {
     await this.enqueue([embed], {
       appId: app.id,
       currencyId: app.currencyId,
-      'watcher.type': WatcherType.PRICE,
+      'watcher.type': WatcherType.Price,
     });
   }
 
@@ -195,7 +195,7 @@ export default class PriceWatcher extends Watcher {
     const average = await db.avg('count AS average')
       .from((builder: Knex.QueryBuilder) => builder.count('app_id AS count')
         .from('watcher')
-        .where('watcher.type', WatcherType.PRICE)
+        .where('watcher.type', WatcherType.Price)
         .andWhere('inactive', false)
         .groupBy('app_id')
         .as('innerCount'))
@@ -229,7 +229,7 @@ export default class PriceWatcher extends Watcher {
       .innerJoin('currency', 'currency.id', 'guild.currency_id')
       .innerJoin('app_price', (builder) => builder.on('app_price.app_id', 'app.id')
         .andOn('currency.id', 'app_price.currency_id'))
-      .where((builder) => builder.where((innerBuilder) => innerBuilder.where('watcher.type', WatcherType.PRICE)
+      .where((builder) => builder.where((innerBuilder) => innerBuilder.where('watcher.type', WatcherType.Price)
         .andWhere('inactive', false)
         .andWhereRaw('last_checked <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [env.settings.watcherRunFrequency]))
         .orWhereNull('app_price.last_checked'))

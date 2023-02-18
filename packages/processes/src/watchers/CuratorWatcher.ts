@@ -90,7 +90,7 @@ export default class CuratorWatcher extends Watcher {
           review,
         )], {
           groupId: curator.id,
-          'watcher.type': WatcherType.CURATOR,
+          'watcher.type': WatcherType.Curator,
         });
       }
     } else {
@@ -107,7 +107,7 @@ export default class CuratorWatcher extends Watcher {
     const watcherAverage = await db.avg('count AS average')
       .from((builder: Knex.QueryBuilder) => builder.count('group_id AS count')
         .from('watcher')
-        .where('watcher.type', WatcherType.CURATOR)
+        .where('watcher.type', WatcherType.Curator)
         .andWhere('inactive', false)
         .groupBy('group_id')
         .as('innerCount'))
@@ -126,7 +126,7 @@ export default class CuratorWatcher extends Watcher {
       ),
     ).from('`group`')
       .innerJoin(db.select('group_id', db.raw('COUNT(group_id) AS watcher_count')).from('watcher')
-        .where('watcher.type', WatcherType.CURATOR)
+        .where('watcher.type', WatcherType.Curator)
         .andWhere('inactive', false)
         .groupBy('groupId')
         .as('watchers'), 'group.id', 'watchers.group_id')

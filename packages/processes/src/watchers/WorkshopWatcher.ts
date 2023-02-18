@@ -3,19 +3,26 @@ import { subHours } from 'date-fns';
 import type { Knex } from 'knex';
 import {
   App,
+  AppWorkshop,
   db,
   EmbedBuilder,
   env,
   logger,
   MAX_EMBEDS,
   steamClient,
+  transformArticle,
+  Watcher as DBWatcher,
   WatcherType,
 } from '@steamwatch/shared';
-import type { PublishedFile } from '@steamwatch/shared/src/steam/SteamWatchUser';
+import { EPublishedFileQueryType, PublishedFile } from '@steamwatch/shared/src/steam/SteamWatchUser';
 import Watcher from './Watcher';
 import type MessageQueue from '../MessageQueue';
 
 const MAX_FILES = MAX_EMBEDS * MAX_EMBEDS;
+
+type QueryResult = Pick<App, 'icon' | 'name'>
+& AppWorkshop
+& Pick<DBWatcher, 'type'>;
 
 export default class WorkshopWatcher extends Watcher {
   constructor(queue: MessageQueue) {
@@ -30,20 +37,22 @@ export default class WorkshopWatcher extends Watcher {
       return this.wait();
     }
 
-    const app = await WorkshopWatcher.fetchNextApp();
+    const workshop = await WorkshopWatcher.fetchNextWorkshop();
 
-    if (!app) {
+    if (!workshop) {
       return this.pause();
     }
 
     logger.info({
-      message: 'Checking workshop for new submissions',
-      app,
+      message: 'Checking workshop for submissions',
+      app: workshop,
     });
 
     let cursor;
     let files: PublishedFile[] = [];
-    const lastCheckedMs = (app.lastCheckedUgc ?? subHours(new Date(), 1)).getTime() / 1000;
+    const lastCheckedMs = (
+      workshop.lastCheckedNew || workshop.lastCheckedUpdate || subHours(new Date(), 1)
+    ).getTime() / 1000;
     let index = -1;
 
     while (files.length < MAX_FILES && index === -1) {
@@ -51,11 +60,18 @@ export default class WorkshopWatcher extends Watcher {
 
       try {
         // eslint-disable-next-line no-await-in-loop
-        response = await steamClient.queryFiles(app.id, cursor);
+        response = await steamClient.queryFiles(
+          workshop.appId,
+          workshop.type === WatcherType.WorkshopNew
+            ? EPublishedFileQueryType.RankedByPublicationDate
+            : EPublishedFileQueryType.RankedByLastUpdatedDate,
+          workshop.filetype,
+          cursor,
+        );
       } catch (err) {
         logger.error({
           message: 'Unable to fetch workshop submissions',
-          appId: app.id,
+          appId: workshop.id,
           err,
         });
         break;
@@ -73,10 +89,15 @@ export default class WorkshopWatcher extends Watcher {
       );
     }
 
-    await db('app').update({
-      lastCheckedUgc: new Date(),
+    await db('app_workshop').update({
+      lastCheckedNew: workshop.type === WatcherType.WorkshopNew
+        ? new Date()
+        : workshop.lastCheckedNew,
+      lastCheckedUpdate: workshop.type === WatcherType.WorkshopUpdate
+        ? new Date()
+        : workshop.lastCheckedUpdate,
     })
-      .where('id', app.id);
+      .where('id', workshop.id);
 
     for (let i = files.length - 1; i >= 0; i -= 1) {
       const file = files[i] as PublishedFile;
@@ -87,51 +108,89 @@ export default class WorkshopWatcher extends Watcher {
       }
 
       logger.info({
-        message: 'Found new workshop submission',
+        message: 'Found workshop submission',
         file,
       });
 
-      this.enqueue([
+      let description;
+
+      if (workshop.type === WatcherType.WorkshopUpdate) {
         // eslint-disable-next-line no-await-in-loop
-        await EmbedBuilder.createWorkshop(app, file, 'time_created'),
-      ], {
-        appId: app.id,
-        'watcher.type': WatcherType.WORKSHOP,
+        const [entry] = (await steamClient.getChangeHistory(file.publishedfileid, 1)).changes;
+        description = entry ? transformArticle(entry.change_description).markdown : '';
+        description = description || 'No changelog';
+      }
+
+      this.enqueue([{
+        // eslint-disable-next-line no-await-in-loop
+        ...(await EmbedBuilder.createWorkshop(
+          {
+            icon: workshop.icon,
+            id: workshop.appId,
+            name: workshop.name,
+          },
+          file,
+          workshop.type === WatcherType.WorkshopNew
+            ? 'time_created'
+            : 'time_updated',
+        )),
+        ...(description ? { description } : {}),
+      }], {
+        workshopId: workshop.id,
+        'watcher.type': workshop.type,
       });
     }
 
     return this.wait();
   }
 
-  private static async fetchNextApp() {
+  private static async fetchNextWorkshop() {
     const watcherAverage = await db.avg('count AS average')
-      .from((builder: Knex.QueryBuilder) => builder.count('app_id AS count')
+      .from((builder: Knex.QueryBuilder) => builder.count('workshop_id AS count')
         .from('watcher')
-        .where('watcher.type', WatcherType.WORKSHOP)
+        .innerJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
+        .whereIn('type', [WatcherType.WorkshopNew, WatcherType.WorkshopUpdate])
         .andWhere('inactive', false)
-        .groupBy('app_id')
+        .groupBy('watcher.type', 'app_workshop.app_id', 'app_workshop.filetype')
         .as('innerCount'))
       .first()
       .then((res: any) => res.average || 0);
 
-    return db.select<App>(
-      'app.*',
+    return db.select<QueryResult>(
+      'app.name',
+      'app.icon',
+      'app_workshop.*',
+      'watcher.type',
       db.raw(
         oneLine`
           watcher_count
-          + (TIMESTAMPDIFF(HOUR, IFNULL(last_checked_ugc, UTC_TIMESTAMP() - INTERVAL 1 YEAR), UTC_TIMESTAMP()) DIV ?) * ?
+          + (TIMESTAMPDIFF
+            (HOUR,
+              IFNULL(
+                IF(watcher.type = ?,
+                  last_checked_new,
+                  last_checked_update),
+                UTC_TIMESTAMP() - INTERVAL 1 YEAR
+              ),
+            UTC_TIMESTAMP())
+          DIV ?) * ?
           AS priority
         `,
-        [env.settings.watcherRunFrequency, watcherAverage],
+        [WatcherType.WorkshopNew, env.settings.watcherRunFrequency, watcherAverage],
       ),
-    ).from('app')
-      .innerJoin(db.select('app_id', db.raw('COUNT(app_id) AS watcher_count')).from('watcher')
-        .where('watcher.type', WatcherType.WORKSHOP)
+    ).from('app_workshop')
+      .innerJoin('app', 'app.id', 'app_workshop.app_id')
+      .innerJoin('watcher', 'watcher.workshop_id', 'app_workshop.id')
+      .innerJoin(db.select('app_workshop.app_id', db.raw('COUNT(workshop_id) AS watcher_count'))
+        .from('watcher')
+        .innerJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
+        .whereIn('type', [WatcherType.WorkshopNew, WatcherType.WorkshopUpdate])
         .andWhere('inactive', false)
-        .groupBy('app_id')
+        .groupBy('watcher.type', 'app_workshop.app_id', 'app_workshop.filetype')
         .as('watchers'), 'app.id', 'watchers.app_id')
-      .whereRaw('last_checked_ugc <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [env.settings.watcherRunFrequency])
-      .orWhereNull('last_checked_ugc')
+      .whereRaw('IF(watcher.type = ?, last_checked_new, last_checked_update) <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [WatcherType.WorkshopNew, env.settings.watcherRunFrequency])
+      .orWhereRaw('IF(watcher.type = ?, last_checked_new, last_checked_update) IS NULL', [WatcherType.WorkshopNew])
+      .groupBy('watcher.type', 'app_workshop.app_id', 'app_workshop.filetype')
       .orderBy('priority', 'desc')
       .first();
   }

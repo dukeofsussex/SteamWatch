@@ -169,7 +169,7 @@ export default class CurrencyCommand extends GuildOnlyCommand {
       .leftJoin({ newAppPrice: 'app_price' }, (builder) => builder.on('new_app_price.app_id', 'watcher.app_id')
         .andOn('new_app_price.currency_id', currencyId))
       .whereNull('new_app_price.id')
-      .andWhere('watcher.type', WatcherType.PRICE)
+      .andWhere('watcher.type', WatcherType.Price)
       .andWhere('guild.id', guildId);
   }
 

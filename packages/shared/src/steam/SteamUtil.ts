@@ -3,7 +3,7 @@ import SteamID from 'steamid';
 import { EResult } from 'steam-user';
 import SteamAPI, { AppType } from './SteamAPI';
 import steamClient from './SteamClient';
-import { FileType, PublishedFile } from './SteamWatchUser';
+import { EWorkshopFileType, PublishedFile } from './SteamWatchUser';
 import db, {
   App,
   CurrencyCode,
@@ -72,12 +72,13 @@ const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
 };
 
 const PermittedAppTypes: Record<WatcherType, AppType[]> = {
-  [WatcherType.CURATOR]: [],
-  [WatcherType.GROUP]: [],
-  [WatcherType.NEWS]: ['application', 'game', 'config', 'hardware'],
-  [WatcherType.PRICE]: ['application', 'dlc', 'game', 'hardware', 'music', 'video'],
+  [WatcherType.Curator]: [],
+  [WatcherType.Group]: [],
+  [WatcherType.News]: ['application', 'game', 'config', 'hardware'],
+  [WatcherType.Price]: ['application', 'dlc', 'game', 'hardware', 'music', 'video'],
   [WatcherType.UGC]: [],
-  [WatcherType.WORKSHOP]: ['game'],
+  [WatcherType.WorkshopNew]: ['game'],
+  [WatcherType.WorkshopUpdate]: ['game'],
 };
 
 export default class SteamUtil {
@@ -96,14 +97,15 @@ export default class SteamUtil {
     Workshop: (id: number) => SteamUtil.BP.Raw(`url/SteamWorkshopPage/${id}`),
     FromType: (id: string, type: WatcherType) => {
       switch (type) {
-        case WatcherType.CURATOR:
-        case WatcherType.GROUP:
+        case WatcherType.Curator:
+        case WatcherType.Group:
           return SteamUtil.BP.Group(parseInt(id, 10));
-        case WatcherType.NEWS:
+        case WatcherType.News:
           return SteamUtil.BP.AppNews(parseInt(id, 10));
         case WatcherType.UGC:
           return SteamUtil.BP.UGC(id);
-        case WatcherType.WORKSHOP:
+        case WatcherType.WorkshopNew:
+        case WatcherType.WorkshopUpdate:
           return SteamUtil.BP.Workshop(parseInt(id, 10));
         default:
           return SteamUtil.BP.Store(parseInt(id, 10));
@@ -142,15 +144,16 @@ export default class SteamUtil {
     Workshop: (appId: number) => `https://store.steampowered.com/app/${appId}/workshop`,
     FromType: (id: string, type: WatcherType) => {
       switch (type) {
-        case WatcherType.CURATOR:
+        case WatcherType.Curator:
           return SteamUtil.URLS.Curator(parseInt(id, 10));
-        case WatcherType.GROUP:
+        case WatcherType.Group:
           return SteamUtil.URLS.Group(id);
-        case WatcherType.NEWS:
+        case WatcherType.News:
           return SteamUtil.URLS.AppNews(parseInt(id, 10));
         case WatcherType.UGC:
           return SteamUtil.URLS.UGC(id);
-        case WatcherType.WORKSHOP:
+        case WatcherType.WorkshopNew:
+        case WatcherType.WorkshopUpdate:
           return SteamUtil.URLS.Workshop(parseInt(id, 10));
         default:
           return SteamUtil.URLS.Store(parseInt(id, 10));
@@ -294,7 +297,6 @@ export default class SteamUtil {
       icon: appInfo.common.icon || '',
       type,
       lastCheckedNews: null,
-      lastCheckedUgc: null,
     };
 
     await db.insert(app).into('app');
@@ -335,8 +337,8 @@ export default class SteamUtil {
       throw new Error(`File banned! Reason: ${file.ban_reason || 'Unknown'}`);
     } else if (file.result !== EResult.OK) {
       throw new Error(`Invalid result: **${EResult[file.result]}**`);
-    } else if (file.file_type !== FileType.Collection && !file.can_subscribe) {
-      throw new Error(`Cannot watch UGC of type ${FileType[file.file_type]}`);
+    } else if (file.file_type !== EWorkshopFileType.Collection && !file.can_subscribe) {
+      throw new Error(`Cannot watch UGC of type ${EWorkshopFileType[file.file_type]}`);
     }
 
     const app = (await db.select('id')

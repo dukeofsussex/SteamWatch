@@ -2,6 +2,7 @@ import { knex } from 'knex';
 import config from './config';
 import env from '../env';
 import logger from '../logger';
+import type { EPublishedFileInfoMatchingFileType } from '../steam/SteamWatchUser';
 
 export type CurrencyCode = 'AED' | 'ARS' | 'AUD' | 'BRL' | 'CAD' | 'CHF'
 | 'CLP' | 'CNY' | 'COP' | 'CRC' | 'EUR' | 'GBP' | 'HKD' | 'ILS'
@@ -27,6 +28,14 @@ export interface AppPrice {
   discountedPrice: number;
   discount: number;
   lastChecked: Date | null;
+}
+
+export interface AppWorkshop {
+  id: number;
+  appId: number;
+  filetype: EPublishedFileInfoMatchingFileType;
+  lastCheckedNew: Date | null;
+  lastCheckedUpdate: Date | null;
 }
 
 export interface ChannelWebhook {
@@ -82,6 +91,7 @@ export interface Watcher {
   id: number;
   appId: number | null;
   ugcId: string | null;
+  workshopId: number | null;
   channelId: string;
   threadId: string | null;
   type: WatcherType;
@@ -96,18 +106,20 @@ export interface WatcherMention {
 }
 
 export enum WatcherType {
-  CURATOR = 'curator',
-  GROUP = 'group',
-  NEWS = 'news',
-  PRICE = 'price',
+  Curator = 'curator',
+  Group = 'group',
+  News = 'news',
+  Price = 'price',
   UGC = 'ugc',
-  WORKSHOP = 'workshop',
+  WorkshopNew = 'workshop_new',
+  WorkshopUpdate = 'workshop_update',
 }
 
 declare module 'knex/types/tables' {
   interface Tables {
     app: App;
     app_price: AppPrice;
+    app_workshop: AppWorkshop;
     channel_webhook: ChannelWebhook;
     currency: Currency;
     group: Group;

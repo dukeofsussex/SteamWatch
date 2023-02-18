@@ -23,7 +23,7 @@ import SteamAPI, {
   Tag,
 } from '../steam/SteamAPI';
 import steamClient from '../steam/SteamClient';
-import { FileType, PublishedFile, SteamDeckCompatibility } from '../steam/SteamWatchUser';
+import { EWorkshopFileType, PublishedFile, SteamDeckCompatibility } from '../steam/SteamWatchUser';
 import SteamUtil from '../steam/SteamUtil';
 import transformArticle from '../transformers';
 
@@ -350,15 +350,15 @@ export default class EmbedBuilder {
       },
       {
         name: 'Type',
-        value: FileType[file.file_type] || 'Unknown',
+        value: EWorkshopFileType[file.file_type] || 'Unknown',
         inline: true,
       },
       ...([
-        FileType.Art,
-        FileType.Item,
-        FileType.Microtransaction,
-        FileType.Screenshot,
-        FileType.WebGuide,
+        EWorkshopFileType.Art,
+        EWorkshopFileType.Item,
+        EWorkshopFileType.Microtransaction,
+        EWorkshopFileType.Screenshot,
+        EWorkshopFileType.WebGuide,
       ].includes(file.file_type) ? [{
           name: 'File Size',
           value: SteamUtil.formatFileSize(parseInt(file.file_size, 10)),
@@ -378,8 +378,8 @@ export default class EmbedBuilder {
     groupAvatarSize: 'full' | 'medium'
   }) {
     switch (type) {
-      case WatcherType.CURATOR:
-      case WatcherType.GROUP:
+      case WatcherType.Curator:
+      case WatcherType.Group:
         return SteamUtil.URLS.GroupAvatar(options.groupAvatar, options.groupAvatarSize);
       default:
         return SteamUtil.URLS.Icon(options.appId, options.appIcon);
