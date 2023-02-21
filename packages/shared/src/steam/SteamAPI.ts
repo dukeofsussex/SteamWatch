@@ -1,5 +1,6 @@
 import { URLSearchParams } from 'node:url';
 import fetch, { RequestInit } from 'node-fetch';
+import { decode } from 'html-entities';
 import {
   ECurrencyCode,
   EPublishedFileQueryType,
@@ -53,6 +54,47 @@ export interface CuratorReviewResponse {
   success: 0 | 1;
   total_count: number;
   results_html: string;
+}
+
+export interface ForumMetadata {
+  owner: string;
+  type: string;
+  feature: string;
+  gidforum: string;
+  forum_display_name: string;
+  appid?: string;
+}
+
+export interface ForumResponse {
+  success: 0 | 1;
+  start: number;
+  total: number;
+  topics_html: string;
+}
+
+export interface ForumThread {
+  id: string;
+  author: string;
+  title: string;
+  contentPreview: string;
+  lastPostAt: Date;
+  replies: number;
+  locked: boolean;
+  solved: boolean;
+  sticky: boolean;
+  url: string;
+}
+
+export interface ForumThreadPost {
+  author: string;
+  text: string;
+}
+
+export interface ForumThreadPostsResponse {
+  success: boolean;
+  timelastpost: number;
+  comments_html: string;
+  comments_raw: Record<string, ForumThreadPost>;
 }
 
 export interface GroupDetails {
@@ -306,6 +348,70 @@ export default class SteamAPI {
     const urlParts = res.url.split('/');
 
     return urlParts[urlParts.length - 1];
+  }
+
+  static async getForumMetadata(forumUrl: string) {
+    let res = null;
+    let text = '';
+    let metadata = null;
+
+    try {
+      res = await fetch(forumUrl);
+      text = await res.text();
+      metadata = text.match(/InitializeForum\(.*?,\s({.*?}),\s'.*?\)/s);
+      metadata = metadata ? JSON.parse(metadata[1]!) : null;
+    } catch (err) {
+      logger.error({
+        label: 'SteamAPI',
+        message: (err as Error).message,
+        res: text,
+        err,
+        forumUrl,
+        metadata,
+      });
+
+      return null;
+    }
+
+    return metadata as ForumMetadata;
+  }
+
+  static getForumThreadPosts(groupId: string, forumId: string, threadId: string) {
+    return this.request<ForumThreadPostsResponse>(`https://steamcommunity.com/comment/ForumTopic/render/${groupId}/${forumId}/`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        start: '0',
+        count: '1',
+        extended_data: '{"topic_permissions":{"can_view":1}}',
+        feature2: threadId,
+        include_raw: 'true',
+      }),
+    });
+  }
+
+  static async getForumThreads(
+    groupId: number,
+    subforumId: string,
+    type: string,
+    page: number = 1,
+  ) {
+    const res = await this.request<ForumResponse>(`https://steamcommunity.com/forum/${groupId}/${type}/render/${subforumId}/?start=${(page - 1) * 25}&count=25`);
+    const threads = decode(res?.topics_html).matchAll(/data-panel=".*?class="(.*?)".*?data-gidforumtopic="(\d+)".*?_text">(.*?)<\/.*?Posted by:.*?_data">(.*?)<\/.*?href="(.*?)".*?_reply_count">.*?<.*?>.*?(\d+).*?<\/.*?data-timestamp="(\d+)".*?_name ">(.*?)<\/div/gs);
+
+    return threads
+      ? [...threads].map((thread) => ({
+        author: thread[4],
+        contentPreview: thread[3]!.trim(),
+        id: thread[2],
+        replies: parseInt(thread[6]!, 10),
+        lastPostAt: new Date(parseInt(thread[7]!, 10) * 1000),
+        locked: thread[1]!.includes('locked'),
+        solved: thread[8]!.includes('forum_topic_answer'),
+        sticky: thread[1]!.includes('sticky'),
+        title: thread[8]!.replace(/<.*>/, '').trim(),
+        url: thread[5],
+      })) as ForumThread[]
+      : null;
   }
 
   static getGroupAvatarHash(avatar: string) {

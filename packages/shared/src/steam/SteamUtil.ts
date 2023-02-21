@@ -8,6 +8,7 @@ import db, {
   App,
   CurrencyCode,
   Group,
+  ForumType,
   UGC,
   WatcherType,
 } from '../db';
@@ -73,6 +74,7 @@ const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
 
 const PermittedAppTypes: Record<WatcherType, AppType[]> = {
   [WatcherType.Curator]: [],
+  [WatcherType.Forum]: [],
   [WatcherType.Group]: [],
   [WatcherType.News]: ['application', 'game', 'config', 'hardware'],
   [WatcherType.Price]: ['application', 'dlc', 'game', 'hardware', 'music', 'video'],
@@ -90,27 +92,12 @@ export default class SteamUtil {
     Group: (id: number) => SteamUtil.BP.Raw(`url/GroupSteamIDPage/${id}`),
     GroupEventsPage: (id: number) => SteamUtil.BP.Raw(`url/GroupEventsPage/${id}`),
     MarketListing: (appId: number, marketHashName: string) => SteamUtil.BP.Raw(`url/CommunityMarketSearch/${appId}/${marketHashName}`),
+    OpenUrl: (url: string) => SteamUtil.BP.Raw(`openurl/${url}`),
     Profile: (id: string) => SteamUtil.BP.Raw(`url/SteamIDPage/${id}`),
     Raw: (path: string) => `steam://${path}`,
     Store: (id: number) => SteamUtil.BP.Raw(`store/${id}`),
     UGC: (id: string) => SteamUtil.BP.Raw(`url/CommunityFilePage/${id}`),
     Workshop: (id: number) => SteamUtil.BP.Raw(`url/SteamWorkshopPage/${id}`),
-    FromType: (id: string, type: WatcherType) => {
-      switch (type) {
-        case WatcherType.Curator:
-        case WatcherType.Group:
-          return SteamUtil.BP.Group(parseInt(id, 10));
-        case WatcherType.News:
-          return SteamUtil.BP.AppNews(parseInt(id, 10));
-        case WatcherType.UGC:
-          return SteamUtil.BP.UGC(id);
-        case WatcherType.WorkshopNew:
-        case WatcherType.WorkshopUpdate:
-          return SteamUtil.BP.Workshop(parseInt(id, 10));
-        default:
-          return SteamUtil.BP.Store(parseInt(id, 10));
-      }
-    },
   };
 
   static readonly REGEXPS = {
@@ -132,6 +119,30 @@ export default class SteamUtil {
     AppNews: (appId: number) => `https://store.steampowered.com/news/app/${appId}`,
     EventAnnouncement: (appId: number, eventId: string, type: 'app' | 'group') => `https://store.steampowered.com/news/${type}/${appId}/view/${eventId}`,
     Curator: (id: number) => `https://store.steampowered.com/curator/${id}`,
+    Forum: (appId: number, groupId: number, subforumId: string, type: ForumType) => {
+      const url = 'https://steamcommunity.com';
+      let subforum = `discussions/${subforumId}`;
+
+      if (type === ForumType.PublishedFile) {
+        return `${url}/sharedfiles/filedetails/${subforum}`;
+      }
+
+      if (type === ForumType.Workshop) {
+        return `${url}/workshop/${subforum}?appid=${appId}`;
+      }
+
+      if (type === ForumType.Event) {
+        subforum = 'eventcomments';
+      } else if (type === ForumType.Trading) {
+        subforum = 'tradingforum';
+      }
+
+      if (appId) {
+        return `${url}/app/${appId}/${subforum}`;
+      }
+
+      return `${url}/gid/${groupId}/${subforum}`;
+    },
     Group: (identifier: string | number) => `https://steamcommunity.com/${(typeof identifier === 'number' ? 'gid' : 'groups')}/${identifier}`,
     GroupAvatar: (avatar: string, size: 'full' | 'medium') => `https://avatars.akamai.steamstatic.com/${avatar}_${size}.jpg`,
     Icon: (appId: number, icon: string) => `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.jpg`,
@@ -142,23 +153,6 @@ export default class SteamUtil {
     Store: (appId: number) => `https://store.steampowered.com/app/${appId}`,
     UGC: (ugcId: string) => `https://steamcommunity.com/sharedfiles/filedetails/?id=${ugcId}`,
     Workshop: (appId: number) => `https://store.steampowered.com/app/${appId}/workshop`,
-    FromType: (id: string, type: WatcherType) => {
-      switch (type) {
-        case WatcherType.Curator:
-          return SteamUtil.URLS.Curator(parseInt(id, 10));
-        case WatcherType.Group:
-          return SteamUtil.URLS.Group(id);
-        case WatcherType.News:
-          return SteamUtil.URLS.AppNews(parseInt(id, 10));
-        case WatcherType.UGC:
-          return SteamUtil.URLS.UGC(id);
-        case WatcherType.WorkshopNew:
-        case WatcherType.WorkshopUpdate:
-          return SteamUtil.URLS.Workshop(parseInt(id, 10));
-        default:
-          return SteamUtil.URLS.Store(parseInt(id, 10));
-      }
-    },
   };
 
   static canHaveWatcher(appType: AppType, watcherType: WatcherType) {
@@ -293,6 +287,7 @@ export default class SteamUtil {
 
     const app: App = {
       id: appId,
+      oggId: null,
       name: appInfo.common.name,
       icon: appInfo.common.icon || '',
       type,

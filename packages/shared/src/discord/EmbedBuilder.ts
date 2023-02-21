@@ -13,10 +13,12 @@ import db, {
   Currency,
   CurrencyCode,
   Group,
+  Forum,
   WatcherType,
 } from '../db';
 import SteamAPI, {
   CuratorReview,
+  ForumThread,
   NewsPost,
   PartnerEvent,
   PriceOverview,
@@ -28,6 +30,12 @@ import SteamUtil from '../steam/SteamUtil';
 import transformArticle from '../transformers';
 
 export type AppMinimal = Pick<App, 'icon' | 'id' | 'name'>;
+export type ForumMinimal = Pick<Forum, 'name'>
+& {
+  appId: App['id'],
+  appIcon: App['icon'],
+  groupAvatar: Group['avatar']
+};
 export type GroupMinimal = Pick<Group, 'avatar' | 'id' | 'name'>;
 
 export default class EmbedBuilder {
@@ -89,6 +97,49 @@ export default class EmbedBuilder {
       fields: [{
         name: 'Steam Client Link',
         value: SteamUtil.BP.Store(review.appId),
+      }],
+    };
+  }
+
+  static createForumPost(
+    forum: ForumMinimal,
+    post: ForumThread,
+  ): MessageEmbedOptions {
+    let emoji = '';
+
+    if (post.locked) {
+      emoji = EMOJIS.LOCK;
+    } else if (post.solved) {
+      emoji = EMOJIS.CHECK;
+    } else if (post.sticky) {
+      emoji = EMOJIS.PIN;
+    }
+
+    return {
+      author: {
+        name: post.author,
+      },
+      title: `${emoji} ${post.title}`,
+      color: EMBED_COLOURS.DEFAULT,
+      description: post.contentPreview,
+      url: post.url,
+      timestamp: post.lastPostAt,
+      thumbnail: {
+        url: EmbedBuilder.getImage(WatcherType.Forum, {
+          ...forum,
+          groupAvatarSize: 'medium',
+        }),
+      },
+      footer: {
+        text: forum.name,
+        icon_url: EmbedBuilder.getImage(WatcherType.Forum, {
+          ...forum,
+          groupAvatarSize: 'medium',
+        }),
+      },
+      fields: [{
+        name: 'Steam Client Link',
+        value: SteamUtil.BP.OpenUrl(post.url),
       }],
     };
   }
@@ -378,6 +429,10 @@ export default class EmbedBuilder {
     groupAvatarSize: 'full' | 'medium'
   }) {
     switch (type) {
+      case WatcherType.Forum:
+        return options.appId
+          ? SteamUtil.URLS.Icon(options.appId, options.appIcon)
+          : SteamUtil.URLS.GroupAvatar(options.groupAvatar, options.groupAvatarSize);
       case WatcherType.Curator:
       case WatcherType.Group:
         return SteamUtil.URLS.GroupAvatar(options.groupAvatar, options.groupAvatarSize);

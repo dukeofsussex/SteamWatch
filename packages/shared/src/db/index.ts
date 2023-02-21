@@ -13,11 +13,11 @@ export type CurrencyCode = 'AED' | 'ARS' | 'AUD' | 'BRL' | 'CAD' | 'CHF'
 
 export interface App {
   id: number;
+  oggId: number | null;
   name: string;
   icon: string;
   type: string;
   lastCheckedNews: Date | null;
-  lastCheckedUgc: Date | null;
 }
 
 export interface AppPrice {
@@ -50,6 +50,24 @@ export interface Currency {
   name: string;
   code: CurrencyCode;
   countryCode: string;
+}
+
+export interface Forum {
+  id: string;
+  appId: number | null;
+  groupId: number | null;
+  subforumId: string;
+  name: string;
+  type: ForumType;
+  lastChecked: Date | null;
+}
+
+export enum ForumType {
+  Event = 'event',
+  General = 'general',
+  PublishedFile = 'publishedfile',
+  Trading = 'trading',
+  Workshop = 'workshop',
 }
 
 export interface Group {
@@ -90,6 +108,7 @@ export interface UGC {
 export interface Watcher {
   id: number;
   appId: number | null;
+  forumId: string | null;
   ugcId: string | null;
   workshopId: number | null;
   channelId: string;
@@ -107,6 +126,7 @@ export interface WatcherMention {
 
 export enum WatcherType {
   Curator = 'curator',
+  Forum = 'forum',
   Group = 'group',
   News = 'news',
   Price = 'price',
@@ -122,6 +142,7 @@ declare module 'knex/types/tables' {
     app_workshop: AppWorkshop;
     channel_webhook: ChannelWebhook;
     currency: Currency;
+    forum: Forum;
     group: Group;
     guild: Guild;
     patron: Patron;

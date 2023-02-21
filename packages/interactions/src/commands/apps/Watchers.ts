@@ -28,6 +28,7 @@ import {
   env,
   EPublishedFileInfoMatchingFileType as EPFIMFileType,
   EPublishedFileQueryType,
+  ForumType,
   logger,
   PatreonUtils,
   SteamAPI,
@@ -56,6 +57,7 @@ interface WorkshopArguments extends BaseArguments {
 
 interface AddArguments {
   curator: BaseArguments;
+  forum: BaseArguments;
   group: BaseArguments;
   news: BaseArguments;
   price: BaseArguments;
@@ -146,6 +148,19 @@ export default class WatchersCommand extends GuildOnlyCommand {
             {
               ...QueryArg,
               description: 'Curator id, name or url',
+              autocomplete: false,
+            },
+            ChannelArg,
+            ThreadArg,
+          ],
+        }, {
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'forum',
+          description: 'Watch a Steam forum for posts',
+          options: [
+            {
+              ...QueryArg,
+              description: 'Forum url',
               autocomplete: false,
             },
             ChannelArg,
@@ -321,6 +336,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
           ...add.curator,
           watcherType: WatcherType.Curator,
         });
+      }
+
+      if (add.forum) {
+        return WatchersCommand.addForum(ctx, add.forum);
       }
 
       if (add.group) {
@@ -502,7 +521,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           return ctx.error(error);
         }
 
-        const ids = await db.insert({
+        const [id] = await db.insert({
           appId: !workshopId ? appId : null,
           channelId,
           threadId,
@@ -511,9 +530,172 @@ export default class WatchersCommand extends GuildOnlyCommand {
           inactive: false,
         }).into('watcher');
 
-        return ctx.success(`Added **${watcherType}** watcher (#${ids[0]}) for **${app!.name} (${app!.type})** to ${ctx.channels.get(channelId)!.mention}.`, {
+        return ctx.success(`Added **${watcherType}** watcher (#${id}) for **${app!.name} (${app!.type})** to ${ctx.channels.get(channelId)!.mention}.`, {
           thumbnail: {
             url: SteamUtil.URLS.Icon(app!.id, app!.icon),
+          },
+        });
+      },
+      DEFAULT_COMPONENT_EXPIRATION,
+      () => ctx.timeout(),
+    );
+  }
+
+  private static async addForum(
+    ctx: CommandContext,
+    {
+      channel: channelId,
+      query,
+      thread_id: threadId,
+    }: BaseArguments,
+  ) {
+    const metadata = await SteamAPI.getForumMetadata(query);
+
+    if (!metadata) {
+      return ctx.error(`Unable to process forum at ${query}`);
+    }
+
+    if (!Object.values(ForumType).includes(metadata.type.toLowerCase() as ForumType)) {
+      logger.error({
+        message: 'Unsupported forum type',
+        metadata,
+      });
+
+      return ctx.error(`Unable to watch forum of type **${metadata.type}**`);
+    }
+
+    let forum = (await db.select(
+      'forum.*',
+      { appId: 'app.id' },
+      { appIcon: 'app.icon' },
+      { groupAvatar: '`group`.avatar' },
+      db.raw('IF(forum.app_id IS NOT NULL, app.name, `group`.name) AS ownerName'),
+    )
+      .from('forum')
+      .leftJoin('app', 'app.id', 'forum.app_id')
+      .leftJoin('`group`', 'group.id', 'forum.group_id')
+      .where('forum.id', metadata.gidforum)
+      .first());
+
+    if (!forum) {
+      forum = {
+        id: metadata.gidforum,
+        appId: metadata.appid ?? null,
+        groupId: metadata.appid ? null : metadata.owner,
+        subforumId: metadata.feature,
+        name: metadata.forum_display_name,
+        type: metadata.type.toLowerCase(),
+        lastChecked: null,
+      };
+
+      let app = null;
+      let group = null;
+
+      if (metadata.appid) {
+        const appId = parseInt(metadata.appid, 10);
+
+        app = (await db.select('id', 'icon', 'name')
+          .from('app')
+          .where('id', appId)
+          .first()) || (await SteamUtil.persistApp(appId));
+      } else {
+        const groupId = parseInt(metadata.owner, 10);
+
+        group = (await db.select('avatar', 'name')
+          .from('`group`')
+          .where('id', groupId)
+          .first()) || (await SteamUtil.persistGroup(groupId));
+      }
+
+      if (!app && !group) {
+        return ctx.error(`Unable to persist forum owner data for ${query}`);
+      }
+
+      await db('app').update('oggId', metadata.owner);
+      await db.insert(forum)
+        .into('forum');
+
+      forum = {
+        ...forum,
+        appId: app?.id,
+        appIcon: app?.icon,
+        groupAvatar: group?.avatar,
+        ownerName: app?.name ?? group?.name,
+      };
+    }
+
+    await ctx.editOriginal({
+      embeds: [{
+        color: EMBED_COLOURS.PENDING,
+        description: `Would you like to add the watcher for **${forum.name} (${forum.ownerName})** to ${ctx.channels.get(channelId)!.mention}?`,
+        title: 'Confirmation',
+        thumbnail: {
+          url: EmbedBuilder.getImage(WatcherType.Forum, {
+            ...forum,
+            groupAvatarSize: 'medium',
+          }),
+        },
+      }],
+      components: [{
+        type: ComponentType.ACTION_ROW,
+        components: [{
+          custom_id: 'cancel',
+          label: 'Cancel',
+          style: ButtonStyle.SECONDARY,
+          type: ComponentType.BUTTON,
+        }, {
+          custom_id: 'confirm',
+          label: 'Confirm',
+          style: ButtonStyle.PRIMARY,
+          type: ComponentType.BUTTON,
+        }],
+      }],
+    });
+
+    ctx.registerComponent(
+      'cancel',
+      () => ctx.error(`Cancelled watcher for **${forum.name} (${forum.ownerName})** on ${ctx.channels.get(channelId)!.mention}.`, {
+        thumbnail: {
+          url: EmbedBuilder.getImage(WatcherType.Forum, {
+            ...forum,
+            groupAvatarSize: 'medium',
+          }),
+        },
+      }),
+      DEFAULT_COMPONENT_EXPIRATION,
+    );
+
+    return ctx.registerComponent(
+      'confirm',
+      async () => {
+        ctx.unregisterComponent('confirm');
+
+        let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
+
+        if (error) {
+          return ctx.error(error);
+        }
+
+        error = await WatchersCommand.setWebhook(channelId, ctx.guildID!);
+
+        if (error) {
+          return ctx.error(error);
+        }
+
+        const [id] = await db.insert({
+          forumId: forum.id,
+          channelId,
+          threadId,
+          type: WatcherType.Forum,
+          inactive: false,
+        }).into('watcher');
+
+        return ctx.success(`Added **${WatcherType.Forum}** watcher (#${id}) for **${forum.name} (${forum.ownerName})** to ${ctx.channels.get(channelId)!.mention}.`, {
+          thumbnail: {
+            url: EmbedBuilder.getImage(WatcherType.Forum, {
+              ...forum,
+              groupAvatarSize: 'medium',
+            }),
           },
         });
       },
@@ -604,7 +786,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           return ctx.error(error);
         }
 
-        const ids = await db.insert({
+        const [id] = await db.insert({
           groupId: group!.id,
           channelId,
           threadId,
@@ -612,7 +794,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           inactive: false,
         }).into('watcher');
 
-        return ctx.success(`Added **${watcherType}** watcher (#${ids[0]}) for **${group!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
+        return ctx.success(`Added **${watcherType}** watcher (#${id}) for **${group!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
           thumbnail: {
             url: SteamUtil.URLS.GroupAvatar(group.avatar, 'medium'),
           },
@@ -705,7 +887,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           return ctx.error(error);
         }
 
-        const ids = await db.insert({
+        const [id] = await db.insert({
           ugcId: ugc!.id,
           channelId,
           threadId,
@@ -713,7 +895,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           inactive: false,
         }).into('watcher');
 
-        return ctx.success(`Added **${WatcherType.UGC}** watcher (#${ids[0]}) for **${ugc!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
+        return ctx.success(`Added **${WatcherType.UGC}** watcher (#${id}) for **${ugc!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
           thumbnail: {
             url: SteamUtil.URLS.Icon(app!.id, app!.icon),
           },
@@ -728,8 +910,9 @@ export default class WatchersCommand extends GuildOnlyCommand {
     let dbQuery = db.select(
       db.raw(oneLine`
         CASE
-          WHEN group_id IS NOT NULL THEN \`group\`.name
-          WHEN ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')
+          WHEN watcher.forum_id IS NOT NULL THEN CONCAT(forum.name, ' (', IF(forum.app_id IS NOT NULL, app.name, \`group\`.name), ')')
+          WHEN watcher.group_id IS NOT NULL THEN \`group\`.name
+          WHEN watcher.ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')
           ELSE app.name
         END AS name
       `),
@@ -738,10 +921,13 @@ export default class WatchersCommand extends GuildOnlyCommand {
     ).from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .leftJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
-      .leftJoin('`group`', '`group`.id', 'watcher.group_id')
+      .leftJoin('forum', 'forum.id', 'watcher.forum_id')
+      .leftJoin('`group`', (builder) => builder.on('`group`.id', 'watcher.group_id')
+        .orOn('`group`.id', 'forum.group_id'))
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
         .orOn('app.id', 'app_workshop.app_id')
+        .orOn('app.id', 'forum.app_id')
         .orOn('app.id', 'ugc.app_id'))
       .where('guild_id', ctx.guildID);
 
@@ -764,11 +950,11 @@ export default class WatchersCommand extends GuildOnlyCommand {
       ['Id', 'Entity Id', 'Name', 'Channel', 'Type', 'Active'],
       ...(rows.map((w: any) => [
         w.id,
-        w.appId || w.groupId || w.ugcId,
+        w.appId || w.forumId || w.groupId || w.ugcId || w.workshopId,
         w.name,
         channelNames.get(w.channelId),
         oneLine`
-          ${w.type}
+          ${w.type.replace('_', ' ')}
           ${(w.workshopId ? `(${EPFIMFileType[w.filetype]})` : '')}
         `,
         !w.inactive ? 'X' : '',
@@ -820,16 +1006,22 @@ export default class WatchersCommand extends GuildOnlyCommand {
       'webhook_token',
       db.raw(oneLine`
         CASE
-          WHEN group_id IS NOT NULL THEN \`group\`.name
-          WHEN ugc_id IS NOT NULL THEN ugc.name
+          WHEN watcher.forum_id IS NOT NULL THEN CONCAT(forum.name, ' (', IF(forum.app_id IS NOT NULL, app.name, \`group\`.name), ')')
+          WHEN watcher.group_id IS NOT NULL THEN \`group\`.name
+          WHEN watcher.ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')
           ELSE app.name
         END AS name
       `),
     ).from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-      .leftJoin('`group`', '`group`.id', 'watcher.group_id')
+      .leftJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
+      .leftJoin('forum', 'forum.id', 'watcher.forum_id')
+      .leftJoin('`group`', (builder) => builder.on('`group`.id', 'watcher.group_id')
+        .orOn('`group`.id', 'forum.group_id'))
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
+        .orOn('app.id', 'app_workshop.app_id')
+        .orOn('app.id', 'forum.app_id')
         .orOn('app.id', 'ugc.app_id'))
       .where({
         'watcher.id': watcherId,
@@ -867,7 +1059,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       }
     }
 
-    return ctx.success(`Removed watcher (#${watcherId}) for **${watcher.name}** from <#${watcher.channelId}>!`, {
+    return ctx.success(`Removed **${watcher.type}** watcher (#${watcherId}) for **${watcher.name}** from <#${watcher.channelId}>!`, {
       thumbnail: {
         url: EmbedBuilder.getImage(watcher.type, {
           ...watcher,

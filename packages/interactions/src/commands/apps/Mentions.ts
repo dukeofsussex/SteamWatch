@@ -13,6 +13,7 @@ import {
   env,
   EPublishedFileInfoMatchingFileType as EPFIMFileType,
   SteamUtil,
+  WatcherType,
 } from '@steamwatch/shared';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 
@@ -287,9 +288,51 @@ export default class MentionsCommand extends GuildOnlyCommand {
       }
     }
 
+    let title = mentions[0].groupName || mentions[0].appName;
+    let url;
+    let bp;
+
+    switch (mentions[0].type) {
+      case WatcherType.Curator:
+        url = SteamUtil.URLS.Curator(parseInt(mentions[0].groupId, 10));
+        bp = SteamUtil.BP.Group(parseInt(mentions[0].groupId, 10));
+        break;
+      case WatcherType.Forum:
+        title = `${mentions[0].forumName} (${mentions[0].appName || mentions[0].groupName})`;
+        url = SteamUtil.URLS.Forum(
+          mentions[0].appId,
+          mentions[0].groupId,
+          mentions[0].forumSubforumId,
+          mentions[0].forumType,
+        );
+        bp = SteamUtil.BP.OpenUrl(url);
+        break;
+      case WatcherType.Group:
+        url = SteamUtil.URLS.Group(mentions[0].groupId);
+        bp = SteamUtil.BP.Group(parseInt(mentions[0].groupId, 10));
+        break;
+      case WatcherType.News:
+        url = SteamUtil.URLS.AppNews(parseInt(mentions[0].appId, 10));
+        bp = SteamUtil.BP.AppNews(parseInt(mentions[0].appId, 10));
+        break;
+      case WatcherType.UGC:
+        title = `${mentions[0].ugcName} (${mentions[0].appName})`;
+        url = SteamUtil.URLS.UGC(mentions[0].ugcId);
+        bp = SteamUtil.BP.UGC(mentions[0].ugcId);
+        break;
+      case WatcherType.WorkshopNew:
+      case WatcherType.WorkshopUpdate:
+        url = SteamUtil.URLS.Workshop(parseInt(mentions[0].appId, 10));
+        bp = SteamUtil.BP.Workshop(parseInt(mentions[0].appId, 10));
+        break;
+      default:
+        url = SteamUtil.URLS.Store(parseInt(mentions[0].appId, 10));
+        bp = SteamUtil.BP.Store(parseInt(mentions[0].appId, 10));
+    }
+
     return ctx.embed({
       color: EMBED_COLOURS.SUCCESS,
-      title: mentions[0].groupName || mentions[0].ugcName || mentions[0].appName,
+      title,
       ...(description ? {
         description,
       } : {}),
@@ -299,10 +342,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
           groupAvatarSize: 'medium',
         }),
       },
-      url: SteamUtil.URLS.FromType(
-        mentions[0].groupId || mentions[0].ugcId || mentions[0].appId,
-        mentions[0].type,
-      ),
+      url,
       timestamp: new Date(),
       footer: {
         text: mentions[0].groupName || mentions[0].appName,
@@ -328,10 +368,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
         inline: true,
       }, {
         name: 'Steam Client Link',
-        value: SteamUtil.BP.FromType(
-          mentions[0].groupId || mentions[0].ugcId || mentions[0].appId,
-          mentions[0].type,
-        ),
+        value: bp,
       }],
     });
   }
@@ -393,6 +430,9 @@ export default class MentionsCommand extends GuildOnlyCommand {
       { appId: 'app.id' },
       { appIcon: 'icon' },
       { appName: 'app.name' },
+      { forumName: 'forum.name' },
+      { forumSubforumId: 'forum.subforumId' },
+      { forumType: 'forum.type' },
       { groupId: '`group`.id' },
       { groupAvatar: '`group`.avatar' },
       { groupName: '`group`.name' },
@@ -403,10 +443,13 @@ export default class MentionsCommand extends GuildOnlyCommand {
       .from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .leftJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
-      .leftJoin('`group`', '`group`.id', 'watcher.group_id')
+      .leftJoin('forum', 'forum.id', 'watcher.forum_id')
+      .leftJoin('`group`', (builder) => builder.on('`group`.id', 'watcher.group_id')
+        .orOn('`group`.id', 'forum.group_id'))
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
         .orOn('app.id', 'app_workshop.app_id')
+        .orOn('app.id', 'forum.app_id')
         .orOn('app.id', 'ugc.app_id'))
       .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
       .where({

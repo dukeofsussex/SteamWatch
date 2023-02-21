@@ -7,6 +7,7 @@ import {
 import MessageQueue from './MessageQueue';
 import SteamGatewayManager from './managers/SteamGatewayManager';
 import CuratorWatcher from './watchers/CuratorWatcher';
+import ForumWatcher from './watchers/ForumWatcher';
 import GroupWatcher from './watchers/GroupWatcher';
 import NewsWatcher from './watchers/NewsWatcher';
 import PriceWatcher from './watchers/PriceWatcher';
@@ -24,6 +25,7 @@ export default class ProcessManager implements Manager {
     this.processes = [
       messageQueue,
       new CuratorWatcher(messageQueue),
+      new ForumWatcher(messageQueue),
       new GroupWatcher(messageQueue),
       new NewsWatcher(messageQueue),
       new PriceWatcher(messageQueue),

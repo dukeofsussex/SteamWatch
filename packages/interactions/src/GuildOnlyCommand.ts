@@ -82,6 +82,32 @@ export default class GuildOnlyCommand extends SlashCommand {
           .orWhere('app.name', 'LIKE', `${value}%`)
         : builder))
       .union(
+        db.select('app.name', 'app_workshop.filetype', 'watcher.*')
+          .from('watcher')
+          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+          .innerJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
+          .innerJoin('app', 'app.id', 'app_workshop.app_id')
+          .where('guild_id', guildId)
+          .andWhere((builder) => (value
+            ? builder.where('watcher.id', value)
+              .orWhere('watcher.type', 'LIKE', `${value}%`)
+              .orWhere('app.name', 'LIKE', `${value}%`)
+              .orWhere('app_workshop.filetype', 'LIKE', `${value}%`)
+            : builder)),
+        db.select(db.raw('CONCAT(forum.name, \' (\', IF(forum.app_id IS NOT NULL, app.name, `group`.name), \')\') AS name'), 'null AS filetype', 'watcher.*')
+          .from('watcher')
+          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+          .innerJoin('forum', 'forum.id', 'watcher.forum_id')
+          .leftJoin('app', 'app.id', 'forum.app_id')
+          .leftJoin('`group`', '`group`.id', 'forum.group_id')
+          .where('guild_id', guildId)
+          .andWhere((builder) => (value
+            ? builder.where('watcher.id', value)
+              .orWhere('watcher.type', 'LIKE', `${value}%`)
+              .orWhere('app.name', 'LIKE', `${value}%`)
+              .orWhere('`group`.name', 'LIKE', `${value}%`)
+              .orWhere('forum.name', 'LIKE', `${value}%`)
+            : builder)),
         db.select('`group`.name', 'null AS filetype', 'watcher.*')
           .from('watcher')
           .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
@@ -104,18 +130,6 @@ export default class GuildOnlyCommand extends SlashCommand {
               .orWhere('watcher.type', 'LIKE', `${value}%`)
               .orWhere('app.name', 'LIKE', `${value}%`)
               .orWhere('ugc.name', 'LIKE', `${value}%`)
-            : builder)),
-        db.select('app.name', 'app_workshop.filetype', 'watcher.*')
-          .from('watcher')
-          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-          .innerJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
-          .innerJoin('app', 'app.id', 'app_workshop.app_id')
-          .where('guild_id', guildId)
-          .andWhere((builder) => (value
-            ? builder.where('watcher.id', value)
-              .orWhere('watcher.type', 'LIKE', `${value}%`)
-              .orWhere('app.name', 'LIKE', `${value}%`)
-              .orWhere('app_workshop.filetype', 'LIKE', `${value}%`)
             : builder)),
       )
       .orderBy('id')

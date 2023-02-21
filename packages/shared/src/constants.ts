@@ -20,8 +20,11 @@ export const EMBED_COLOURS = {
 
 export const EMOJIS = {
   ALERT: '\uD83D\uDEA8',
+  CHECK: '\u2611',
   DM: '\uD83D\uDCEC',
   ERROR: '\u274C',
+  LOCK: '\uD83D\uDD12',
+  PIN: '\uD83D\uDCCC',
   PING_PONG: '\uD83C\uDFD3',
   PRICE_DOWN: '\uD83D\uDCC9',
   PRICE_UP: '\uD83D\uDCC8',
