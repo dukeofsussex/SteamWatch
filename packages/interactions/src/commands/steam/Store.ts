@@ -1,14 +1,14 @@
 import {
   AutocompleteContext,
   CommandContext,
-  CommandOptionType,
   SlashCommand,
   SlashCreator,
 } from 'slash-create';
 import { EmbedBuilder, env, SteamUtil } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface CommandArguments {
-  query: string;
+  app: string;
 }
 
 export default class StoreCommand extends SlashCommand {
@@ -17,13 +17,9 @@ export default class StoreCommand extends SlashCommand {
       name: 'store',
       description: 'Search the Steam store.',
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
-      options: [{
-        type: CommandOptionType.STRING,
-        name: 'query',
-        description: 'App id, name or url',
-        autocomplete: true,
-        required: true,
-      }],
+      options: [
+        CommonCommandOptions.App,
+      ],
       throttling: {
         duration: 10,
         usages: 1,
@@ -43,12 +39,12 @@ export default class StoreCommand extends SlashCommand {
   // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
     await ctx.defer();
-    const { query } = ctx.options as CommandArguments;
+    const { app } = ctx.options as CommandArguments;
 
-    const appId = await SteamUtil.findAppId(query);
+    const appId = await SteamUtil.findAppId(app);
 
     if (!appId) {
-      return ctx.error(`Unable to find an application with the id/name: ${query}`);
+      return ctx.error(`Unable to find an application with the id/name: ${app}`);
     }
 
     const message = await EmbedBuilder.createStore(appId, ctx.guildID);

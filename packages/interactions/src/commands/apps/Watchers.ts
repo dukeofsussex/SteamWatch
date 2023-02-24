@@ -38,36 +38,75 @@ import {
   UGC,
   WatcherType,
 } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 
 const markdownTable = require('markdown-table');
 
 const MAX_MESSAGE_LENGTH = 2000;
 
+const ChannelArg = {
+  type: CommandOptionType.CHANNEL,
+  name: 'channel',
+  description: 'The channel notifications should be sent to',
+  required: true,
+  // TODO Replace magic number with enum once typings have been fixed upstream
+  channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT, 15],
+};
+
+const ThreadArg = {
+  type: CommandOptionType.STRING,
+  name: 'thread',
+  description: 'The thread notifications should be sent to (ONLY REQUIRED IF THE CHANNEL IS A FORUM)',
+  autocomplete: true,
+  required: false,
+};
+
 interface BaseArguments {
-  query: string;
   channel: string;
-  thread_id?: string;
+  thread?: string;
 }
 
-interface WorkshopArguments extends BaseArguments {
+interface AddAppArguments extends BaseArguments {
+  app: string;
+}
+
+interface AddAppTypedArguments extends BaseArguments {
+  app: string;
+  watcherType: WatcherType.News
+  | WatcherType.Price
+  | WatcherType.WorkshopNew
+  | WatcherType.WorkshopUpdate;
+}
+
+interface AddForumArguments extends BaseArguments {
+  forum: string;
+}
+
+interface AddGroupArguments extends BaseArguments {
+  curator?: string;
+  group?: string;
+  watcherType: WatcherType.Curator | WatcherType.Group;
+}
+
+interface AddUGCArguments extends BaseArguments {
+  ugc: string;
+}
+
+interface AddWorkshopArguments extends AddAppArguments {
   filetype: EPFIMFileType;
   type: WatcherType.WorkshopNew | WatcherType.WorkshopUpdate;
 }
 
 interface AddArguments {
-  curator: BaseArguments;
-  forum: BaseArguments;
-  group: BaseArguments;
-  news: BaseArguments;
-  price: BaseArguments;
-  steam: Pick<BaseArguments, 'channel' | 'thread_id'>;
-  ugc: BaseArguments;
-  workshop: WorkshopArguments;
-}
-
-interface AddTypeArguments extends BaseArguments {
-  watcherType: WatcherType
+  curator: Omit<AddGroupArguments, 'group'>;
+  forum: AddForumArguments;
+  group: Omit<AddGroupArguments, 'curator'>;
+  news: AddAppArguments;
+  price: AddAppArguments;
+  steam: BaseArguments;
+  ugc: AddUGCArguments;
+  workshop: AddWorkshopArguments;
 }
 
 type ListArguments = BaseArguments;
@@ -81,53 +120,6 @@ interface CommandArguments {
   list?: ListArguments;
   remove?: RemoveArguments;
 }
-
-const ChannelArg = {
-  type: CommandOptionType.CHANNEL,
-  name: 'channel',
-  description: 'The channel notifications should be sent to',
-  required: true,
-  // TODO Replace magic number with enum once typings have been fixed upstream
-  channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT, 15],
-};
-
-const ThreadArg = {
-  type: CommandOptionType.STRING,
-  name: 'thread_id',
-  description: 'The thread notifications should be sent to (ONLY REQUIRED IF THE CHANNEL IS A FORUM)',
-  autocomplete: true,
-  required: false,
-};
-
-const QueryArg = {
-  type: CommandOptionType.STRING,
-  name: 'query',
-  description: 'App id, name or url',
-  autocomplete: true,
-  required: true,
-};
-
-const WorkshopFileTypeArg = {
-  type: CommandOptionType.INTEGER,
-  name: 'filetype',
-  description: 'The type of workshop submissions to watch',
-  required: true,
-  choices: Object.keys(EPFIMFileType)
-    .filter((ft) => [
-      'Items',
-      'Collections',
-      'Art',
-      'Videos',
-      'Screenshots',
-      'Guides',
-      'Merch',
-      'Microtransaction',
-    ].includes(ft))
-    .map((ft) => ({
-      name: ft,
-      value: EPFIMFileType[ft as keyof typeof EPFIMFileType],
-    })),
-};
 
 export default class WatchersCommand extends GuildOnlyCommand {
   constructor(creator: SlashCreator) {
@@ -145,11 +137,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           name: 'curator',
           description: 'Watch a Steam curator for reviews',
           options: [
-            {
-              ...QueryArg,
-              description: 'Curator id, name or url',
-              autocomplete: false,
-            },
+            CommonCommandOptions.Curator,
             ChannelArg,
             ThreadArg,
           ],
@@ -159,9 +147,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
           description: 'Watch a Steam forum for posts',
           options: [
             {
-              ...QueryArg,
+              type: CommandOptionType.STRING,
+              name: 'forum',
               description: 'Forum url',
-              autocomplete: false,
+              required: true,
             },
             ChannelArg,
             ThreadArg,
@@ -171,11 +160,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           name: 'group',
           description: 'Watch a Steam group for news',
           options: [
-            {
-              ...QueryArg,
-              description: 'Group id, name or url',
-              autocomplete: false,
-            },
+            CommonCommandOptions.Group,
             ChannelArg,
             ThreadArg,
           ],
@@ -184,7 +169,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           name: 'news',
           description: 'Watch a Steam app for news',
           options: [
-            QueryArg,
+            CommonCommandOptions.App,
             ChannelArg,
             ThreadArg,
           ],
@@ -194,7 +179,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           name: 'price',
           description: 'Watch a Steam app for price changes',
           options: [
-            QueryArg,
+            CommonCommandOptions.App,
             ChannelArg,
             ThreadArg,
           ],
@@ -212,11 +197,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           name: 'ugc',
           description: 'Watch a workshop item/user-generated content',
           options: [
-            {
-              ...QueryArg,
-              autocomplete: false,
-              description: 'UGC id or url',
-            },
+            CommonCommandOptions.UGC,
             ChannelArg,
             ThreadArg,
           ],
@@ -238,8 +219,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
                 value: WatcherType.WorkshopUpdate,
               }],
             },
-            WorkshopFileTypeArg,
-            QueryArg,
+            CommonCommandOptions.WorkshopFileType,
+            CommonCommandOptions.App,
             ChannelArg,
             ThreadArg,
           ],
@@ -260,13 +241,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         name: 'remove',
         description: 'Remove a watcher.',
         options: [
-          {
-            type: CommandOptionType.INTEGER,
-            name: 'watcher_id',
-            description: 'The watcher\'s id',
-            autocomplete: true,
-            required: true,
-          },
+          CommonCommandOptions.Watcher,
         ],
       }],
       requiredPermissions: ['MANAGE_CHANNELS'],
@@ -327,7 +302,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
       // TODO Replace magic number with enum once typings have been fixed upstream
       if (ctx.channels.get(addSub.channel)!.type === 15
-          && !addSub.thread_id) {
+          && !addSub.thread) {
         return ctx.error('A thread is required when using forum channels!');
       }
 
@@ -365,8 +340,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
       if (add.steam) {
         return WatchersCommand.addApp(ctx, {
+          app: STEAM_NEWS_APPID.toString(),
           channel: add.steam.channel,
-          query: STEAM_NEWS_APPID.toString(),
           watcherType: WatcherType.News,
         });
       }
@@ -393,12 +368,12 @@ export default class WatchersCommand extends GuildOnlyCommand {
   private static async addApp(
     ctx: CommandContext,
     {
+      app: query,
       channel: channelId,
-      query,
       watcherType,
-      thread_id: threadId,
+      thread: threadId,
       filetype,
-    }: AddTypeArguments & Partial<WorkshopArguments>,
+    }: AddAppTypedArguments & Partial<AddWorkshopArguments>,
   ) {
     const appId = await SteamUtil.findAppId(query);
 
@@ -545,9 +520,9 @@ export default class WatchersCommand extends GuildOnlyCommand {
     ctx: CommandContext,
     {
       channel: channelId,
-      query,
-      thread_id: threadId,
-    }: BaseArguments,
+      forum: query,
+      thread: threadId,
+    }: AddForumArguments,
   ) {
     const metadata = await SteamAPI.getForumMetadata(query);
 
@@ -708,11 +683,13 @@ export default class WatchersCommand extends GuildOnlyCommand {
     ctx: CommandContext,
     {
       channel: channelId,
-      query,
-      thread_id: threadId,
+      curator: curatorId,
+      group: groupId,
+      thread: threadId,
       watcherType,
-    }: AddTypeArguments,
+    }: AddGroupArguments,
   ) {
+    const query = curatorId || groupId!;
     const identifier = SteamUtil.findGroupIdentifier(query);
 
     if (watcherType === WatcherType.Curator) {
@@ -809,9 +786,9 @@ export default class WatchersCommand extends GuildOnlyCommand {
     ctx: CommandContext,
     {
       channel: channelId,
-      query,
-      thread_id: threadId,
-    }: BaseArguments,
+      thread: threadId,
+      ugc: query,
+    }: AddUGCArguments,
   ) {
     const ugcId = SteamUtil.findUGCId(query);
 

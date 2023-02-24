@@ -15,6 +15,7 @@ import {
   SteamUtil,
   WatcherType,
 } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 
 interface WatcherArgument {
@@ -51,14 +52,6 @@ const UserArg = {
   description: 'User to mention',
 };
 
-const WatcherArg = {
-  type: CommandOptionType.INTEGER,
-  name: 'watcher_id',
-  description: 'The watcher\'s id',
-  autocomplete: true,
-  required: true,
-};
-
 export default class MentionsCommand extends GuildOnlyCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
@@ -83,7 +76,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
           name: 'single',
           description: 'Role and/or user to add to a single watcher.',
           options: [
-            WatcherArg,
+            CommonCommandOptions.Watcher,
             RoleArg,
             UserArg,
           ],
@@ -93,7 +86,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
         name: 'list',
         description: 'List mentions for a watcher.',
         options: [
-          WatcherArg,
+          CommonCommandOptions.Watcher,
         ],
       }, {
         type: CommandOptionType.SUB_COMMAND_GROUP,
@@ -112,7 +105,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
           name: 'single',
           description: 'Role and/or user to remove from  a single watcher.',
           options: [
-            WatcherArg,
+            CommonCommandOptions.Watcher,
             RoleArg,
             UserArg,
           ],

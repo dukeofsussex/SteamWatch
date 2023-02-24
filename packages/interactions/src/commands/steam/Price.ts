@@ -1,7 +1,6 @@
 import {
   AutocompleteContext,
   CommandContext,
-  CommandOptionType,
   SlashCommand,
   SlashCreator,
 } from 'slash-create';
@@ -16,9 +15,10 @@ import {
   SteamUtil,
   WatcherType,
 } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface CommandArguments {
-  query: string;
+  app: string;
   currency?: number;
 }
 
@@ -28,18 +28,10 @@ export default class PriceCommand extends SlashCommand {
       name: 'price',
       description: 'Fetch the current price for the specified app.',
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
-      options: [{
-        type: CommandOptionType.STRING,
-        name: 'query',
-        description: 'App id, name or url',
-        autocomplete: true,
-        required: true,
-      }, {
-        type: CommandOptionType.INTEGER,
-        name: 'currency',
-        description: 'The currency to retrieve the price in',
-        autocomplete: true,
-      }],
+      options: [
+        CommonCommandOptions.App,
+        CommonCommandOptions.Currency,
+      ],
     });
 
     this.filePath = __filename;
@@ -73,7 +65,7 @@ export default class PriceCommand extends SlashCommand {
   // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
     await ctx.defer();
-    const { query, currency } = ctx.options as CommandArguments;
+    const { app: query, currency } = ctx.options as CommandArguments;
     const appId = await SteamUtil.findAppId(query);
 
     if (!appId) {

@@ -1,9 +1,4 @@
-import {
-  CommandContext,
-  CommandOptionType,
-  SlashCommand,
-  SlashCreator,
-} from 'slash-create';
+import { CommandContext, SlashCommand, SlashCreator } from 'slash-create';
 import {
   EmbedBuilder,
   env,
@@ -11,9 +6,10 @@ import {
   steamClient,
   SteamUtil,
 } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface CommandArguments {
-  query: string;
+  curator: string;
 }
 
 export default class CuratorCommand extends SlashCommand {
@@ -22,12 +18,9 @@ export default class CuratorCommand extends SlashCommand {
       name: 'curator',
       description: 'Fetch the latest review for the specified curator.',
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
-      options: [{
-        type: CommandOptionType.STRING,
-        name: 'query',
-        description: 'Curator id, name or url',
-        required: true,
-      }],
+      options: [
+        CommonCommandOptions.Curator,
+      ],
       throttling: {
         duration: 10,
         usages: 1,
@@ -40,17 +33,17 @@ export default class CuratorCommand extends SlashCommand {
   // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
     await ctx.defer();
-    const { query } = ctx.options as CommandArguments;
+    const { curator } = ctx.options as CommandArguments;
 
     if (!steamClient.connected) {
       return ctx.error('Currently not connected to Steam. Please try again in a few minutes');
     }
 
-    let id = SteamUtil.findGroupIdentifier(query);
+    let id = SteamUtil.findGroupIdentifier(curator);
     const details = await SteamAPI.getGroupDetails(id);
 
     if (!details || !details.is_curator) {
-      return ctx.error(`Unable to find a curator page for **${query}**`);
+      return ctx.error(`Unable to find a curator page for **${curator}**`);
     }
 
     id = details.clanAccountID;
@@ -58,7 +51,7 @@ export default class CuratorCommand extends SlashCommand {
     const reviews = await SteamAPI.getCuratorReviews(id);
 
     if (!reviews || !reviews.length) {
-      return ctx.error(`Unable to find a review by **${query}**`);
+      return ctx.error(`Unable to find a review by **${curator}**`);
     }
 
     const appInfo = (await steamClient.getProductInfo([reviews[0]!.appId], []))

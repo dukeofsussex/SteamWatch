@@ -1,7 +1,6 @@
 import {
   AutocompleteContext,
   CommandContext,
-  CommandOptionType,
   SlashCommand,
   SlashCreator,
 } from 'slash-create';
@@ -14,9 +13,10 @@ import {
   SteamUtil,
   WatcherType,
 } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface CommandArguments {
-  query: string;
+  app: string;
 }
 
 export default class NewsCommand extends SlashCommand {
@@ -25,13 +25,9 @@ export default class NewsCommand extends SlashCommand {
       name: 'news',
       description: 'Fetch the latest news article for the specified app.',
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
-      options: [{
-        type: CommandOptionType.STRING,
-        name: 'query',
-        description: 'App id, name or url',
-        autocomplete: true,
-        required: true,
-      }],
+      options: [
+        CommonCommandOptions.App,
+      ],
     });
 
     this.filePath = __filename;
@@ -47,7 +43,7 @@ export default class NewsCommand extends SlashCommand {
   // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
     await ctx.defer();
-    const { query } = ctx.options as CommandArguments;
+    const { app: query } = ctx.options as CommandArguments;
     const appId = await SteamUtil.findAppId(query);
 
     if (!appId) {

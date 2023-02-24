@@ -16,46 +16,17 @@ import {
   SteamUtil,
   WatcherType,
 } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface BaseArguments {
   filetype: EPFIMFileType;
-  query: string;
+  app: string;
 }
 
 interface CommandArguments {
   new: BaseArguments;
   update: BaseArguments;
 }
-
-const QueryArg = {
-  type: CommandOptionType.STRING,
-  name: 'query',
-  description: 'App id, name or url',
-  autocomplete: true,
-  required: true,
-};
-
-const WorkshopFileTypeArg = {
-  type: CommandOptionType.INTEGER,
-  name: 'filetype',
-  description: 'The type of workshop submissions to watch',
-  required: true,
-  choices: Object.keys(EPFIMFileType)
-    .filter((ft) => [
-      'Items',
-      'Collections',
-      'Art',
-      'Videos',
-      'Screenshots',
-      'Guides',
-      'Merch',
-      'Microtransaction',
-    ].includes(ft))
-    .map((ft) => ({
-      name: ft,
-      value: EPFIMFileType[ft as keyof typeof EPFIMFileType],
-    })),
-};
 
 export default class WorkshopCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -68,16 +39,16 @@ export default class WorkshopCommand extends SlashCommand {
         name: 'new',
         description: 'Fetch the latest new submission from a Steam app\'s workshop',
         options: [
-          WorkshopFileTypeArg,
-          QueryArg,
+          CommonCommandOptions.WorkshopFileType,
+          CommonCommandOptions.App,
         ],
       }, {
         type: CommandOptionType.SUB_COMMAND,
         name: 'update',
         description: 'Fetch the latest updated submission from a Steam app\'s workshop',
         options: [
-          WorkshopFileTypeArg,
-          QueryArg,
+          CommonCommandOptions.WorkshopFileType,
+          CommonCommandOptions.App,
         ],
       }],
     });
@@ -101,7 +72,7 @@ export default class WorkshopCommand extends SlashCommand {
     }
 
     const options = ctx.options as CommandArguments;
-    const { filetype, query } = options.new || options.update;
+    const { filetype, app: query } = options.new || options.update;
 
     const appId = await SteamUtil.findAppId(query);
 

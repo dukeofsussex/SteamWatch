@@ -13,6 +13,7 @@ import {
   SteamUtil,
 } from '@steamwatch/shared';
 import { EResult } from 'steam-user';
+import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface CommandArgumentsOwned {
   profile: string;
@@ -61,28 +62,26 @@ export default class SuggestCommand extends SlashCommand {
         type: CommandOptionType.SUB_COMMAND,
         name: 'owned',
         description: 'Suggest a random game each player already owns.',
-        options: [{
-          type: CommandOptionType.STRING,
-          name: 'profile',
-          description: 'Custom url name or SteamID64',
-          required: true,
-        }, {
-          type: CommandOptionType.STRING,
-          name: 'profile_2',
-          description: 'Custom url name or SteamID64',
-        }, {
-          type: CommandOptionType.STRING,
-          name: 'profile_3',
-          description: 'Custom url name or SteamID64',
-        }, {
-          type: CommandOptionType.STRING,
-          name: 'profile_4',
-          description: 'Custom url name or SteamID64',
-        }, {
-          type: CommandOptionType.STRING,
-          name: 'profile_5',
-          description: 'Custom url name or SteamID64',
-        }],
+        options: [
+          CommonCommandOptions.Profile,
+          {
+            ...CommonCommandOptions.Profile,
+            name: 'profile_2',
+            required: false,
+          }, {
+            ...CommonCommandOptions.Profile,
+            name: 'profile_3',
+            required: false,
+          }, {
+            ...CommonCommandOptions.Profile,
+            name: 'profile_4',
+            required: false,
+          }, {
+            ...CommonCommandOptions.Profile,
+            name: 'profile_5',
+            required: false,
+          },
+        ],
       }],
       throttling: {
         duration: 10,

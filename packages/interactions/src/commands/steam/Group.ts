@@ -14,6 +14,7 @@ import {
   SteamUtil,
   transformArticle,
 } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface GroupArgument {
   group: string | number;
@@ -23,13 +24,6 @@ interface CommandArguments {
   news?: GroupArgument;
   profile?: GroupArgument;
 }
-
-const GroupArg = {
-  type: CommandOptionType.STRING,
-  name: 'group',
-  description: 'Group name or url',
-  required: true,
-};
 
 export default class GroupCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -42,14 +36,14 @@ export default class GroupCommand extends SlashCommand {
         name: 'news',
         description: 'Fetch the latest news post for the specified Steam group.',
         options: [
-          GroupArg,
+          CommonCommandOptions.Group,
         ],
       }, {
         type: CommandOptionType.SUB_COMMAND,
         name: 'profile',
         description: 'Show the specified group\'s profile.',
         options: [
-          GroupArg,
+          CommonCommandOptions.Group,
         ],
       }],
       throttling: {

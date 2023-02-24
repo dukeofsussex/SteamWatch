@@ -1,9 +1,4 @@
-import {
-  CommandContext,
-  CommandOptionType,
-  SlashCommand,
-  SlashCreator,
-} from 'slash-create';
+import { CommandContext, SlashCommand, SlashCreator } from 'slash-create';
 import SteamUser from 'steam-user';
 import {
   EMBED_COLOURS,
@@ -16,9 +11,10 @@ import {
   SteamUtil,
   transformArticle,
 } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface CommandArguments {
-  query: string;
+  ugc: string;
 }
 
 export default class UGCCommand extends SlashCommand {
@@ -27,12 +23,9 @@ export default class UGCCommand extends SlashCommand {
       name: 'ugc',
       description: 'Search the Steam workshop.',
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
-      options: [{
-        type: CommandOptionType.STRING,
-        name: 'query',
-        description: 'App id, name or url',
-        required: true,
-      }],
+      options: [
+        CommonCommandOptions.UGC,
+      ],
       throttling: {
         duration: 10,
         usages: 1,
@@ -45,23 +38,23 @@ export default class UGCCommand extends SlashCommand {
   // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
     await ctx.defer();
-    const { query } = ctx.options as CommandArguments;
+    const { ugc } = ctx.options as CommandArguments;
 
     if (!steamClient.connected) {
       return ctx.error('Currently not connected to Steam. Please try again in a few minutes');
     }
 
-    const ugcId = SteamUtil.findUGCId(query);
+    const ugcId = SteamUtil.findUGCId(ugc);
 
     if (!ugcId) {
-      return ctx.error(`Unable to parse UGC identifier: ${query}`);
+      return ctx.error(`Unable to parse UGC identifier: ${ugc}`);
     }
 
     const published = (await steamClient.getPublishedFileDetails([parseInt(ugcId, 10)])) as any;
     const file = published?.files?.[ugcId] as PublishedFile;
 
     if (!file) {
-      return ctx.error(`Unable to find UGC with the id/url: ${query}`);
+      return ctx.error(`Unable to find UGC with the id/url: ${ugc}`);
     }
 
     if (file.result !== SteamUser.EResult.OK) {
@@ -76,7 +69,7 @@ export default class UGCCommand extends SlashCommand {
     const appInfo = app.apps[file.consumer_appid]?.appinfo;
 
     if (!appInfo || !profile) {
-      return ctx.error(`Unable to process app info: ${query}`);
+      return ctx.error(`Unable to process app info: ${ugc}`);
     }
 
     const transformed = transformArticle(file.file_description);

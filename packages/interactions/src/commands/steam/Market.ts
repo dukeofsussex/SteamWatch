@@ -15,6 +15,7 @@ import {
   SteamAPI,
   SteamUtil,
 } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface CommandArguments {
   item: string;
@@ -27,18 +28,16 @@ export default class MarketCommand extends SlashCommand {
       name: 'market',
       description: 'Fetch details for the specified market item.',
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
-      options: [{
-        type: CommandOptionType.STRING,
-        name: 'item',
-        description: 'Item name or url',
-        // autocomplete: true, // Disabled due to strict rate limits
-        required: true,
-      }, {
-        type: CommandOptionType.INTEGER,
-        name: 'currency',
-        description: 'The currency to retrieve the price in',
-        autocomplete: true,
-      }],
+      options: [
+        {
+          type: CommandOptionType.STRING,
+          name: 'item',
+          description: 'Item name or url',
+          // autocomplete: true, // Disabled due to strict rate limits
+          required: true,
+        },
+        CommonCommandOptions.Currency,
+      ],
       throttling: {
         duration: env.dev ? 1 : 60,
         usages: 1,

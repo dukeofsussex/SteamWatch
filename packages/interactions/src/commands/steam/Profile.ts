@@ -1,11 +1,6 @@
 import { oneLine, stripIndents } from 'common-tags';
 import { formatDistanceToNow } from 'date-fns';
-import {
-  CommandContext,
-  CommandOptionType,
-  SlashCommand,
-  SlashCreator,
-} from 'slash-create';
+import { CommandContext, SlashCommand, SlashCreator } from 'slash-create';
 import SteamID from 'steamid';
 import { EPrivacyState } from 'steam-user';
 import {
@@ -15,6 +10,7 @@ import {
   SteamAPI,
   SteamUtil,
 } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface CommandArguments {
   profile: string;
@@ -26,12 +22,9 @@ export default class ProfileCommand extends SlashCommand {
       name: 'profile',
       description: 'Show a player\'s Steam profile.',
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
-      options: [{
-        type: CommandOptionType.STRING,
-        name: 'profile',
-        description: 'Custom url name or SteamID64',
-        required: true,
-      }],
+      options: [
+        CommonCommandOptions.Profile,
+      ],
       throttling: {
         duration: 10,
         usages: 1,
