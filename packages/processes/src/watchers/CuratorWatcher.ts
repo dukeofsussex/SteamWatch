@@ -21,9 +21,7 @@ export default class CuratorWatcher extends Watcher {
 
   protected async work() {
     if (!steamClient.connected) {
-      logger.info({
-        message: 'Waiting for Steam connection',
-      });
+      logger.info('Waiting for Steam connection');
       return this.wait();
     }
 
@@ -94,9 +92,7 @@ export default class CuratorWatcher extends Watcher {
         });
       }
     } else {
-      await db('`group`').update({
-        lastCheckedReviews: new Date(),
-      })
+      await db('`group`').update('lastCheckedReviews', new Date())
         .where('id', curator.id);
     }
 

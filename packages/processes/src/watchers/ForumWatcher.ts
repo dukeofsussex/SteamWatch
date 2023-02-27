@@ -82,9 +82,7 @@ export default class ForumWatcher extends Watcher {
       page += 1;
     }
 
-    await db('forum').update({
-      lastChecked: new Date(),
-    })
+    await db('forum').update('lastChecked', new Date())
       .where('id', forum.id);
 
     for (let i = threads.length - 1; i >= 0; i -= 1) {

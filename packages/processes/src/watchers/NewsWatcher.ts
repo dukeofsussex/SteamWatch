@@ -42,9 +42,7 @@ export default class NewsWatcher extends Watcher {
       });
     }
 
-    await db('app').update({
-      lastCheckedNews: new Date(),
-    })
+    await db('app').update('lastCheckedNews', new Date())
       .where('id', app.id);
 
     const lastCheckedMs = (app.lastCheckedNews ?? subHours(new Date(), 1)).getTime() / 1000;

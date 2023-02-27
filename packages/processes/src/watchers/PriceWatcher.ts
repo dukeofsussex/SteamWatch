@@ -103,7 +103,7 @@ export default class PriceWatcher extends Watcher {
     }
 
     if (unchanged.length > 0) {
-      await db('app_price').update({ lastChecked: new Date() })
+      await db('app_price').update('lastChecked', new Date())
         .whereIn('app_id', unchanged.map((app) => app.id))
         .andWhere('currency_id', unchanged[0]!.currencyId);
     }

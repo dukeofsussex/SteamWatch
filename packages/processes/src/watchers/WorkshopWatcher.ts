@@ -31,9 +31,7 @@ export default class WorkshopWatcher extends Watcher {
 
   protected async work() {
     if (!steamClient.connected) {
-      logger.info({
-        message: 'Waiting for Steam connection',
-      });
+      logger.info('Waiting for Steam connection');
       return this.wait();
     }
 

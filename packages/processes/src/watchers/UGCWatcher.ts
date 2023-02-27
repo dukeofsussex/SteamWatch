@@ -29,9 +29,7 @@ export default class UGCWatcher extends Watcher {
 
   protected async work() {
     if (!steamClient.connected) {
-      logger.info({
-        message: 'Waiting for Steam connection',
-      });
+      logger.info('Waiting for Steam connection');
       return this.wait();
     }
 
@@ -54,15 +52,13 @@ export default class UGCWatcher extends Watcher {
       published = await steamClient.getPublishedFileDetails(ids) as any;
     } catch (err) {
       logger.error({
-        message: 'Unable to fetch UGC details!',
+        message: 'Unable to fetch UGC details',
         ugcItems,
         err,
       });
     }
 
-    await db('ugc').update({
-      lastChecked: new Date(),
-    })
+    await db('ugc').update('lastChecked', new Date())
       .whereIn('id', ids);
 
     if (!published || !published.files) {
@@ -165,13 +161,11 @@ export default class UGCWatcher extends Watcher {
         }
 
         // eslint-disable-next-line no-await-in-loop
-        await db('ugc').update({
-          name: file.title,
-        })
+        await db('ugc').update('name', file.title)
           .where('id', file.publishedfileid);
 
         logger.info({
-          message: 'Found new UGC update!',
+          message: 'Found new UGC update',
           item,
           file,
         });

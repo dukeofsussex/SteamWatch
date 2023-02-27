@@ -42,9 +42,7 @@ export default class GroupWatcher extends Watcher {
       });
     }
 
-    await db('`group`').update({
-      lastCheckedNews: new Date(),
-    })
+    await db('`group`').update('lastCheckedNews', new Date())
       .where('id', group.id);
 
     const lastCheckedMs = (group.lastCheckedNews ?? subHours(new Date(), 1)).getTime() / 1000;

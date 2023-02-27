@@ -31,7 +31,7 @@ steamClient.on('loggedOn', (details) => {
   if (details['eresult'] !== EResult.OK) {
     logger.error({
       label: 'Steam:loggedOn',
-      message: 'Failed to log in to Steam!',
+      message: 'Failed to log in to Steam',
       details,
     });
   } else {

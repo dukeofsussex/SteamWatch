@@ -48,7 +48,7 @@ export default class TopGGWorker extends Worker {
       });
     } catch (err) {
       logger.error({
-        message: 'Unable to post bot stats to Top.gg!',
+        message: 'Unable to post bot stats to Top.gg',
         err,
       });
     }

@@ -127,9 +127,7 @@ export default class PremiumCommand extends GuildOnlyCommand {
       });
     }
 
-    await db('patron').update({
-      guildId: ctx.guildID!,
-    })
+    await db('patron').update('guildId', ctx.guildID!)
       .where('id', patron.id);
 
     await PatreonUtils.setWatcherStates(ctx.guildID!);
@@ -162,9 +160,7 @@ export default class PremiumCommand extends GuildOnlyCommand {
       });
     }
 
-    await db('patron').update({
-      guildId: null,
-    })
+    await db('patron').update('guildId', null)
       .where('id', patron.id);
 
     await PatreonUtils.setWatcherStates(ctx.guildID!);
