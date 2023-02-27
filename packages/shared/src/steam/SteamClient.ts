@@ -3,7 +3,7 @@ import SteamWatchUser from './SteamWatchUser';
 import env from '../env';
 import logger from '../logger';
 
-const steamClient = new SteamWatchUser({ enablePicsCache: true });
+const steamClient = new SteamWatchUser();
 
 if (env.debug) {
   // @ts-ignore Missing typings
