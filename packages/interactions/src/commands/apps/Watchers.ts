@@ -137,7 +137,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         options: [{
           type: CommandOptionType.SUB_COMMAND,
           name: 'curator',
-          description: 'Watch a Steam curator for reviews',
+          description: 'Watch a Steam curator for reviews.',
           options: [
             CommonCommandOptions.Curator,
             ChannelArg,
@@ -146,7 +146,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'forum',
-          description: 'Watch a Steam forum for posts',
+          description: 'Watch a Steam forum for posts.',
           options: [
             {
               type: CommandOptionType.STRING,
@@ -160,7 +160,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'free',
-          description: 'Watch Steam for free promotions',
+          description: 'Watch Steam for free promotions.',
           options: [
             ChannelArg,
             ThreadArg,
@@ -168,7 +168,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'group',
-          description: 'Watch a Steam group for news',
+          description: 'Watch a Steam group for news.',
           options: [
             CommonCommandOptions.Group,
             ChannelArg,
@@ -177,7 +177,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'news',
-          description: 'Watch a Steam app for news',
+          description: 'Watch a Steam app for news.',
           options: [
             CommonCommandOptions.App,
             ChannelArg,
@@ -187,7 +187,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         {
           type: CommandOptionType.SUB_COMMAND,
           name: 'price',
-          description: 'Watch a Steam app for price changes',
+          description: 'Watch a Steam app for price changes.',
           options: [
             CommonCommandOptions.App,
             ChannelArg,
@@ -197,7 +197,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         {
           type: CommandOptionType.SUB_COMMAND,
           name: 'steam',
-          description: 'Watch Steam for (Valve) news',
+          description: 'Watch Steam for (Valve) news.',
           options: [
             ChannelArg,
             ThreadArg,
@@ -205,7 +205,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'ugc',
-          description: 'Watch a workshop item/user-generated content',
+          description: 'Watch a workshop item/user-generated content.',
           options: [
             CommonCommandOptions.UGC,
             ChannelArg,
@@ -214,7 +214,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'workshop',
-          description: 'Watch a Steam app\'s workshop',
+          description: 'Watch a Steam app\'s workshop.',
           options: [
             {
               type: CommandOptionType.STRING,

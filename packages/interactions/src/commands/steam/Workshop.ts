@@ -37,7 +37,7 @@ export default class WorkshopCommand extends SlashCommand {
       options: [{
         type: CommandOptionType.SUB_COMMAND,
         name: 'new',
-        description: 'Fetch the latest new submission from a Steam app\'s workshop',
+        description: 'Fetch the latest new submission from a Steam app\'s workshop.',
         options: [
           CommonCommandOptions.WorkshopFileType,
           CommonCommandOptions.App,
@@ -45,7 +45,7 @@ export default class WorkshopCommand extends SlashCommand {
       }, {
         type: CommandOptionType.SUB_COMMAND,
         name: 'update',
-        description: 'Fetch the latest updated submission from a Steam app\'s workshop',
+        description: 'Fetch the latest updated submission from a Steam app\'s workshop.',
         options: [
           CommonCommandOptions.WorkshopFileType,
           CommonCommandOptions.App,
