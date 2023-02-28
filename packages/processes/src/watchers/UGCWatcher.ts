@@ -1,4 +1,5 @@
 import { oneLine, stripIndents } from 'common-tags';
+import { differenceInHours } from 'date-fns';
 import type { Knex } from 'knex';
 import { EResult } from 'steam-user';
 import {
@@ -72,7 +73,8 @@ export default class UGCWatcher extends Watcher {
       const file = published.files[item.id];
       let message = '';
 
-      if (!file) {
+      // Don't remove immediately, might be a Steam issue
+      if (!file && differenceInHours(file.lastUpdate, new Date()) > 24) {
         message = stripIndents`
           ${EMOJIS.ALERT} UGC watcher removed!
           Item not found!
