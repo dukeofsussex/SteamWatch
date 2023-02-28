@@ -45,7 +45,9 @@ export interface AppWorkshop {
   appId: number;
   filetype: EPublishedFileInfoMatchingFileType;
   lastCheckedNew: Date | null;
+  lastNew: Date | null;
   lastCheckedUpdate: Date | null;
+  lastUpdate: Date | null;
 }
 
 export interface ChannelWebhook {
@@ -86,6 +88,7 @@ export interface Forum {
   name: string;
   type: ForumType;
   lastChecked: Date | null;
+  lastPost: Date | null;
 }
 
 export enum ForumType {
@@ -129,6 +132,7 @@ export interface UGC {
   appId: number;
   name: string;
   lastChecked: Date | null;
+  lastUpdate: Date | null;
 }
 
 export interface Watcher {

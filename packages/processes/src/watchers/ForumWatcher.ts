@@ -48,7 +48,7 @@ export default class ForumWatcher extends Watcher {
     let page = 1;
     let threads: ForumThread[] = [];
     const groupId64 = new SteamID(`[g:1:${forum.groupId}]`).getSteamID64();
-    const lastChecked = forum.lastChecked ?? subHours(new Date(), 1);
+    const lastPostAt = forum.lastPost ?? subHours(new Date(), 1);
     let index = -1;
 
     while (threads.length < MAX_FILES && index === -1) {
@@ -76,13 +76,16 @@ export default class ForumWatcher extends Watcher {
       }
 
       index = response.sort((a, b) => b.lastPostAt.getTime() - a.lastPostAt.getTime())
-        .findIndex((file) => file.lastPostAt <= lastChecked);
+        .findIndex((file) => file.lastPostAt <= lastPostAt);
       threads = threads.concat(response.slice(0, index !== -1 ? index : undefined));
 
       page += 1;
     }
 
-    await db('forum').update('lastChecked', new Date())
+    await db('forum').update({
+      lastChecked: new Date(),
+      lastPost: threads[0]?.lastPostAt ?? forum.lastPost,
+    })
       .where('id', forum.id);
 
     for (let i = threads.length - 1; i >= 0; i -= 1) {

@@ -48,8 +48,9 @@ export default class WorkshopWatcher extends Watcher {
 
     let cursor;
     let files: PublishedFile[] = [];
-    const lastCheckedMs = (
-      workshop.lastCheckedNew || workshop.lastCheckedUpdate || subHours(new Date(), 1)
+    const lastSubmissionMs = (
+      (workshop.type === WatcherType.WorkshopNew ? workshop.lastNew : workshop.lastUpdate)
+        ?? subHours(new Date(), 1)
     ).getTime() / 1000;
     let index = -1;
 
@@ -81,7 +82,7 @@ export default class WorkshopWatcher extends Watcher {
         break;
       }
 
-      index = response.publishedfiledetails.findIndex((file) => file[workshop.type === WatcherType.WorkshopNew ? 'time_created' : 'time_updated'] <= lastCheckedMs);
+      index = response.publishedfiledetails.findIndex((file) => file[workshop.type === WatcherType.WorkshopNew ? 'time_created' : 'time_updated'] <= lastSubmissionMs);
       files = files.concat(
         response.publishedfiledetails.slice(0, index !== -1 ? index : undefined),
       );
@@ -91,9 +92,15 @@ export default class WorkshopWatcher extends Watcher {
       lastCheckedNew: workshop.type === WatcherType.WorkshopNew
         ? new Date()
         : workshop.lastCheckedNew,
+      lastNew: workshop.type === WatcherType.WorkshopNew && files.length
+        ? new Date(files[0]!.time_created * 1000)
+        : workshop.lastNew,
       lastCheckedUpdate: workshop.type === WatcherType.WorkshopUpdate
         ? new Date()
         : workshop.lastCheckedUpdate,
+      lastUpdate: workshop.type === WatcherType.WorkshopUpdate && files.length
+        ? new Date(files[0]!.time_updated * 1000)
+        : workshop.lastUpdate,
     })
       .where('id', workshop.id);
 
@@ -190,6 +197,6 @@ export default class WorkshopWatcher extends Watcher {
       .orWhereRaw('IF(watcher.type = ?, last_checked_new, last_checked_update) IS NULL', [WatcherType.WorkshopNew])
       .groupBy('watcher.type', 'app_workshop.app_id', 'app_workshop.filetype')
       .orderBy('priority', 'desc')
-      .first();
+      .first() as Promise<QueryResult | undefined>;
   }
 }

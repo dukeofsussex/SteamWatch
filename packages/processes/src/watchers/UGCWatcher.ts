@@ -90,10 +90,10 @@ export default class UGCWatcher extends Watcher {
         `;
       }
 
-      /**
-       * Watcher doesn't need to be removed and UGC up-to-date
-       */
-      if (!message && item.lastChecked && (item.lastChecked > new Date(file.time_updated * 1000))) {
+      const lastUpdate = new Date(file.time_updated * 1000);
+
+      // Watcher doesn't need to be removed and UGC up-to-date
+      if (!message && item.lastUpdate && (item.lastUpdate >= lastUpdate)) {
         // eslint-disable-next-line no-continue
         continue;
       }
@@ -128,15 +128,15 @@ export default class UGCWatcher extends Watcher {
         // eslint-disable-next-line no-await-in-loop
         const changeHistory = await steamClient.getChangeHistory(
           item.id,
-          item.lastChecked ? MAX_EMBEDS : 1,
+          item.lastUpdate ? MAX_EMBEDS : 1,
         );
 
-        const lastCheckedMs = item.lastChecked ? (item.lastChecked.getTime() / 1000) : 0;
+        const lastUpdateMs = item.lastUpdate ? (item.lastUpdate.getTime() / 1000) : 0;
 
         for (let j = changeHistory.changes.length - 1; j >= 0; j -= 1) {
           const entry = changeHistory.changes[j]!;
 
-          if (item.lastChecked && entry.timestamp <= lastCheckedMs) {
+          if (item.lastUpdate && entry.timestamp <= lastUpdateMs) {
             // eslint-disable-next-line no-continue
             continue;
           }
@@ -161,7 +161,10 @@ export default class UGCWatcher extends Watcher {
         }
 
         // eslint-disable-next-line no-await-in-loop
-        await db('ugc').update('name', file.title)
+        await db('ugc').update({
+          name: file.title,
+          lastUpdate,
+        })
           .where('id', file.publishedfileid);
 
         logger.info({
