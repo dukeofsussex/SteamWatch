@@ -81,7 +81,7 @@ export default class WorkshopWatcher extends Watcher {
         break;
       }
 
-      index = response.publishedfiledetails.findIndex((file) => file.time_created <= lastCheckedMs);
+      index = response.publishedfiledetails.findIndex((file) => file[workshop.type === WatcherType.WorkshopNew ? 'time_created' : 'time_updated'] <= lastCheckedMs);
       files = files.concat(
         response.publishedfiledetails.slice(0, index !== -1 ? index : undefined),
       );
