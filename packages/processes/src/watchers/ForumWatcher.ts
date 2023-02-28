@@ -79,6 +79,15 @@ export default class ForumWatcher extends Watcher {
         .findIndex((file) => file.lastPostAt <= lastPostAt);
       threads = threads.concat(response.slice(0, index !== -1 ? index : undefined));
 
+      // Account for pinned/locked/solved threads preventing pagination
+      if (index !== -1) {
+        const remaining = response.slice(index);
+
+        if (remaining.every((thread) => thread.locked || thread.sticky || thread.solved)) {
+          index = -1;
+        }
+      }
+
       page += 1;
     }
 
