@@ -139,6 +139,7 @@ export interface Watcher {
   id: number;
   appId: number | null;
   forumId: string | null;
+  groupId: string | null;
   ugcId: string | null;
   workshopId: number | null;
   channelId: string;
