@@ -12,7 +12,7 @@ exports.up = (knex: Knex) => knex.schema
       .notNullable();
     table.string('vanity_url', 32)
       .notNullable();
-    table.datetime('last_checked');
+    table.dateTime('last_checked');
   })
   .alterTable('watcher', (table) => {
     table.enum('type', ['group', 'news', 'price', 'ugc', 'workshop'])

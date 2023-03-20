@@ -25,7 +25,7 @@ exports.up = (knex: Knex) => knex.schema
     table.integer('last_reviewed_app_id')
       .unsigned()
       .after('last_checked');
-    table.datetime('last_checked_reviews')
+    table.dateTime('last_checked_reviews')
       .after('last_reviewed_app_id');
     table.foreign('last_reviewed_app_id')
       .references('id')
