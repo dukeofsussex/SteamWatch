@@ -37,14 +37,15 @@ npm install
 3. Configure the bot by copying `.env.example` to `.env` and setting the provided parameters
 4. (Optional) Build the bot for production
 ```sh
-npm run build
+npm run build:<package>
 ```
 5. Run the bot
 ```sh
 # development
-npm run dev
+npm run dev:<package>
 
 # production
+cd <path to package>
 node .
 ```
 
