@@ -156,7 +156,7 @@ export default class EmbedBuilder {
   static createFreePackage(
     app: AppMinimal,
     pkg: FreePackage,
-  ) {
+  ): MessageEmbedOptions {
     return {
       ...EmbedBuilder.createApp(app, {
         description: `**${(pkg.type === FreePackageType.Promo ? 'Free To Keep' : 'Free Weekend')}**`,
@@ -166,10 +166,12 @@ export default class EmbedBuilder {
       }),
       fields: [{
         name: 'Starts',
-        value: `<t:${pkg.startTime!.getTime()}:F>`,
+        value: `<t:${pkg.startTime!.getTime() / 1000}:F>`,
+        inline: true,
       }, {
         name: 'Ends',
-        value: `<t:${pkg.endTime!.getTime()}:F>`,
+        value: `<t:${pkg.endTime!.getTime() / 1000}:F>`,
+        inline: true,
       }, {
         name: 'Steam Client Link',
         value: SteamUtil.BP.StoreApp(app.id),

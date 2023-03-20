@@ -6,8 +6,8 @@ import {
 } from '@steamwatch/shared';
 import MessageQueue from './MessageQueue';
 import CuratorWatcher from './watchers/CuratorWatcher';
-import FreeWatcher from './watchers/FreeWatcher';
 import ForumWatcher from './watchers/ForumWatcher';
+import FreeWatcher from './watchers/FreeWatcher';
 import GroupWatcher from './watchers/GroupWatcher';
 import NewsWatcher from './watchers/NewsWatcher';
 import PriceWatcher from './watchers/PriceWatcher';
@@ -26,8 +26,8 @@ export default class ProcessManager implements Manager {
     this.processes = [
       messageQueue,
       new CuratorWatcher(messageQueue),
-      new FreeWatcher(messageQueue),
       new ForumWatcher(messageQueue),
+      new FreeWatcher(messageQueue),
       new GroupWatcher(messageQueue),
       new NewsWatcher(messageQueue),
       new PriceWatcher(messageQueue),
