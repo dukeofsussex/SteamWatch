@@ -1,5 +1,108 @@
 # Changelog
 
+## [4.7.0] Bundle & Package Prices
+
+### Added
+
+- Add bundle and package prices watching
+
+### Changed
+
+- Simplify price formatting
+- Use the final price for formatting
+- Show thread names instead of the parent channels where possible
+- Tidy up some code
+- Update README installation steps
+- Delay guild removal in case of extended Discord outage
+- Handle missing icon for DLC apps
+- Remove redundant change history request, already managed by underlying package
+- Reduce watcher pause duration
+- Check free packages more frequently
+
+### Fixed
+
+- Fix interaction timeout error
+- Fix interaction timeout false positive
+- Fix missing description for workshop items
+- Fix markdown exceeding max length
+- Fix infinite queueing for more webhook error types
+- Fix thread autocomplete
+- Fix Steam news watchers not working in forums
+- Fix Docker image
+- Fix migrations
+- Fix `/free` command not responding
+- Fix `/free` command embeds overwriting each other
+- Fix curator review date format issue
+- Fix mentions being added for other guilds
+- Fix empty forum post comments error
+- Fix Steam gateway worker not working
+
+## [4.6.0]
+
+### Changed
+
+- Improve change detection for forum, UGC and workshop watchers
+- Delay removal of invalid UGC
+- Tidy up some migrations
+
+### Fixed
+
+- Fix special (i.e. pinned, locked, solved) threads interfering with forum pagination
+- Fix watcher typings
+
+## [4.5.0] Free
+
+### Added
+
+- Add free promotion watching
+
+### Changes
+
+- Have packages manage PICS caching
+- Use proper punctuation in command descriptions
+- Tidy up some queries
+
+### Fixed
+
+- Use correct timestamp for workshop update watcher
+
+## [4.4.0] Forums
+
+### Added
+
+- Add forums watching
+
+### Changed
+
+- Improve understanding of command options
+
+## [4.3.0] Curator
+
+### Added
+
+- Add curator review watching
+- Add `/market` command
+- Add mention editing for all watchers at once
+- Expand workshop watching to support more types
+- Expand workshop watching to support updates alongside new submissions
+
+### Changed
+
+- Remove 3rd party news sites from news watchers
+- Disable the broadcasting feature
+- Persist data in container volumes
+- Change price watcher to not run for 24h after a change has been detected
+- Move `/suggest owned` to the Steam gateway
+- Improve watcher autocompletion performance
+- Tidy up some commands
+
+### Fixed
+
+- Fix group watcher not running
+- Fix infinite loop in workshop watcher
+- Fix completed interactions being marked as timed out
+- Fix down migration for [4.2.0](#420-groups)
+
 ## [4.2.0] Groups
 
 ### Added
