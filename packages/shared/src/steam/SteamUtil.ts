@@ -24,11 +24,11 @@ import db, {
   Sub,
 } from '../db';
 
-interface CurrencyFormatOptions {
+export interface CurrencyFormatOptions {
   append?: string;
   prepend?: string;
-  noDecimals?: boolean;
-  useComma?: boolean;
+  scale?: number;
+  format?: string;
 }
 
 export interface PriceDisplay {
@@ -39,46 +39,46 @@ export interface PriceDisplay {
 }
 
 const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
-  AED: { append: ' AED' },
-  ARS: { prepend: 'ARS$ ', useComma: true },
+  AED: { append: ' AED', format: 'ar-AE' },
+  ARS: { prepend: 'ARS$ ', format: 'es' },
   AUD: { prepend: 'A$ ' },
-  BRL: { prepend: 'R$ ', useComma: true },
+  BRL: { prepend: 'R$ ', format: 'pt-BR' },
   CAD: { prepend: 'CDN$ ' },
   CHF: { prepend: 'CHF ' },
-  CLP: { prepend: 'CLP$ ', noDecimals: true },
-  CNY: { prepend: '¥ ', noDecimals: true },
+  CLP: { prepend: 'CLP$ ', format: 'es', scale: 0 },
+  CNY: { prepend: '¥ ', format: 'zh-CN' },
   'CIS-USD': { append: ' USD', prepend: '$' },
-  COP: { prepend: 'COL$ ', noDecimals: true },
-  CRC: { prepend: '₡', noDecimals: true },
-  EUR: { append: '€', useComma: true },
+  COP: { prepend: 'COL$ ', format: 'es', scale: 0 },
+  CRC: { prepend: '₡', format: 'es', scale: 0 },
+  EUR: { append: '€', format: 'de' },
   GBP: { prepend: '£' },
-  HKD: { prepend: 'HK$ ' },
-  IDR: { prepend: 'Rp ', noDecimals: true },
-  ILS: { prepend: '₪' },
-  INR: { prepend: '₹ ', noDecimals: true },
-  JPY: { prepend: '¥ ', noDecimals: true },
-  KRW: { prepend: '₩ ', noDecimals: true },
+  HKD: { prepend: 'HK$ ', format: 'zh-HK' },
+  IDR: { prepend: 'Rp ', format: 'id', scale: 0 },
+  ILS: { prepend: '₪', format: 'he' },
+  INR: { prepend: '₹ ', format: 'hi', scale: 0 },
+  JPY: { prepend: '¥ ', format: 'ja', scale: 0 },
+  KRW: { prepend: '₩ ', format: 'ko', scale: 0 },
   KWD: { append: ' KD' },
-  KZT: { append: '₸', noDecimals: true },
+  KZT: { append: '₸', format: 'ru', scale: 0 },
   MXN: { prepend: 'Mex$ ' },
-  MYR: { prepend: 'RM' },
-  NOK: { append: ' kr', useComma: true },
+  MYR: { prepend: 'RM', format: 'ms' },
+  NOK: { append: ' kr', format: 'no' },
   NZD: { prepend: 'NZ$ ' },
   PEN: { prepend: 'S/.' },
-  PHP: { prepend: '₱' },
-  PLN: { append: 'zł', useComma: true },
+  PHP: { prepend: '₱', format: 'fil' },
+  PLN: { append: 'zł', format: 'pl' },
   QAR: { append: ' QR' },
-  RUB: { append: ' ₽', noDecimals: true },
+  RUB: { append: ' ₽', format: 'ru', scale: 0 },
   SAR: { append: ' SR' },
   'SASIA-USD': { append: ' USD', prepend: '$' },
   SGD: { prepend: 'S$' },
-  THB: { prepend: '฿' },
-  TRY: { prepend: '₺', useComma: true },
-  TWD: { prepend: 'NT$ ', noDecimals: true },
-  UAH: { append: '₴', noDecimals: true },
+  THB: { prepend: '฿', format: 'th' },
+  TRY: { prepend: '₺', format: 'tr' },
+  TWD: { prepend: 'NT$ ', format: 'zh-TW', scale: 0 },
+  UAH: { append: '₴', format: 'ua', scale: 0 },
   USD: { prepend: '$' },
-  UYU: { prepend: '$U', noDecimals: true },
-  VND: { append: '₫', noDecimals: true },
+  UYU: { prepend: '$U', format: 'es', scale: 0 },
+  VND: { append: '₫', format: 'vi', scale: 0 },
   ZAR: { prepend: 'R ' },
 };
 
@@ -211,18 +211,11 @@ export default class SteamUtil {
 
   static formatPrice(amount: number, currency: CurrencyCode) {
     const options = CurrencyFormats[currency];
-    let fixedAmount = amount.toString().slice(0, -2);
 
-    if (!options.noDecimals) {
-      fixedAmount += options.useComma ? ',' : '.';
-      fixedAmount += amount.toString().slice(-2);
-    }
-
-    if (fixedAmount.startsWith(',') || fixedAmount.startsWith('.')) {
-      fixedAmount = `0${fixedAmount}`;
-    }
-
-    return `${(options.prepend || '')}${fixedAmount}${(options.append || '')}`;
+    return `${(options.prepend || '')}${Intl.NumberFormat(options.format || 'en-GB', {
+      minimumFractionDigits: options.scale !== undefined ? options.scale : 2,
+      maximumFractionDigits: options.scale !== undefined ? options.scale : 2,
+    }).format(amount / 100)}${(options.append || '')}`;
   }
 
   static formatPriceDisplay({
