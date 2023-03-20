@@ -21,6 +21,7 @@ import db, {
   FreePackage,
   FreePackageType,
   Group,
+  PriceType,
   WatcherType,
 } from '../db';
 import SteamAPI, {
@@ -29,6 +30,7 @@ import SteamAPI, {
   NewsPost,
   PartnerEvent,
   PriceOverview,
+  StoreItem,
   Tag,
 } from '../steam/SteamAPI';
 import steamClient from '../steam/SteamClient';
@@ -92,7 +94,7 @@ export default class EmbedBuilder {
       title: app!.name,
       color,
       description: `> "${review.description.trim() || 'N/A'}"`,
-      url: `${SteamUtil.URLS.Store(review.appId)}?curator_clanid=${curator.id}`,
+      url: `${SteamUtil.URLS.Store(review.appId, PriceType.App)}?curator_clanid=${curator.id}`,
       timestamp: review.date,
       thumbnail: {
         url: SteamUtil.URLS.Icon(review.appId, app!.icon),
@@ -103,7 +105,7 @@ export default class EmbedBuilder {
       },
       fields: [{
         name: 'Steam Client Link',
-        value: SteamUtil.BP.Store(review.appId),
+        value: SteamUtil.BP.StoreApp(review.appId),
       }],
     };
   }
@@ -160,7 +162,7 @@ export default class EmbedBuilder {
         description: `**${(pkg.type === FreePackageType.Promo ? 'Free To Keep' : 'Free Weekend')}**`,
         timestamp: new Date(),
         title: app.name,
-        url: SteamUtil.URLS.Store(app.id),
+        url: SteamUtil.URLS.Store(app.id, PriceType.App),
       }),
       fields: [{
         name: 'Starts',
@@ -170,7 +172,7 @@ export default class EmbedBuilder {
         value: `<t:${pkg.endTime!.getTime()}:F>`,
       }, {
         name: 'Steam Client Link',
-        value: SteamUtil.BP.Store(app.id),
+        value: SteamUtil.BP.StoreApp(app.id),
       }],
     };
   }
@@ -219,7 +221,9 @@ export default class EmbedBuilder {
         // Truncate long news titles
         title: news.title.length > 128 ? `${news.title.substring(0, 125)}...` : news.title,
         description: transformed.markdown,
-        url: eventId ? SteamUtil.URLS.EventAnnouncement(app.id, eventId, 'app') : news.url,
+        url: eventId
+          ? SteamUtil.URLS.EventAnnouncement(app.id, eventId, PriceType.App)
+          : news.url,
         timestamp: new Date(news.date * 1000),
       }),
       ...(news.author ? {
@@ -255,11 +259,11 @@ export default class EmbedBuilder {
         }),
         timestamp: new Date(),
         title: app.name,
-        url: SteamUtil.URLS.Store(app.id),
+        url: SteamUtil.URLS.Store(app.id, PriceType.App),
       }),
       fields: [{
         name: 'Steam Client Link',
-        value: SteamUtil.BP.Store(app.id),
+        value: SteamUtil.BP.StoreApp(app.id),
       }],
     };
   }
@@ -319,7 +323,7 @@ export default class EmbedBuilder {
           url: details.header_image,
         },
         timestamp: new Date(),
-        url: SteamUtil.URLS.Store(appId!),
+        url: SteamUtil.URLS.Store(appId!, PriceType.App),
         fields: [
           {
             name: 'Price',
@@ -384,7 +388,7 @@ export default class EmbedBuilder {
           },
           {
             name: 'Steam Client Link',
-            value: SteamUtil.BP.Store(appId!),
+            value: SteamUtil.BP.StoreApp(appId!),
           },
         ],
       }],
@@ -401,6 +405,39 @@ export default class EmbedBuilder {
       },
       ] : []),
     };
+  }
+
+  static createStoreItem(item: StoreItem, message: string) {
+    let bp = SteamUtil.BP.StoreApp(item.id);
+    let priceType = PriceType.App;
+
+    if (item.type === PriceType.Bundle) {
+      bp = SteamUtil.BP.StoreBundle(item.id);
+      priceType = PriceType.Bundle;
+    } else if (item.type === PriceType.Sub) {
+      bp = SteamUtil.BP.StoreSub(item.id);
+      priceType = PriceType.Sub;
+    }
+
+    const embed = EmbedBuilder.createApp(item, {
+      title: item.name,
+      description: message,
+      url: SteamUtil.URLS.Store(item.id, priceType),
+      timestamp: new Date(),
+    });
+
+    // We only have icons for apps
+    if (item.type !== 'app') {
+      delete embed.footer!.icon_url;
+      delete embed.thumbnail;
+    }
+
+    embed.fields = [{
+      name: 'Steam Client Link',
+      value: bp,
+    }];
+
+    return embed;
   }
 
   static async createWorkshop(app: AppMinimal, file: PublishedFile, timestamp: keyof Pick<PublishedFile, 'time_created' | 'time_updated'>): Promise<MessageEmbedOptions> {

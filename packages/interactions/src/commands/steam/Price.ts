@@ -11,8 +11,9 @@ import {
   EmbedBuilder,
   env,
   MAX_OPTIONS,
-  SteamAPI,
+  PriceType,
   SteamUtil,
+  StoreItem,
   WatcherType,
 } from '@steamwatch/shared';
 import CommonCommandOptions from '../../CommonCommandOptions';
@@ -55,7 +56,7 @@ export default class PriceCommand extends SlashCommand {
   override async autocomplete(ctx: AutocompleteContext) {
     const value = ctx.options[ctx.focused];
 
-    if (ctx.focused === 'query') {
+    if (ctx.focused === 'app') {
       return ctx.sendResults(await SteamUtil.createAppAutocomplete(value));
     }
 
@@ -66,26 +67,46 @@ export default class PriceCommand extends SlashCommand {
   override async run(ctx: CommandContext) {
     await ctx.defer();
     const { app: query, currency } = ctx.options as CommandArguments;
-    const appId = await SteamUtil.findAppId(query);
+    const { id, type } = await SteamUtil.findStoreItem(query);
 
-    if (!appId) {
-      return ctx.error(`Unable to find an application id for: ${query}`);
+    if (!id) {
+      return ctx.error(`Unable to find a store page for: ${query}`);
     }
 
-    const app = (await db.select('*')
-      .from('app')
-      .where('id', appId)
-      .first()) || (await SteamUtil.persistApp(appId));
+    let item: StoreItem | null;
 
-    if (!app) {
-      return ctx.error(`Unable to find an application with the id/name: ${query}`);
+    if (type === PriceType.Bundle) {
+      item = (await db.select('id', 'name', '"bundle" AS type')
+        .from('bundle')
+        .where('id', id)
+        .first()) || (await SteamUtil.persistBundle(id));
+    } else if (type === PriceType.Sub) {
+      item = (await db.select('id', 'name', '"sub" AS type')
+        .from('sub')
+        .where('id', id)
+        .first()) || (await SteamUtil.persistSub(id));
+    } else {
+      if (!SteamUtil.canHaveWatcher(type as AppType, WatcherType.Price)) {
+        return ctx.error(`Unable to fetch prices for apps of type **${type}**!`);
+      }
+
+      item = (await db.select('id', 'name', 'icon', 'type')
+        .from('app')
+        .where('id', id)
+        .first()) || (await SteamUtil.persistApp(id));
     }
 
-    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase() as AppType, WatcherType.Price)) {
-      return ctx.error(`Unable to fetch prices for apps of type **${app.type}**!`);
+    if (!item?.id) {
+      return ctx.error(`Unable to find a Store item with the id **${id}**!`);
     }
 
-    let currencyDetails: { code: CurrencyCode, countryCode: string } = { code: 'USD', countryCode: 'US' };
+    // New bundles and subs don't have an assigned type property
+    item.type = type;
+
+    let currencyDetails: { code: CurrencyCode, countryCode: string } = {
+      code: 'USD',
+      countryCode: 'US',
+    };
 
     if (currency || ctx.guildID) {
       let dbQuery = db.select('code', 'countryCode')
@@ -102,27 +123,26 @@ export default class PriceCommand extends SlashCommand {
       currencyDetails = details || currencyDetails;
     }
 
-    const prices = await SteamAPI.getAppPrices([appId], currencyDetails.countryCode);
+    const storePrices = await SteamUtil.getStorePrices(
+      [id],
+      type,
+      currencyDetails.code,
+      currencyDetails.countryCode,
+    );
 
-    if (!prices || !prices[appId]!.success || Array.isArray(prices[app.id]!.data)) {
-      return ctx.embed({
-        ...EmbedBuilder.createApp(app, {
-          description: (!prices || !prices[appId]!.success)
-            ? 'No price found!'
-            : '**Free**',
-          timestamp: new Date(),
-          title: app.name,
-          url: SteamUtil.URLS.Store(appId),
-        }),
-        fields: [{
-          name: 'Steam Client Link',
-          value: SteamUtil.BP.Store(appId),
-        }],
+    let message: string;
+
+    if (!storePrices[item.id]) {
+      message = 'No price found!';
+    } else if (storePrices[item.id]!.final === 0) {
+      message = '**Free**';
+    } else {
+      message = SteamUtil.formatPriceDisplay({
+        currency: currencyDetails.code,
+        ...storePrices[item.id]!,
       });
     }
 
-    return ctx.embed(
-      EmbedBuilder.createPrice(app, currencyDetails.code, prices[appId]!.data.price_overview!),
-    );
+    return ctx.embed(EmbedBuilder.createStoreItem(item, message));
   }
 }

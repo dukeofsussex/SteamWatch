@@ -74,16 +74,16 @@ export default class WorkshopCommand extends SlashCommand {
     const options = ctx.options as CommandArguments;
     const { filetype, app: query } = options.new || options.update;
 
-    const appId = await SteamUtil.findAppId(query);
+    const { id } = await SteamUtil.findStoreItem(query);
 
-    if (!appId) {
+    if (!id) {
       return ctx.error(`Unable to find an application id for: ${query}`);
     }
 
     const app = (await db.select('*')
       .from('app')
-      .where('id', appId)
-      .first()) || (await SteamUtil.persistApp(appId));
+      .where('id', id)
+      .first()) || (await SteamUtil.persistApp(id));
 
     if (!app) {
       return ctx.error(`Unable to find an application with the id/name: ${query}`);
@@ -94,7 +94,7 @@ export default class WorkshopCommand extends SlashCommand {
     }
 
     const files = await steamClient.queryFiles(
-      appId,
+      id,
       options.new
         ? EPublishedFileQueryType.RankedByPublicationDate
         : EPublishedFileQueryType.RankedByLastUpdatedDate,

@@ -7,7 +7,7 @@ import {
   EPublishedFileVisibility,
   EResult,
 } from 'steam-user';
-import type { AppType } from '../db';
+import type { App, AppType, PriceType } from '../db';
 import env from '../env';
 import logger from '../logger';
 
@@ -246,21 +246,44 @@ export interface PriceOverview {
   final_formatted: string;
 }
 
+export interface ResolvedBundle {
+  appids: number[];
+  bundleid: number;
+  name: string;
+  initial_price: number;
+  final_price: number;
+  formatted_orig_price: string;
+  formatted_final_price: string;
+  discount_percent: number;
+  bundle_base_discount: number;
+}
+
+export interface ResolvedSub {
+  appids: number[];
+  packageid: number;
+  name: string;
+  formatted_orig_price: string;
+  orig_price_cents: number;
+  formatted_final_price: string;
+  final_price_cents: number;
+  discount_percent: number;
+}
+
 export interface Response<T> {
   response: T;
 }
 
 export interface SearchResult {
-  total: number;
-  items: {
-    id: number;
-    name: string;
-  }[];
+  id: string;
+  name: string;
+  type: StoreAppType;
 }
 
 export interface SteamLevel {
   player_level: number;
 }
+
+export type StoreAppType = AppType | PriceType;
 
 export interface Tag {
   description: string;
@@ -293,6 +316,11 @@ export interface SteamUGC {
   }[];
 }
 
+export type StoreItem = Pick<App, 'id' | 'icon' | 'name'>
+& {
+  type: StoreAppType;
+};
+
 export interface UGCResponse {
   publishedfiledetails: SteamUGC[];
 }
@@ -323,6 +351,10 @@ export default class SteamAPI {
 
   static async getAppPrices(appIds: number[], cc: string) {
     return this.request<KeyedAppDetails>(`https://store.steampowered.com/api/appdetails?appids=${appIds.join(',')}&filters=price_overview&cc=${cc}`);
+  }
+
+  static async getBundlePrices(bundleIds: number[], cc: string) {
+    return this.request<ResolvedBundle[]>(`https://store.steampowered.com/actions/ajaxresolvebundles?bundleids=${bundleIds.join(',')}&cc=${cc}&l=english`);
   }
 
   static async getCuratorReviews(curatorId: number) {
@@ -524,6 +556,10 @@ export default class SteamAPI {
     return res?.response.player_level || null;
   }
 
+  static async getSubPrices(subIds: number[], cc: string) {
+    return this.request<ResolvedSub[]>(`https://store.steampowered.com/actions/ajaxresolvepackages?packageids=${subIds.join(',')}&cc=${cc}&l=english`);
+  }
+
   static async queryFiles(appId: number) {
     const res = await this.request<Response<UGCResponse>>(`https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/?key=${env.steamWebApiKey}&appid=${appId}&query_type=${EPublishedFileQueryType.RankedByPublicationDate}&return_details=true`);
     return res?.response.publishedfiledetails?.[0] || null;
@@ -539,9 +575,8 @@ export default class SteamAPI {
     return res?.results || null;
   }
 
-  static async searchStore(term: string) {
-    const res = await this.request<SearchResult>(`https://store.steampowered.com/api/storesearch/?term=${term}&cc=US`);
-    return res?.total ? res.items : null;
+  static searchStore(term: string) {
+    return this.request<SearchResult[]>(`https://store.steampowered.com/search/suggest?term=${term}&cc=US&l=english&f=json`);
   }
 
   private static extractXmlValue(key: string, text: string) {

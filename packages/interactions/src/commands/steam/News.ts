@@ -44,16 +44,16 @@ export default class NewsCommand extends SlashCommand {
   override async run(ctx: CommandContext) {
     await ctx.defer();
     const { app: query } = ctx.options as CommandArguments;
-    const appId = await SteamUtil.findAppId(query);
+    const { id } = await SteamUtil.findStoreItem(query);
 
-    if (!appId) {
+    if (!id) {
       return ctx.error(`Unable to find an application id for: ${query}`);
     }
 
     const app = (await db.select('*')
       .from('app')
-      .where('id', appId)
-      .first()) || (await SteamUtil.persistApp(appId));
+      .where('id', id)
+      .first()) || (await SteamUtil.persistApp(id));
 
     if (!app) {
       return ctx.error(`Unable to find an application with the id/name: ${query}`);
@@ -63,7 +63,7 @@ export default class NewsCommand extends SlashCommand {
       return ctx.error(`Unable to fetch news for apps of type **${app.type}**!`);
     }
 
-    const news = await SteamAPI.getAppNews(appId);
+    const news = await SteamAPI.getAppNews(id);
 
     if (!news) {
       return ctx.embed(EmbedBuilder.createApp(app, {

@@ -4,7 +4,12 @@ import {
   SlashCommand,
   SlashCreator,
 } from 'slash-create';
-import { EmbedBuilder, env, SteamUtil } from '@steamwatch/shared';
+import {
+  EmbedBuilder,
+  env,
+  PriceType,
+  SteamUtil,
+} from '@steamwatch/shared';
 import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface CommandArguments {
@@ -41,13 +46,13 @@ export default class StoreCommand extends SlashCommand {
     await ctx.defer();
     const { app } = ctx.options as CommandArguments;
 
-    const appId = await SteamUtil.findAppId(app);
+    const { id, type } = await SteamUtil.findStoreItem(app);
 
-    if (!appId) {
+    if (!id || type === PriceType.Bundle || type === PriceType.Sub) {
       return ctx.error(`Unable to find an application with the id/name: ${app}`);
     }
 
-    const message = await EmbedBuilder.createStore(appId, ctx.guildID);
+    const message = await EmbedBuilder.createStore(id, ctx.guildID);
 
     if (!message) {
       return ctx.error('Unable to fetch the application\'s details.');

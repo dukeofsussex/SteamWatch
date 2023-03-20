@@ -95,6 +95,16 @@ export default class GuildOnlyCommand extends SlashCommand {
               .orWhere('app.name', 'LIKE', `${value}%`)
               .orWhere('app_workshop.filetype', 'LIKE', `${value}%`)
             : builder)),
+        db.select('bundle.name', 'null AS filetype', 'watcher.*')
+          .from('watcher')
+          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+          .innerJoin('bundle', 'bundle.id', 'watcher.bundle_id')
+          .where('guild_id', guildId)
+          .andWhere((builder) => (value
+            ? builder.where('watcher.id', value)
+              .orWhere('watcher.type', 'LIKE', `${value}%`)
+              .orWhere('bundle.name', 'LIKE', `${value}%`)
+            : builder)),
         db.select(db.raw('CONCAT(forum.name, \' (\', IF(forum.app_id IS NOT NULL, app.name, `group`.name), \')\') AS name'), 'null AS filetype', 'watcher.*')
           .from('watcher')
           .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
@@ -128,6 +138,16 @@ export default class GuildOnlyCommand extends SlashCommand {
               .orWhere('watcher.type', 'LIKE', `${value}%`)
               .orWhere('`group`.name', 'LIKE', `${value}%`)
               .orWhere('`group`.vanity_url', 'LIKE', `${value}%`)
+            : builder)),
+        db.select('sub.name', 'null AS filetype', 'watcher.*')
+          .from('watcher')
+          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+          .innerJoin('sub', 'sub.id', 'watcher.sub_id')
+          .where('guild_id', guildId)
+          .andWhere((builder) => (value
+            ? builder.where('watcher.id', value)
+              .orWhere('watcher.type', 'LIKE', `${value}%`)
+              .orWhere('sub.name', 'LIKE', `${value}%`)
             : builder)),
         db.select(db.raw('CONCAT(ugc.name, \' (\', app.name, \')\') AS name'), 'null AS filetype', 'watcher.*')
           .from('watcher')

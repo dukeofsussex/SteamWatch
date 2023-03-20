@@ -15,7 +15,7 @@ interface Protocol {
 const PROTOCOLS: Protocol[] = [
   { regex: SteamUtil.REGEXPS.EventAnnouncement, command: SteamUtil.BP.EventAnnouncement },
   { regex: SteamUtil.REGEXPS.AppNews, command: SteamUtil.BP.AppNews },
-  { regex: SteamUtil.REGEXPS.Store, command: SteamUtil.BP.Store },
+  { regex: SteamUtil.REGEXPS.Store, command: SteamUtil.BP.StoreApp },
   { regex: SteamUtil.REGEXPS.UGC, command: SteamUtil.BP.UGC },
   { regex: SteamUtil.REGEXPS.Workshop, command: SteamUtil.BP.Workshop },
   { regex: SteamUtil.REGEXPS.GameHub, command: SteamUtil.BP.GameHub },

@@ -1,27 +1,33 @@
 import { oneLine, stripIndents } from 'common-tags';
-import { addDays } from 'date-fns';
+import { addDays, subDays } from 'date-fns';
 import type { Knex } from 'knex';
 import {
   App,
-  AppPrice,
   Currency,
   db,
   EmbedBuilder,
   EMOJIS,
   env,
   logger,
-  PriceOverview,
-  SteamAPI,
+  Price,
+  PriceType,
   SteamUtil,
   WatcherType,
 } from '@steamwatch/shared';
+import type { PriceDisplay } from '@steamwatch/shared/src/steam/SteamUtil';
 import Watcher from './Watcher';
 import type MessageQueue from '../MessageQueue';
 
+const BATCH_SIZE = 100;
+
+type StorePrices = Record<number, Omit<PriceDisplay, 'currency'> | null>;
+
 type QueryResult = Pick<App, 'icon' | 'id' | 'name'>
 & Pick<Currency, 'code' | 'countryCode'>
-& Omit<AppPrice, 'id' | 'appId'>
-& { currencyName: string };
+& Omit<Price, 'id' | 'appId' | 'bundleId' | 'subId'>
+& {
+  type: PriceType;
+};
 
 export default class PriceWatcher extends Watcher {
   constructor(queue: MessageQueue) {
@@ -29,57 +35,94 @@ export default class PriceWatcher extends Watcher {
   }
 
   protected async work() {
-    const apps = await PriceWatcher.fetchNextAppPrices();
+    const items = await PriceWatcher.fetchNextPrices();
 
-    if (!apps) {
+    if (items.length === 0) {
       return this.pause();
     }
 
     logger.info({
-      message: 'Checking app prices',
-      apps,
+      message: 'Checking prices',
+      items,
     });
 
-    let prices;
+    const ids = items.map((item) => item.id);
+    const key = SteamUtil.getPriceTypeIdKey(items[0]!.type);
+
+    let prices: StorePrices = {};
 
     try {
-      prices = await SteamAPI.getAppPrices(
-        apps.map((app) => app.id),
-        apps[0]!.countryCode,
+      prices = await SteamUtil.getStorePrices(
+        ids,
+        items[0]!.type,
+        items[0]!.code,
+        items[0]!.countryCode,
       );
     } catch (err) {
       logger.error({
-        message: 'Unable to fetch app prices',
-        currency: apps[0]!.currencyName,
-        apps,
+        message: 'Unable to fetch prices',
+        currency: items[0]!.code,
+        items,
         err,
       });
     }
 
-    if (!prices) {
+    await db('price').update('lastChecked', new Date())
+      .whereIn(key, ids)
+      .andWhere('currency_id', items[0]!.currencyId);
+
+    if (!Object.keys(prices).length) {
       return this.wait();
     }
 
-    const removed: QueryResult[] = [];
-    const unchanged: QueryResult[] = [];
+    const fn = items[0]!.type === PriceType.App
+      ? this.processAppPrices.bind(this)
+      : this.processNonAppPrices.bind(this);
+
+    const [unchanged, removed] = await fn(items, prices);
+
+    if (unchanged!.length > 0) {
+      await db('price').update('lastUpdate', new Date())
+        .whereIn(key, unchanged!)
+        .andWhere('currency_id', items[0]!.currencyId);
+    }
+
+    if (removed!.length > 0) {
+      await db('watcher').delete()
+        .whereIn(key, removed!)
+        .andWhere('type', WatcherType.Price);
+
+      await db('price').delete()
+        .whereIn(key, removed!);
+    }
+
+    return this.wait();
+  }
+
+  private async processAppPrices(apps: QueryResult[], prices: StorePrices) {
+    const unchanged: number[] = [];
+    const removed: number[] = [];
 
     for (let i = 0; i < apps.length; i += 1) {
-      const app = apps[i] as QueryResult;
+      const app = apps[i]!;
+      const price = prices[app.id];
 
-      if (!prices[app!.id]) {
+      if (!price) {
         // eslint-disable-next-line no-continue
         continue;
       }
 
-      if (!prices[app.id]!.success || Array.isArray(prices[app.id]!.data)) {
-        const message = !prices[app.id]!.success
+      // Only remove a price watcher if we haven't received an update for 3 or more days
+      if ((!price && app.lastUpdate < subDays(new Date(), 3))
+          || price.final === 0) {
+        const message = !price
           ? `No longer available in **${app.code}**.`
           : 'App is now free-to-play.';
 
         logger.info({
           message: `Price watcher removed! Reason: ${message}`,
           app,
-          priceOverview: prices[app.id]!.data.price_overview!,
+          price,
         });
 
         // eslint-disable-next-line no-await-in-loop
@@ -91,163 +134,180 @@ export default class PriceWatcher extends Watcher {
           `,
         );
 
-        removed.push(app);
-      } else if (prices[app.id]!.data.price_overview!.initial === app.price
-          && prices[app.id]!.data.price_overview!.discount_percent === app.discount
-          && prices[app.id]!.data.price_overview!.final === app.discountedPrice) {
-        unchanged.push(app);
+        removed.push(app.id!);
+      } else if (price.initial === app.price
+          && price.discount === app.discount
+          && price.final === app.discountedPrice) {
+        unchanged.push(app.id!);
       } else {
         // eslint-disable-next-line no-await-in-loop
-        await this.processChanges(app, prices[app.id]!.data.price_overview!);
+        await this.processChanges(app, price);
       }
     }
 
-    if (unchanged.length > 0) {
-      await db('app_price').update('lastChecked', new Date())
-        .whereIn('app_id', unchanged.map((app) => app.id))
-        .andWhere('currency_id', unchanged[0]!.currencyId);
-    }
-
-    if (removed.length > 0) {
-      const ids = removed.map((app) => app.id);
-
-      await db('watcher').delete()
-        .whereIn('app_id', ids)
-        .andWhere('type', WatcherType.Price);
-
-      await db('app_price').delete()
-        .whereIn('appId', ids);
-    }
-
-    return this.wait();
+    return [unchanged, removed];
   }
 
-  private async processChanges(app: QueryResult, priceOverview: PriceOverview) {
-    await db('app_price').update({
-      price: priceOverview.initial,
-      discountedPrice: priceOverview.final,
-      discount: priceOverview.discount_percent,
+  private async processNonAppPrices(items: QueryResult[], prices: StorePrices) {
+    const unchanged: number[] = [];
+
+    for (let i = 0; i < items.length; i += 1) {
+      const item = items[i]!;
+      const price = prices[item.id];
+
+      if (!price) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      if (price.initial === item.price
+          && price.discount === item.discount
+          && price.final === item.discountedPrice) {
+        unchanged.push(item.id!);
+      } else {
+        // eslint-disable-next-line no-await-in-loop
+        await this.processChanges(item, price);
+      }
+    }
+
+    return [unchanged, []];
+  }
+
+  private async processChanges(item: QueryResult, price: Omit<PriceDisplay, 'currency'>) {
+    await db('price').update({
+      price: price.initial,
+      discountedPrice: price.final,
+      discount: price.discount,
       lastChecked: addDays(new Date(), 1),
+      lastUpdate: addDays(new Date(), 1),
     })
       .where({
-        appId: app.id,
-        currencyId: app.currencyId,
+        [SteamUtil.getPriceTypeIdKey(item.type)]: item.id,
+        currencyId: item.currencyId,
       });
 
     let message = '';
 
-    if (priceOverview.initial > app.price) {
+    if (price.initial > item.price) {
       message = oneLine`
           ${EMOJIS.PRICE_UP} Base price increased from
-          **${SteamUtil.formatPrice(app.price, app.code)}**
+          **${SteamUtil.formatPrice(item.price, item.code)}**
           to
-          **${SteamUtil.formatPrice(priceOverview.initial, app.code)}**!
+          **${SteamUtil.formatPrice(price.initial, item.code)}**!
         `;
-    } else if (priceOverview.initial < app.price) {
+    } else if (price.initial < item.price) {
       message = oneLine`
           ${EMOJIS.PRICE_DOWN} Base price dropped from
-          **${SteamUtil.formatPrice(app.price, app.code)}**
+          **${SteamUtil.formatPrice(item.price, item.code)}**
           to
-          **${SteamUtil.formatPrice(priceOverview.initial, app.code)}**!
+          **${SteamUtil.formatPrice(price.initial, item.code)}**!
         `;
-    } else if (priceOverview.discount_percent > app.discount) {
-      const price = SteamUtil.formatPriceDisplay({
-        currency: app.code,
-        discount: priceOverview.discount_percent,
-        final: priceOverview.final,
-        initial: priceOverview.initial,
+    } else if (price.discount > item.discount) {
+      const formattedPrice = SteamUtil.formatPriceDisplay({
+        currency: item.code,
+        ...price,
       });
-      message = `${EMOJIS.ALERT} Discount: ${price}`;
+      message = `${EMOJIS.ALERT} Discount: ${formattedPrice}`;
     }
 
     if (message) {
       logger.info({
         message: `Found new price! ${message.split(' ').slice(1)
           .join(' ')}`,
-        app,
-        priceOverview,
+        app: item,
+        price,
       });
-      await this.preEnqueue(app, message);
+      await this.preEnqueue(item, message);
     }
   }
 
-  private async preEnqueue(app: QueryResult, message: string) {
-    const embed = EmbedBuilder.createApp(app, {
-      title: app.name,
-      description: message,
-      url: SteamUtil.URLS.Store(app.id),
-      timestamp: new Date(),
-    });
-
-    embed.fields = [{
-      name: 'Steam Client Link',
-      value: SteamUtil.BP.Store(app.id),
-    }];
-
-    await this.enqueue([embed], {
-      appId: app.id,
-      currencyId: app.currencyId,
+  private async preEnqueue(item: QueryResult, message: string) {
+    await this.enqueue([EmbedBuilder.createStoreItem(item, message)], {
+      appId: item.id,
+      currencyId: item.currencyId,
       'watcher.type': WatcherType.Price,
     });
   }
 
-  private static async fetchNextAppPrices() {
+  private static async fetchNextPrices() {
     const average = await db.avg('count AS average')
-      .from((builder: Knex.QueryBuilder) => builder.count('app_id AS count')
+      .from((builder: Knex.QueryBuilder) => builder.count('* AS count')
         .from('watcher')
         .where('watcher.type', WatcherType.Price)
         .andWhere('inactive', false)
-        .groupBy('app_id')
+        .groupBy('app_id', 'bundle_id', 'sub_id')
         .as('innerCount'))
       .first()
       .then((res: any) => res.average || 0);
 
-    const appBaseQuery = db.select<QueryResult[]>(
-      'app.id',
-      'app.name',
+    const appBaseQuery = db.select(
       'app.icon',
       'currency.code',
-      { currencyName: 'currency.name' },
       'currency.country_code',
-      'app_price.currency_id',
-      'app_price.price',
-      'app_price.discount',
-      'app_price.discounted_price',
-      'app_price.last_checked',
+      'price.currency_id',
+      'price.price',
+      'price.discount',
+      'price.discounted_price',
+      'price.last_checked',
+      db.raw(oneLine`
+        CASE
+          WHEN watcher.bundle_id IS NOT NULL THEN bundle.id
+          WHEN watcher.sub_id IS NOT NULL THEN sub.id
+          ELSE app.id
+        END AS id
+      `),
+      db.raw(oneLine`
+        CASE
+          WHEN watcher.bundle_id IS NOT NULL THEN bundle.name
+          WHEN watcher.sub_id IS NOT NULL THEN sub.name
+          ELSE app.name
+        END AS name
+      `),
+      db.raw(oneLine`
+        CASE
+          WHEN watcher.bundle_id IS NOT NULL THEN "bundle"
+          WHEN watcher.sub_id IS NOT NULL THEN "sub"
+          ELSE "app"
+        END AS type
+      `),
       db.raw(
         oneLine`
         COUNT(*)
-        + (TIMESTAMPDIFF(HOUR, IFNULL(last_checked, UTC_TIMESTAMP() - INTERVAL 1 YEAR), UTC_TIMESTAMP()) DIV ?) * ?
+        + (TIMESTAMPDIFF(HOUR, last_checked, UTC_TIMESTAMP()) DIV ?) * ?
         AS priority
       `,
         [env.settings.watcherRunFrequency, average],
       ),
-    ).from('app')
-      .innerJoin('watcher', 'watcher.app_id', 'app.id')
+    ).from('watcher')
+      .leftJoin('app', 'app.id', 'watcher.app_id')
+      .leftJoin('bundle', 'bundle.id', 'watcher.bundle_id')
+      .leftJoin('sub', 'sub.id', 'watcher.sub_id')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
       .innerJoin('currency', 'currency.id', 'guild.currency_id')
-      .innerJoin('app_price', (builder) => builder.on('app_price.app_id', 'app.id')
-        .andOn('currency.id', 'app_price.currency_id'))
-      .where((builder) => builder.where((innerBuilder) => innerBuilder.where('watcher.type', WatcherType.Price)
+      .innerJoin('price', (builder) => builder.on(
+        (innerBuilder) => innerBuilder.on('price.app_id', 'watcher.app_id')
+          .orOn('price.bundle_id', 'watcher.bundle_id')
+          .orOn('price.sub_id', 'watcher.sub_id'),
+      ).andOn('currency.id', 'price.currency_id'))
+      .where((builder) => builder.where('watcher.type', WatcherType.Price)
         .andWhere('inactive', false)
         .andWhereRaw('last_checked <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [env.settings.watcherRunFrequency]))
-        .orWhereNull('app_price.last_checked'))
-      .groupBy('app.id', 'currency.code')
+      .groupBy('watcher.app_id', 'watcher.bundle_id', 'watcher.sub_id', 'currency.code')
       .orderBy('priority', 'desc');
 
-    const currencyId = await appBaseQuery
+    const res = await appBaseQuery
       .clone()
-      .first()
-      .then((res: any) => res?.currencyId || 0);
+      .first() as QueryResult;
 
-    if (currencyId === 0) {
-      return null;
+    if (!res) {
+      return [];
     }
 
     return appBaseQuery
       .clone()
-      .andWhere('currency.id', currencyId)
-      .limit(100);
+      .andWhereRaw('watcher.?? IS NOT NULL', SteamUtil.getPriceTypeIdKey(res.type))
+      .andWhere('currency.id', res.currencyId)
+      .limit(BATCH_SIZE) as Promise<QueryResult[]>;
   }
 }

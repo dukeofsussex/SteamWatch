@@ -12,6 +12,7 @@ import {
   EMOJIS,
   env,
   EPublishedFileInfoMatchingFileType as EPFIMFileType,
+  PriceType,
   SteamUtil,
   WatcherType,
 } from '@steamwatch/shared';
@@ -281,6 +282,10 @@ export default class MentionsCommand extends GuildOnlyCommand {
       }
     }
 
+    let image: string | null = EmbedBuilder.getImage(mentions[0].type, {
+      ...mentions[0],
+      groupAvatarSize: 'medium',
+    });
     let title = mentions[0].groupName || mentions[0].appName;
     let url;
     let bp;
@@ -322,8 +327,20 @@ export default class MentionsCommand extends GuildOnlyCommand {
         bp = SteamUtil.BP.Workshop(parseInt(mentions[0].appId, 10));
         break;
       default:
-        url = SteamUtil.URLS.Store(parseInt(mentions[0].appId, 10));
-        bp = SteamUtil.BP.Store(parseInt(mentions[0].appId, 10));
+        if (mentions[0].bundleId) {
+          image = null;
+          title = mentions[0].bundleName;
+          url = SteamUtil.URLS.Store(parseInt(mentions[0].bundleId, 10), PriceType.Bundle);
+          bp = SteamUtil.BP.StoreBundle(parseInt(mentions[0].bundleId, 10));
+        } else if (mentions[0].subId) {
+          image = null;
+          title = mentions[0].subName;
+          url = SteamUtil.URLS.Store(parseInt(mentions[0].subId, 10), PriceType.Sub);
+          bp = SteamUtil.BP.StoreSub(parseInt(mentions[0].subId, 10));
+        } else {
+          url = SteamUtil.URLS.Store(parseInt(mentions[0].appId, 10), PriceType.Sub);
+          bp = SteamUtil.BP.StoreApp(parseInt(mentions[0].appId, 10));
+        }
     }
 
     return ctx.embed({
@@ -332,20 +349,12 @@ export default class MentionsCommand extends GuildOnlyCommand {
       ...(description ? {
         description,
       } : {}),
-      thumbnail: {
-        url: EmbedBuilder.getImage(mentions[0].type, {
-          ...mentions[0],
-          groupAvatarSize: 'medium',
-        }),
-      },
+      ...(image ? { thumbnail: { url: image } } : {}),
       ...(url ? { url } : {}),
       timestamp: new Date(),
       footer: {
         text: mentions[0].groupName || mentions[0].appName || title,
-        icon_url: EmbedBuilder.getImage(mentions[0].type, {
-          ...mentions[0],
-          groupAvatarSize: 'medium',
-        }),
+        ...(image ? { icon_url: image } : {}),
       },
       fields: [{
         name: 'Roles',
@@ -429,12 +438,16 @@ export default class MentionsCommand extends GuildOnlyCommand {
       { appId: 'app.id' },
       { appIcon: 'icon' },
       { appName: 'app.name' },
+      { bundleId: 'bundle.id' },
+      { bundleName: 'bundle.name' },
       { forumName: 'forum.name' },
       { forumSubforumId: 'forum.subforumId' },
       { forumType: 'forum.type' },
       { groupId: '`group`.id' },
       { groupAvatar: '`group`.avatar' },
       { groupName: '`group`.name' },
+      { subId: 'sub.id' },
+      { subName: 'sub.name' },
       { ugcId: 'ugc.id' },
       { ugcName: 'ugc.name' },
       { workshopFiletype: 'app_workshop.filetype' },
@@ -442,9 +455,11 @@ export default class MentionsCommand extends GuildOnlyCommand {
       .from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .leftJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
+      .leftJoin('bundle', 'bundle.id', 'watcher.bundle_id')
       .leftJoin('forum', 'forum.id', 'watcher.forum_id')
       .leftJoin('`group`', (builder) => builder.on('`group`.id', 'watcher.group_id')
         .orOn('`group`.id', 'forum.group_id'))
+      .leftJoin('sub', 'sub.id', 'watcher.sub_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
         .orOn('app.id', 'app_workshop.app_id')

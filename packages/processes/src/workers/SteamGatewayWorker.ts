@@ -104,7 +104,7 @@ export default class SteamGatewayWorker extends Queue<QueuedGateway> {
       );
 
     if (pricedApps.size) {
-      await db('app_price').update('lastChecked', subMonths(new Date(), 1))
+      await db('price').update('lastChecked', subMonths(new Date(), 1))
         .whereIn('appId', [...pricedApps]);
     }
 

@@ -30,16 +30,6 @@ export enum AppType {
   Video = 'video',
 }
 
-export interface AppPrice {
-  id: number;
-  appId: number;
-  currencyId: number;
-  price: number;
-  discountedPrice: number;
-  discount: number;
-  lastChecked: Date | null;
-}
-
 export interface AppWorkshop {
   id: number;
   appId: number;
@@ -48,6 +38,11 @@ export interface AppWorkshop {
   lastNew: Date | null;
   lastCheckedUpdate: Date | null;
   lastUpdate: Date | null;
+}
+
+export interface Bundle {
+  id: number;
+  name: string;
 }
 
 export interface ChannelWebhook {
@@ -127,6 +122,30 @@ export interface Patron {
   guildId: string | null;
 }
 
+export interface Price {
+  id: number;
+  appId: number | null;
+  bundleId: number | null;
+  subId: number | null;
+  currencyId: number;
+  price: number;
+  discountedPrice: number;
+  discount: number;
+  lastChecked: Date;
+  lastUpdate: Date;
+}
+
+export enum PriceType {
+  App = 'app',
+  Bundle = 'bundle',
+  Sub = 'sub',
+}
+
+export interface Sub {
+  id: number;
+  name: string;
+}
+
 export interface UGC {
   id: string;
   appId: number;
@@ -138,8 +157,10 @@ export interface UGC {
 export interface Watcher {
   id: number;
   appId: number | null;
+  bundleId: number | null;
   forumId: string | null;
   groupId: string | null;
+  subId: number | null;
   ugcId: string | null;
   workshopId: number | null;
   channelId: string;
@@ -170,8 +191,8 @@ export enum WatcherType {
 declare module 'knex/types/tables' {
   interface Tables {
     app: App;
-    app_price: AppPrice;
     app_workshop: AppWorkshop;
+    bundle: Bundle;
     channel_webhook: ChannelWebhook;
     currency: Currency;
     forum: Forum;
@@ -179,6 +200,8 @@ declare module 'knex/types/tables' {
     group: Group;
     guild: Guild;
     patron: Patron;
+    price: Price;
+    sub: Sub;
     ugc: UGC;
     watcher: Watcher;
     watcher_mention: WatcherMention;

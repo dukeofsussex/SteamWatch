@@ -17,7 +17,6 @@ import {
   SlashCreator,
 } from 'slash-create';
 import {
-  App,
   AppType,
   capitalize,
   db,
@@ -32,10 +31,12 @@ import {
   ForumType,
   logger,
   PatreonUtils,
+  PriceType,
   SteamAPI,
   steamClient,
   SteamUtil,
   STEAM_NEWS_APPID,
+  StoreItem,
   UGC,
   WatcherType,
 } from '@steamwatch/shared';
@@ -389,36 +390,57 @@ export default class WatchersCommand extends GuildOnlyCommand {
       filetype,
     }: AddAppTypedArguments & Partial<AddWorkshopArguments>,
   ) {
-    const appId = await SteamUtil.findAppId(query);
+    const { id, type } = await SteamUtil.findStoreItem(query);
 
-    if (!appId) {
-      return ctx.error(`Unable to find an application with the id/name: ${query}`);
+    if (!id) {
+      return ctx.error(`Unable to find a store page for: ${query}`);
     }
 
-    const app = (await db.select('*')
-      .from('app')
-      .where('id', appId)
-      .first()) || (await SteamUtil.persistApp(appId));
+    let item: StoreItem | null;
 
-    if (!app) {
-      return ctx.error(stripIndents`
-        Unable to find an app with the id **${appId}**!
-        Make sure the id doesn't belong to a package or bundle.
-      `);
+    if (watcherType === WatcherType.Price && type === PriceType.Bundle) {
+      item = (await db.select('id', 'name', '"bundle" AS type')
+        .from('bundle')
+        .where('id', id)
+        .first()) || (await SteamUtil.persistBundle(id));
+    } else if (watcherType === WatcherType.Price && type === PriceType.Sub) {
+      item = (await db.select('id', 'name', '"sub" AS type')
+        .from('sub')
+        .where('id', id)
+        .first()) || (await SteamUtil.persistSub(id));
+    } else {
+      if (!SteamUtil.canHaveWatcher(type as AppType, watcherType)) {
+        return ctx.error(`${capitalize(watcherType)} watchers aren't supported for apps of type **${type}**!`);
+      }
+
+      item = (await db.select('id', 'name', 'icon', 'type')
+        .from('app')
+        .where('id', id)
+        .first()) || (await SteamUtil.persistApp(id));
     }
 
-    if (!SteamUtil.canHaveWatcher(app.type.toLowerCase() as AppType, watcherType)) {
-      return ctx.error(`${capitalize(watcherType)} watchers aren't supported for apps of type **${app.type}**!`);
+    if (!item?.id) {
+      return ctx.error(`Unable to find a Store item with the id **${id}**!`);
     }
+
+    // New bundles and subs don't have an assigned type property
+    item.type = type;
+
+    const priceType = item.type !== PriceType.Bundle && item.type !== PriceType.Sub
+      ? PriceType.App
+      : item.type;
 
     await ctx.editOriginal({
       embeds: [{
         color: EMBED_COLOURS.PENDING,
-        description: `Would you like to add the watcher for **${app.name} (${app.type})** to ${ctx.channels.get(channelId)!.mention}?`,
+        description: `Would you like to add the watcher for **${item.name} (${item.type})** to ${ctx.channels.get(channelId)!.mention}?`,
         title: 'Confirmation',
-        thumbnail: {
-          url: SteamUtil.URLS.Icon(app.id, app.icon),
-        },
+        ...(priceType === PriceType.App
+          ? {
+            thumbnail: {
+              url: SteamUtil.URLS.Icon(item.id, item.icon),
+            },
+          } : {}),
       }],
       components: [{
         type: ComponentType.ACTION_ROW,
@@ -438,10 +460,13 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     ctx.registerComponent(
       'cancel',
-      () => ctx.error(`Cancelled watcher for **${app!.name} (${app!.type})** on ${ctx.channels.get(channelId)!.mention}.`, {
-        thumbnail: {
-          url: SteamUtil.URLS.Icon(app!.id, app!.icon),
-        },
+      () => ctx.error(`Cancelled watcher for **${item!.name} (${item!.type})** on ${ctx.channels.get(channelId)!.mention}.`, {
+        ...(priceType === PriceType.App
+          ? {
+            thumbnail: {
+              url: SteamUtil.URLS.Icon(item!.id, item!.icon),
+            },
+          } : {}),
       }),
       DEFAULT_COMPONENT_EXPIRATION,
     );
@@ -449,8 +474,6 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.registerComponent(
       'confirm',
       async () => {
-        ctx.unregisterComponent('confirm');
-
         let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
 
         if (error) {
@@ -461,7 +484,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
         if (watcherType === WatcherType.WorkshopNew || watcherType === WatcherType.WorkshopUpdate) {
           const { total } = await steamClient.queryFiles(
-            appId,
+            item!.id,
             watcherType === WatcherType.WorkshopNew
               ? EPublishedFileQueryType.RankedByPublicationDate
               : EPublishedFileQueryType.RankedByLastUpdatedDate,
@@ -471,7 +494,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           if (!total) {
             return ctx.error(
               stripIndents`
-                **${app.name}** doesn't have any submissions of type **${EPFIMFileType[filetype!]}**!
+                **${item!.name}** doesn't have any submissions of type **${EPFIMFileType[filetype!]}**!
                 If this is an error, please try again later.
               `,
             );
@@ -480,7 +503,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
           workshopId = await db.select('id')
             .from('app_workshop')
             .where({
-              appId: 1,
+              appId: item!.id,
               filetype: filetype!,
             })
             .first()
@@ -488,7 +511,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
           if (!workshopId) {
             [workshopId] = await db.insert({
-              appId,
+              appId: item!.id,
               filetype,
               lastCheckedNew: null,
               lastCheckedUpdate: null,
@@ -502,16 +525,18 @@ export default class WatchersCommand extends GuildOnlyCommand {
           return ctx.error(error);
         }
 
+        const key = SteamUtil.getPriceTypeIdKey(priceType as PriceType);
+
         if (watcherType === WatcherType.Price) {
-          error = await WatchersCommand.setAppPrice(app, ctx.guildID!);
+          error = await WatchersCommand.setPrice(item!, ctx.guildID!, key);
         }
 
         if (error) {
           return ctx.error(error);
         }
 
-        const [id] = await db.insert({
-          appId: !workshopId ? appId : null,
+        const [dbId] = await db.insert({
+          [key]: item!.id,
           channelId,
           threadId,
           type: watcherType,
@@ -519,10 +544,15 @@ export default class WatchersCommand extends GuildOnlyCommand {
           inactive: false,
         }).into('watcher');
 
-        return ctx.success(`Added **${watcherType}** watcher (#${id}) for **${app!.name} (${app!.type})** to ${ctx.channels.get(channelId)!.mention}.`, {
-          thumbnail: {
-            url: SteamUtil.URLS.Icon(app!.id, app!.icon),
-          },
+        ctx.unregisterComponent('confirm');
+
+        return ctx.success(`Added **${watcherType}** watcher (#${dbId}) for **${item!.name} (${item!.type})** to ${ctx.channels.get(channelId)!.mention}.`, {
+          ...(priceType === PriceType.App
+            ? {
+              thumbnail: {
+                url: SteamUtil.URLS.Icon(item!.id, item!.icon),
+              },
+            } : {}),
         });
       },
       DEFAULT_COMPONENT_EXPIRATION,
@@ -657,8 +687,6 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.registerComponent(
       'confirm',
       async () => {
-        ctx.unregisterComponent('confirm');
-
         let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
 
         if (error) {
@@ -678,6 +706,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
           type: WatcherType.Forum,
           inactive: false,
         }).into('watcher');
+
+        ctx.unregisterComponent('confirm');
 
         return ctx.success(`Added **${WatcherType.Forum}** watcher (#${id}) for **${forum.name} (${forum.ownerName})** to ${ctx.channels.get(channelId)!.mention}.`, {
           thumbnail: {
@@ -734,8 +764,6 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.registerComponent(
       'confirm',
       async () => {
-        ctx.unregisterComponent('confirm');
-
         let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
 
         if (error) {
@@ -754,6 +782,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
           type: WatcherType.Free,
           inactive: false,
         }).into('watcher');
+
+        ctx.unregisterComponent('confirm');
 
         return ctx.success(`Added **${WatcherType.Free}** watcher (#${id}) for **free promotions** to ${ctx.channels.get(channelId)!.mention}.`, {
           thumbnail: {
@@ -836,8 +866,6 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.registerComponent(
       'confirm',
       async () => {
-        ctx.unregisterComponent('confirm');
-
         let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
 
         if (error) {
@@ -857,6 +885,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
           type: watcherType,
           inactive: false,
         }).into('watcher');
+
+        ctx.unregisterComponent('confirm');
 
         return ctx.success(`Added **${watcherType}** watcher (#${id}) for **${group!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
           thumbnail: {
@@ -937,8 +967,6 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.registerComponent(
       'confirm',
       async () => {
-        ctx.unregisterComponent('confirm');
-
         let error = await WatchersCommand.hasReachedMaxWatchers(ctx.guildID!);
 
         if (error) {
@@ -959,6 +987,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
           inactive: false,
         }).into('watcher');
 
+        ctx.unregisterComponent('confirm');
+
         return ctx.success(`Added **${WatcherType.UGC}** watcher (#${id}) for **${ugc!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
           thumbnail: {
             url: SteamUtil.URLS.Icon(app!.id, app!.icon),
@@ -975,8 +1005,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
       db.raw(oneLine`
         CASE
           WHEN watcher.type = 'free' THEN "Free Promotions"
+          WHEN watcher.bundle_id IS NOT NULL THEN bundle.name
           WHEN watcher.forum_id IS NOT NULL THEN CONCAT(forum.name, ' (', IF(forum.app_id IS NOT NULL, app.name, \`group\`.name), ')')
           WHEN watcher.group_id IS NOT NULL THEN \`group\`.name
+          WHEN watcher.sub_id IS NOT NULL THEN sub.name
           WHEN watcher.ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')
           ELSE app.name
         END AS name
@@ -986,9 +1018,11 @@ export default class WatchersCommand extends GuildOnlyCommand {
     ).from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .leftJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
+      .leftJoin('bundle', 'bundle.id', 'watcher.bundle_id')
       .leftJoin('forum', 'forum.id', 'watcher.forum_id')
       .leftJoin('`group`', (builder) => builder.on('`group`.id', 'watcher.group_id')
         .orOn('`group`.id', 'forum.group_id'))
+      .leftJoin('sub', 'sub.id', 'watcher.sub_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
         .orOn('app.id', 'app_workshop.app_id')
@@ -1015,7 +1049,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       ['Id', 'Entity Id', 'Name', 'Channel', 'Type', 'Active'],
       ...(rows.map((w: any) => [
         w.id,
-        w.appId || w.forumId || w.groupId || w.ugcId || w.workshopId || '-',
+        w.appId || w.bundleId || w.forumId || w.groupId || w.subId || w.ugcId || w.workshopId || '-',
         w.name,
         channelNames.get(w.channelId),
         oneLine`
@@ -1072,8 +1106,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
       db.raw(oneLine`
         CASE
           WHEN watcher.type = 'free' THEN "Free Promotions"
+          WHEN watcher.bundle_id IS NOT NULL THEN bundle.name
           WHEN watcher.forum_id IS NOT NULL THEN CONCAT(forum.name, ' (', IF(forum.app_id IS NOT NULL, app.name, \`group\`.name), ')')
           WHEN watcher.group_id IS NOT NULL THEN \`group\`.name
+          WHEN watcher.sub_id IS NOT NULL THEN sub.name
           WHEN watcher.ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')
           ELSE app.name
         END AS name
@@ -1081,9 +1117,11 @@ export default class WatchersCommand extends GuildOnlyCommand {
     ).from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .leftJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
+      .leftJoin('bundle', 'bundle.id', 'watcher.bundle_id')
       .leftJoin('forum', 'forum.id', 'watcher.forum_id')
       .leftJoin('`group`', (builder) => builder.on('`group`.id', 'watcher.group_id')
         .orOn('`group`.id', 'forum.group_id'))
+      .leftJoin('sub', 'sub.id', 'watcher.sub_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
         .orOn('app.id', 'app_workshop.app_id')
@@ -1195,55 +1233,49 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return null;
   }
 
-  private static async setAppPrice(app: App, guildId: string) {
-    const appPrice = await db.select(
-      'app_price.id',
+  private static async setPrice(item: StoreItem, guildId: string, key: string) {
+    const price = await db.select(
+      'price.id',
       'guild.currency_id',
       'currency.code',
       'currency.country_code',
     ).from('guild')
       .innerJoin('currency', 'currency.id', 'guild.currency_id')
-      .leftJoin('app_price', (builder) => builder.on('app_price.app_id', app.id.toString())
-        .andOn('app_price.currency_id', 'currency.id'))
+      .leftJoin('price', (builder) => builder.on(key, item.id.toString())
+        .andOn('price.currency_id', 'currency.id'))
       .where('guild.id', guildId)
       .first();
 
     // Don't have the app <> currency combination in the db
-    if (!appPrice.id) {
-      const priceOverview = await SteamAPI.getAppPrices(
-        [app.id],
-        appPrice.countryCode,
+    if (!price.id) {
+      const storePrices = await SteamUtil.getStorePrices(
+        [item.id],
+        item.type,
+        price.code,
+        price.countryCode,
       );
 
-      if (priceOverview === null) {
-        return 'Something went wrong whilst fetching app prices! Please try again later.';
-      }
-
-      if (!priceOverview[app.id]!.success) {
+      if (!storePrices[item.id]) {
         return stripIndents`
-          ${oneLine`
-            Unable to watch app prices for **${app.name} (${app.type})**
-            in **${appPrice.code}**!`}
-          This may be due to regional restrictions.
-          You can change your currency using \`/currency\`
-        `;
-      }
-      if (!priceOverview[app.id]!.data.price_overview) {
-        return stripIndents`
-          ${oneLine`
-            Unable to watch app prices for **${app.name} (${app.type})**
-            in **${appPrice.code}**!`}
-          App is either free or doesn't have a (regional) price assigned.
-        `;
+        ${oneLine`
+          Unable to watch app prices for **${item.name} (${item.type})**
+          in **${price.code}**!`}
+        This may be due to regional restrictions, or the app is either free or doesn't have a (regional) price assigned..
+        You can change your currency using \`/currency\`
+      `;
       }
 
       await db.insert({
-        appId: app.id,
-        currencyId: appPrice.currencyId,
-        price: priceOverview[app.id]!.data.price_overview!.initial,
-        discountedPrice: priceOverview[app.id]!.data.price_overview!.final,
-        discount: priceOverview[app.id]!.data.price_overview!.discount_percent,
-      }).into('app_price');
+        appId: item.type !== PriceType.Bundle && item.type !== PriceType.Sub ? item.id : null,
+        bundleId: item.type === PriceType.Bundle ? item.id : null,
+        subId: item.type === PriceType.Sub ? item.id : null,
+        currencyId: price.currencyId,
+        price: storePrices[item.id]!.initial,
+        discountedPrice: storePrices[item.id]!.final,
+        discount: storePrices[item.id]!.discount,
+        lastChecked: new Date(),
+        lastUpdate: new Date(),
+      }).into('price');
     }
 
     return null;

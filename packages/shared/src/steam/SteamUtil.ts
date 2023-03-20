@@ -1,7 +1,7 @@
 import { oneLine } from 'common-tags';
 import SteamID from 'steamid';
 import { EResult } from 'steam-user';
-import SteamAPI from './SteamAPI';
+import SteamAPI, { StoreAppType } from './SteamAPI';
 import steamClient from './SteamClient';
 import {
   AppInfo,
@@ -17,8 +17,11 @@ import db, {
   ForumType,
   FreePackage,
   FreePackageType,
+  PriceType,
   UGC,
   WatcherType,
+  Bundle,
+  Sub,
 } from '../db';
 
 interface CurrencyFormatOptions {
@@ -28,7 +31,7 @@ interface CurrencyFormatOptions {
   useComma?: boolean;
 }
 
-interface PriceDisplay {
+export interface PriceDisplay {
   currency: CurrencyCode;
   discount: number;
   final: number;
@@ -117,7 +120,9 @@ export default class SteamUtil {
     OpenUrl: (url: string) => SteamUtil.BP.Raw(`openurl/${url}`),
     Profile: (id: string) => SteamUtil.BP.Raw(`url/SteamIDPage/${id}`),
     Raw: (path: string) => `steam://${path}`,
-    Store: (id: number) => SteamUtil.BP.Raw(`store/${id}`),
+    StoreApp: (id: number) => SteamUtil.BP.Raw(`store/${id}`),
+    StoreBundle: (id: number) => SteamUtil.BP.Raw(`openurl/${SteamUtil.URLS.Store(id, PriceType.Bundle)}`),
+    StoreSub: (id: number) => SteamUtil.BP.Raw(`url/StoreSubPage/${id}`),
     UGC: (id: string) => SteamUtil.BP.Raw(`url/CommunityFilePage/${id}`),
     Workshop: (id: number) => SteamUtil.BP.Raw(`url/SteamWorkshopPage/${id}`),
   };
@@ -172,7 +177,7 @@ export default class SteamUtil {
     MarketListingIcon: (icon: string) => `https://community.cloudflare.steamstatic.com/economy/image/${icon}`,
     NewsImage: (imageUrl: string) => imageUrl.replace(/\{STEAM_CLAN(?:_LOC)?_IMAGE\}/, 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/clans'),
     Profile: (steamId: string) => `https://steamcommunity.com/profiles/${steamId}`,
-    Store: (appId: number) => `https://store.steampowered.com/app/${appId}`,
+    Store: (id: number, type: PriceType) => `https://store.steampowered.com/${type}/${id}`,
     UGC: (ugcId: string) => `https://steamcommunity.com/sharedfiles/filedetails/?id=${ugcId}`,
     Workshop: (appId: number) => `https://store.steampowered.com/app/${appId}/workshop`,
   };
@@ -234,32 +239,6 @@ export default class SteamUtil {
       ` : this.formatPrice(initial, currency);
   }
 
-  static async findAppId(id: string) {
-    let appId: number | null = Number.parseInt(id, 10);
-    if (!Number.isNaN(appId) && Number.isFinite(appId)) {
-      return appId > 0 && appId < 100000000 ? appId : null;
-    }
-
-    const urlMatch = id.match(/\/app\/(\d+)\/?/);
-    if (urlMatch) {
-      return Number.parseInt(urlMatch[1]!, 10);
-    }
-
-    appId = await db.select('id')
-      .from('app')
-      .where('id', id)
-      .orWhere('name', 'like', `%${id}%`)
-      .first()
-      .then((res) => res?.id || null);
-
-    if (!appId) {
-      const results = await SteamAPI.searchStore(id);
-      appId = results?.[0]?.id ?? null;
-    }
-
-    return appId;
-  }
-
   static async findSteamId(id: string) {
     const match = id.match(SteamUtil.REGEXPS.SteamId);
     if (match) {
@@ -293,8 +272,167 @@ export default class SteamUtil {
     return id;
   }
 
+  static async findStoreItem(id: string) {
+    let details: {
+      id: number;
+      type: StoreAppType;
+    } | null;
+
+    const urlMatch = id.match(/\/(app|bundle|sub)\/(\d+)\/?/);
+    if (urlMatch) {
+      return {
+        id: Number.parseInt(urlMatch[2]!, 10),
+        type: urlMatch[1]! as StoreAppType,
+      };
+    }
+
+    details = await db.select('id', 'type')
+      .from('app')
+      .where('id', id)
+      .orWhere('name', 'LIKE', `%${id}%`)
+      .union(
+        db.select('id', '"bundle" AS type')
+          .from('bundle')
+          .where('id', id)
+          .orWhere('name', 'LIKE', `%${id}%`) as any,
+        db.select('id', '"sub" AS type')
+          .from('sub')
+          .where('id', id)
+          .orWhere('name', 'LIKE', `%${id}%`) as any,
+      )
+      .first() as any;
+
+    // Check strings and app ids
+    if (!details) {
+      const results = await SteamAPI.searchStore(id);
+
+      details = results?.length ? {
+        id: parseInt(results[0]!.id, 10),
+        type: results[0]!.type,
+      } : null;
+    }
+
+    // Store search doesn't support bundle and sub ids
+    const parsedId = parseInt(id, 10);
+
+    if (!details && !Number.isNaN(parsedId)) {
+      const results = await SteamAPI.getBundlePrices([parsedId], 'US');
+
+      details = results?.length ? {
+        id: results[0]!.bundleid,
+        type: PriceType.Bundle,
+      } : null;
+    }
+
+    if (!details && !Number.isNaN(parsedId)) {
+      const results = await SteamAPI.getSubPrices([parsedId], 'US');
+
+      details = results?.length ? {
+        id: results[0]!.packageid,
+        type: PriceType.Sub,
+      } : null;
+    }
+
+    return details || {
+      id: 0,
+      type: AppType.Game,
+    };
+  }
+
   static findUGCId(id: string) {
     return id.match(SteamUtil.REGEXPS.UGC)?.[1] ?? id.match(/\d+/)?.[0];
+  }
+
+  static async getStorePrices(
+    ids: number[],
+    type: StoreAppType,
+    code: CurrencyCode,
+    cc: string,
+  ) : Promise<Record<number, Omit<PriceDisplay, 'currency'> | null>> {
+    if (type === PriceType.Bundle) {
+      const bundlePrices = await SteamAPI.getBundlePrices(ids, cc);
+
+      if (!bundlePrices?.length) {
+        return {};
+      }
+
+      return ids.reduce((curr: any, id) => {
+        const bundle = bundlePrices.find((b) => b.bundleid === id);
+
+        if (!bundle) {
+          // eslint-disable-next-line no-param-reassign
+          curr[id] = null;
+        } else {
+          // eslint-disable-next-line no-param-reassign
+          curr[id] = {
+            // Steam randomly sets final_price to 0, so we have to extract the raw value ourselves
+            final: bundle.final_price
+              || parseInt(
+                `${bundle.formatted_final_price.replace(/[^\d]/g, '')}${'0'.repeat(CurrencyFormats[code].scale === 0 ? 2 : 0)}`,
+                10,
+              ),
+            initial: bundle.initial_price,
+            discount: bundle.discount_percent,
+          };
+        }
+
+        return curr;
+      }, {});
+    }
+
+    if (type === PriceType.Sub) {
+      const subPrices = await SteamAPI.getSubPrices(ids, cc);
+
+      if (!subPrices?.length) {
+        return {};
+      }
+
+      return ids.reduce((curr: any, id) => {
+        const sub = subPrices.find((b) => b.packageid === id);
+
+        if (!sub) {
+          // eslint-disable-next-line no-param-reassign
+          curr[id] = null;
+        } else {
+          // eslint-disable-next-line no-param-reassign
+          curr[id] = {
+            final: sub.final_price_cents,
+            initial: sub.orig_price_cents,
+            discount: sub.discount_percent,
+          };
+        }
+
+        return curr;
+      }, {});
+    }
+
+    const appPrices = await SteamAPI.getAppPrices(ids, cc);
+
+    if (!appPrices) {
+      return {};
+    }
+
+    return ids.reduce((curr: any, id) => {
+      if (!appPrices[id]?.success) {
+        // eslint-disable-next-line no-param-reassign
+        curr[id] = null;
+      } else {
+        const app = appPrices[id]?.data.price_overview;
+
+        // eslint-disable-next-line no-param-reassign
+        curr[id] = {
+          final: app?.final ?? 0,
+          initial: app?.initial ?? 0,
+          discount: app?.discount_percent ?? 0,
+        };
+      }
+
+      return curr;
+    }, {});
+  }
+
+  static getPriceTypeIdKey(type: PriceType) {
+    return `${type}_id`;
   }
 
   static isTrackedAppType(appType: string) {
@@ -309,6 +447,23 @@ export default class SteamUtil {
     }
 
     return (await this.persistApps([apps[appId]!]))[0] || null;
+  }
+
+  static async persistBundle(bundleId: number) {
+    const response = await SteamAPI.getBundlePrices([bundleId], 'US');
+
+    if (!response?.length) {
+      return null;
+    }
+
+    const bundle = {
+      id: response[0]!.bundleid,
+      name: response[0]!.name,
+    } as Bundle;
+
+    await db.insert(bundle).into('bundle');
+
+    return bundle;
   }
 
   static async persistApps(apps: AppInfo[]) {
@@ -433,6 +588,23 @@ export default class SteamUtil {
     }
   }
 
+  static async persistSub(subId: number) {
+    const response = await SteamAPI.getSubPrices([subId], 'US');
+
+    if (!response?.length) {
+      return null;
+    }
+
+    const sub = {
+      id: response[0]!.packageid,
+      name: response[0]!.name,
+    } as Sub;
+
+    await db.insert(sub).into('sub');
+
+    return sub;
+  }
+
   static async persistUGC(ugcId: string) {
     const published = (await steamClient.getPublishedFileDetails([parseInt(ugcId, 10)])) as any;
     const file = published?.files?.[ugcId] as PublishedFile;
@@ -461,6 +633,7 @@ export default class SteamUtil {
       id: ugcId,
       appId: file.consumer_appid,
       lastChecked: null,
+      lastUpdate: null,
       name: file.title,
     };
 
