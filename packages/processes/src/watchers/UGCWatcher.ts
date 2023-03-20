@@ -18,6 +18,8 @@ import {
 import Watcher from './Watcher';
 import type MessageQueue from '../MessageQueue';
 
+const BATCH_SIZE = 50;
+
 type QueryResult = UGC & {
   appName: string;
   appIcon: string;
@@ -218,6 +220,6 @@ export default class UGCWatcher extends Watcher {
       .whereRaw('last_checked <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [env.settings.watcherRunFrequency])
       .orWhereNull('last_checked')
       .orderBy('priority', 'desc')
-      .limit(25);
+      .limit(BATCH_SIZE);
   }
 }

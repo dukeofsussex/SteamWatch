@@ -2,7 +2,7 @@ import { knex } from 'knex';
 import config from './config';
 import env from '../env';
 import logger from '../logger';
-import type { EPublishedFileInfoMatchingFileType } from '../steam/SteamWatchUser';
+import type { EPublishedFileInfoMatchingFileType as EPFIMFileType } from '../steam/SteamWatchUser';
 
 export type CurrencyCode = 'AED' | 'ARS' | 'AUD' | 'BRL' | 'CAD' | 'CHF'
 | 'CLP' | 'CNY' | 'COP' | 'CRC' | 'EUR' | 'GBP' | 'HKD' | 'ILS'
@@ -33,7 +33,7 @@ export enum AppType {
 export interface AppWorkshop {
   id: number;
   appId: number;
-  filetype: EPublishedFileInfoMatchingFileType;
+  filetype: EPFIMFileType;
   lastCheckedNew: Date | null;
   lastNew: Date | null;
   lastCheckedUpdate: Date | null;
@@ -173,7 +173,12 @@ export interface WatcherMention {
   id: number;
   watcherId: number;
   entityId: string;
-  type: 'member' | 'role';
+  type: WatcherMentionType;
+}
+
+export enum WatcherMentionType {
+  Member = 'member',
+  Role = 'role',
 }
 
 export enum WatcherType {

@@ -14,6 +14,7 @@ import {
 import Watcher from './Watcher';
 import type MessageQueue from '../MessageQueue';
 
+const BATCH_SIZE = 50;
 const HOURS_IN_ADVANCE = 6;
 
 export default class FreeWatcher extends Watcher {
@@ -137,7 +138,7 @@ export default class FreeWatcher extends Watcher {
       .andWhere('endTime', '>', new Date())
       .andWhere('active', 0)
       .orderBy('startTime', 'asc')
-      .limit(50);
+      .limit(BATCH_SIZE);
   }
 
   private static async fetchNextPackages() {
@@ -148,6 +149,6 @@ export default class FreeWatcher extends Watcher {
       .whereRaw('last_checked <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [env.settings.watcherRunFrequency])
       .andWhere('active', 0)
       .orderBy('priority', 'desc')
-      .limit(50);
+      .limit(BATCH_SIZE);
   }
 }
