@@ -229,7 +229,7 @@ export default class SteamUtil {
         ~~${this.formatPrice(initial, currency)}~~\n
         **${this.formatPrice(final, currency)}**
         (-${discount}%)
-      ` : this.formatPrice(initial, currency);
+      ` : this.formatPrice(final, currency);
   }
 
   static async findSteamId(id: string) {
