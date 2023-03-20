@@ -89,7 +89,12 @@ export default class CurrencyCommand extends GuildOnlyCommand {
       },
       DEFAULT_COMPONENT_EXPIRATION,
       () => {
-        ctx.editOriginal({ embeds, components: [] });
+        try {
+          ctx.editOriginal({ embeds, components: [] });
+        } catch {
+          // Interaction may have already been deleted by the user
+          // or expired before being able to send this message
+        }
       },
     );
 
