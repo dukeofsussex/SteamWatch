@@ -215,9 +215,9 @@ export default class GuildOnlyCommand extends SlashCommand {
       // Change currency select options
       ctx.registerComponent(
         'currency_select_change',
-        async () => {
+        async (cctx) => {
           page = page === 0 ? 1 : 0;
-          ctx.editOriginal({
+          return cctx.editParent({
             embeds,
             components: await GuildOnlyCommand.buildCurrencyComponents(page),
           });
@@ -229,9 +229,7 @@ export default class GuildOnlyCommand extends SlashCommand {
       ctx.registerComponent(
         'currency_select',
         async (cctx: ComponentContext) => {
-          ctx.unregisterComponent('currency_select');
-
-          await cctx.editOriginal({
+          await cctx.editParent({
             embeds: [{
               color: EMBED_COLOURS.SUCCESS,
               description: `${EMOJIS.SUCCESS} Guild ready!`,
@@ -255,6 +253,8 @@ export default class GuildOnlyCommand extends SlashCommand {
             message: 'New guild set up',
             guild,
           });
+
+          ctx.unregisterComponent('currency_select');
 
           resolve(true);
         },

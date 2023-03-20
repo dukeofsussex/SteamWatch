@@ -78,15 +78,12 @@ export default class CurrencyCommand extends GuildOnlyCommand {
     });
 
     // Change currency
-    ctx.registerComponentFrom(
-      ctx.messageID!,
+    ctx.registerComponent(
       'currency_change',
-      async () => {
-        ctx.editOriginal({
-          embeds,
-          components: await CurrencyCommand.buildModifiedCurrencyComponents(page, placeholder),
-        });
-      },
+      async (cctx) => cctx.editParent({
+        embeds,
+        components: await CurrencyCommand.buildModifiedCurrencyComponents(page, placeholder),
+      }),
       DEFAULT_COMPONENT_EXPIRATION,
       () => {
         try {
@@ -99,22 +96,18 @@ export default class CurrencyCommand extends GuildOnlyCommand {
     );
 
     // Cancel
-    ctx.registerComponentFrom(
-      ctx.messageID!,
+    ctx.registerComponent(
       'currency_change_cancel',
-      async () => {
-        ctx.editOriginal({ embeds, components: [] });
-      },
+      async (cctx) => cctx.editParent({ embeds, components: [] }),
       DEFAULT_COMPONENT_EXPIRATION,
     );
 
     // Change currency select options
-    ctx.registerComponentFrom(
-      ctx.messageID!,
+    ctx.registerComponent(
       'currency_select_change',
-      async () => {
+      async (cctx) => {
         page = page === 0 ? 1 : 0;
-        ctx.editOriginal({
+        return cctx.editParent({
           embeds,
           components: await CurrencyCommand.buildModifiedCurrencyComponents(page, placeholder),
         });
@@ -123,8 +116,7 @@ export default class CurrencyCommand extends GuildOnlyCommand {
     );
 
     // Currency selected
-    ctx.registerComponentFrom(
-      ctx.messageID!,
+    ctx.registerComponent(
       'currency_select',
       async (cctx: ComponentContext) => {
         const currencyId = parseInt(cctx.data.data.values![0]!, 10);
