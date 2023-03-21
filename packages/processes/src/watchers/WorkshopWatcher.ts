@@ -117,7 +117,7 @@ export default class WorkshopWatcher extends Watcher {
         file,
       });
 
-      let description;
+      let description = transformArticle(file.file_description).markdown;
 
       if (workshop.type === WatcherType.WorkshopUpdate) {
         // eslint-disable-next-line no-await-in-loop
