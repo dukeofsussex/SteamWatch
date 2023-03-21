@@ -11,6 +11,13 @@ import {
 } from '@steamwatch/shared';
 import Queue from './Queue';
 
+const PURGE_ERROR_CODES = [
+  RESTJSONErrorCodes.UnknownChannel,
+  RESTJSONErrorCodes.UnknownGuild,
+  RESTJSONErrorCodes.UnknownWebhook,
+  RESTJSONErrorCodes.WebhooksPostedToForumChannelsCannotHaveBothAThreadNameAndThreadId,
+  RESTJSONErrorCodes.WebhooksPostedToForumChannelsMustHaveAThreadNameOrThreadId,
+];
 const SLOWMODE_DELAY = 300000; // 5m
 
 export interface QueuedMessage {
@@ -74,7 +81,9 @@ export default class MessageQueue extends Queue<QueuedMessage[]> {
         },
       }) as RESTPostAPIWebhookWithTokenResult;
     } catch (err) {
-      if ((err as DiscordAPIError).code === RESTJSONErrorCodes.UnknownWebhook) {
+      const errCode = (err as DiscordAPIError).code;
+
+      if (PURGE_ERROR_CODES.includes(parseInt(errCode as string, 10))) {
         await MessageQueue.purgeWebhook(id);
       } else {
         logger.error({
