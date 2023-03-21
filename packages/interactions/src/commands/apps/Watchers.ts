@@ -433,7 +433,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
     await ctx.editOriginal({
       embeds: [{
         color: EMBED_COLOURS.PENDING,
-        description: `Would you like to add the watcher for **${item.name} (${item.type})** to ${ctx.channels.get(channelId)!.mention}?`,
+        description: `Would you like to add the watcher for **${item.name} (${item.type})** to <#${(threadId || channelId)}>?`,
         title: 'Confirmation',
         ...(priceType === PriceType.App
           ? {
@@ -460,7 +460,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     ctx.registerComponent(
       'cancel',
-      () => ctx.error(`Cancelled watcher for **${item!.name} (${item!.type})** on ${ctx.channels.get(channelId)!.mention}.`, {
+      () => ctx.error(`Cancelled watcher for **${item!.name} (${item!.type})** on <#${(threadId || channelId)}>.`, {
         ...(priceType === PriceType.App
           ? {
             thumbnail: {
@@ -546,7 +546,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
         ctx.unregisterComponent('confirm');
 
-        return ctx.success(`Added **${watcherType}** watcher (#${dbId}) for **${item!.name} (${item!.type})** to ${ctx.channels.get(channelId)!.mention}.`, {
+        return ctx.success(`Added **${watcherType}** watcher (#${dbId}) for **${item!.name} (${item!.type})** to <#${(threadId || channelId)}>.`, {
           ...(priceType === PriceType.App
             ? {
               thumbnail: {
@@ -646,7 +646,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
     await ctx.editOriginal({
       embeds: [{
         color: EMBED_COLOURS.PENDING,
-        description: `Would you like to add the watcher for **${forum.name} (${forum.ownerName})** to ${ctx.channels.get(channelId)!.mention}?`,
+        description: `Would you like to add the watcher for **${forum.name} (${forum.ownerName})** to <#${(threadId || channelId)}>?`,
         title: 'Confirmation',
         thumbnail: {
           url: EmbedBuilder.getImage(WatcherType.Forum, {
@@ -673,7 +673,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     ctx.registerComponent(
       'cancel',
-      () => ctx.error(`Cancelled watcher for **${forum.name} (${forum.ownerName})** on ${ctx.channels.get(channelId)!.mention}.`, {
+      () => ctx.error(`Cancelled watcher for **${forum.name} (${forum.ownerName})** on <#${(threadId || channelId)}>.`, {
         thumbnail: {
           url: EmbedBuilder.getImage(WatcherType.Forum, {
             ...forum,
@@ -709,7 +709,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
         ctx.unregisterComponent('confirm');
 
-        return ctx.success(`Added **${WatcherType.Forum}** watcher (#${id}) for **${forum.name} (${forum.ownerName})** to ${ctx.channels.get(channelId)!.mention}.`, {
+        return ctx.success(`Added **${WatcherType.Forum}** watcher (#${id}) for **${forum.name} (${forum.ownerName})** to <#${(threadId || channelId)}>.`, {
           thumbnail: {
             url: EmbedBuilder.getImage(WatcherType.Forum, {
               ...forum,
@@ -733,7 +733,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
     await ctx.editOriginal({
       embeds: [{
         color: EMBED_COLOURS.PENDING,
-        description: `Would you like to add the watcher for **free promotions** to ${ctx.channels.get(channelId)!.mention}?`,
+        description: `Would you like to add the watcher for **free promotions** to <#${(threadId || channelId)}>?`,
         title: 'Confirmation',
         thumbnail: {
           url: DEFAULT_STEAM_ICON,
@@ -757,7 +757,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     ctx.registerComponent(
       'cancel',
-      () => ctx.error(`Cancelled watcher for **free promotions** on ${ctx.channels.get(channelId)!.mention}.`),
+      () => ctx.error(`Cancelled watcher for **free promotions** on <#${(threadId || channelId)}>.`),
       DEFAULT_COMPONENT_EXPIRATION,
     );
 
@@ -785,7 +785,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
         ctx.unregisterComponent('confirm');
 
-        return ctx.success(`Added **${WatcherType.Free}** watcher (#${id}) for **free promotions** to ${ctx.channels.get(channelId)!.mention}.`, {
+        return ctx.success(`Added **${WatcherType.Free}** watcher (#${id}) for **free promotions** to <#${(threadId || channelId)}>.`, {
           thumbnail: {
             url: DEFAULT_STEAM_ICON,
           },
@@ -831,7 +831,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
     await ctx.editOriginal({
       embeds: [{
         color: EMBED_COLOURS.PENDING,
-        description: `Would you like to add the watcher for **${group.name}** to ${ctx.channels.get(channelId)!.mention}?`,
+        description: `Would you like to add the watcher for **${group.name}** to <#${(threadId || channelId)}>?`,
         title: 'Confirmation',
         thumbnail: {
           url: SteamUtil.URLS.GroupAvatar(group.avatar, 'medium'),
@@ -855,7 +855,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     ctx.registerComponent(
       'cancel',
-      () => ctx.error(`Cancelled watcher for **${group!.name}** on ${ctx.channels.get(channelId)!.mention}.`, {
+      () => ctx.error(`Cancelled watcher for **${group!.name}** on <#${(threadId || channelId)}>.`, {
         thumbnail: {
           url: SteamUtil.URLS.GroupAvatar(group.avatar, 'medium'),
         },
@@ -888,7 +888,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
         ctx.unregisterComponent('confirm');
 
-        return ctx.success(`Added **${watcherType}** watcher (#${id}) for **${group!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
+        return ctx.success(`Added **${watcherType}** watcher (#${id}) for **${group!.name}** to <#${(threadId || channelId)}>.`, {
           thumbnail: {
             url: SteamUtil.URLS.GroupAvatar(group.avatar, 'medium'),
           },
@@ -932,7 +932,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
     await ctx.editOriginal({
       embeds: [{
         color: EMBED_COLOURS.PENDING,
-        description: `Would you like to add the watcher for **${ugc.name}** to ${ctx.channels.get(channelId)!.mention}?`,
+        description: `Would you like to add the watcher for **${ugc.name}** to <#${(threadId || channelId)}>?`,
         title: 'Confirmation',
         thumbnail: {
           url: SteamUtil.URLS.Icon(app!.id, app!.icon),
@@ -956,7 +956,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     ctx.registerComponent(
       'cancel',
-      () => ctx.error(`Cancelled watcher for **${ugc!.name}** on ${ctx.channels.get(channelId)!.mention}.`, {
+      () => ctx.error(`Cancelled watcher for **${ugc!.name}** on <#${(threadId || channelId)}>.`, {
         thumbnail: {
           url: SteamUtil.URLS.Icon(app!.id, app!.icon),
         },
@@ -989,7 +989,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
         ctx.unregisterComponent('confirm');
 
-        return ctx.success(`Added **${WatcherType.UGC}** watcher (#${id}) for **${ugc!.name}** to ${ctx.channels.get(channelId)!.mention}.`, {
+        return ctx.success(`Added **${WatcherType.UGC}** watcher (#${id}) for **${ugc!.name}** to <#${(threadId || channelId)}>.`, {
           thumbnail: {
             url: SteamUtil.URLS.Icon(app!.id, app!.icon),
           },
@@ -1051,7 +1051,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         w.id,
         w.appId || w.bundleId || w.forumId || w.groupId || w.subId || w.ugcId || w.workshopId || '-',
         w.name,
-        channelNames.get(w.channelId),
+        channelNames.get(w.threadId || w.channelId),
         oneLine`
           ${w.type.replace('_', ' ')}
           ${(w.workshopId ? `(${EPFIMFileType[w.filetype]})` : '')}
@@ -1065,9 +1065,12 @@ export default class WatchersCommand extends GuildOnlyCommand {
     for (let i = 0; i < watchers.length; i += 1) {
       const watcher = watchers[i];
 
-      if (!channelNames.has(watcher.channelId)) {
-        // eslint-disable-next-line no-await-in-loop
-        channelNames.set(watcher.channelId, await DiscordAPI.getChannelName(watcher.channelId));
+      if (!channelNames.has(watcher.threadId || watcher.channelId)) {
+        channelNames.set(
+          watcher.threadId || watcher.channelId,
+          // eslint-disable-next-line no-await-in-loop
+          await DiscordAPI.getChannelName(watcher.threadId || watcher.channelId),
+        );
       }
 
       batch.push(watcher);
