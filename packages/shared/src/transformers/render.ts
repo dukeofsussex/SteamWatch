@@ -33,7 +33,7 @@ export default function createRender() {
       exceeded = (currentLength + length) >= MAX_LENGTH || currentNewlines >= MAX_NEWLINES;
 
       rendered = exceeded
-        ? node.substring(0, length - (MAX_LENGTH - currentLength))
+        ? node.substring(0, MAX_LENGTH - currentLength)
         : node;
 
       if (node !== '\n') {
