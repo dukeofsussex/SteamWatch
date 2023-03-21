@@ -355,8 +355,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
       if (add.steam) {
         return WatchersCommand.addApp(ctx, {
+          ...add.steam,
           app: STEAM_NEWS_APPID.toString(),
-          channel: add.steam.channel,
           watcherType: WatcherType.News,
         });
       }
