@@ -278,7 +278,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     const value = ctx.options[ctx.subcommands[0]!][ctx.subcommands[1]!][ctx.focused];
 
-    if (ctx.focused === 'thread_id') {
+    if (ctx.focused === 'thread') {
       return ctx.sendResults(await GuildOnlyCommand.createThreadAutocomplete(value, ctx.guildID!));
     }
 
