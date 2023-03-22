@@ -45,11 +45,7 @@ export default abstract class Queue<Q> extends Worker {
   }
 
   override async stop() {
-    logger.info({
-      message: 'Stopping queue',
-      length: this.size(),
-      path: this.filePath,
-    });
+    logger.info('Stopping queue');
 
     await this.backupQueue();
 
