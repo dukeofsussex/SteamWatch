@@ -365,7 +365,7 @@ export default class SteamAPI {
       ? [...reviews].map((review) => ({
         appId: parseInt(review[1]!, 10),
         status: review[2]!,
-        date: new Date(`${review[3]!}${review[3]!.includes(',') ? '' : new Date().getFullYear()}`),
+        date: new Date(`${review[3]!} ${review[3]!.includes(',') ? '' : new Date().getFullYear()}`),
         description: review[4]!,
       })) as CuratorReview[]
       : null;
