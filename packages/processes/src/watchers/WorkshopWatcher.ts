@@ -7,14 +7,15 @@ import {
   db,
   EmbedBuilder,
   env,
+  EPublishedFileQueryType,
   logger,
   MAX_EMBEDS,
+  PublishedFile,
   steamClient,
   transformArticle,
   Watcher as DBWatcher,
   WatcherType,
 } from '@steamwatch/shared';
-import { EPublishedFileQueryType, PublishedFile } from '@steamwatch/shared/src/steam/SteamWatchUser';
 import Watcher from './Watcher';
 import type MessageQueue from '../MessageQueue';
 

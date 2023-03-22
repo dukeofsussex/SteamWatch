@@ -10,11 +10,11 @@ import {
   env,
   logger,
   Price,
+  PriceDisplay,
   PriceType,
   SteamUtil,
   WatcherType,
 } from '@steamwatch/shared';
-import type { PriceDisplay } from '@steamwatch/shared/src/steam/SteamUtil';
 import Watcher from './Watcher';
 import type MessageQueue from '../MessageQueue';
 
