@@ -31,7 +31,7 @@ export default class FreeCommand extends SlashCommand {
       .andWhere('endTime', '>', new Date())
       .orderBy('startTime', 'asc');
 
-    if (packages.length) {
+    if (!packages.length) {
       await ctx.error('No free promotions');
       return;
     }
