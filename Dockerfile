@@ -16,7 +16,10 @@ RUN npm install
 COPY packages/${package_dir}/src ./packages/${package_dir}/src
 COPY packages/shared/src ./packages/shared/src
 
-RUN npm run build && npm prune --production && rm -rf packages/**/src
+RUN npm run build \
+  && npm prune --production \
+  && rm -rf packages/**/src \
+  && mkdir -p packages/${package_dir}/data
 
 FROM node:lts-alpine
 
