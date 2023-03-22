@@ -40,7 +40,7 @@ export default class MessageQueue extends Queue<QueuedMessage[]> {
 
   constructor() {
     super();
-    this.filePath = join('data', 'message.queue.json');
+    this.filePath = join(__dirname, '..', 'data', 'message.queue.json');
     this.offset = 0;
     this.queue = [];
   }

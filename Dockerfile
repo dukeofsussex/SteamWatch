@@ -37,6 +37,6 @@ COPY --from=build /opt/build ./
 
 EXPOSE $SERVER_PORT
 
-VOLUME /packages/${package_dir}/data
+VOLUME /srv/steamwatch/packages/${package_dir}/data
 
 CMD ["sh", "-c", "node $TARGET"]

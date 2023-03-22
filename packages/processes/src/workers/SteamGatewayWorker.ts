@@ -49,7 +49,7 @@ export default class SteamGatewayWorker extends Queue<QueuedGateway> {
   constructor() {
     super();
     this.changenumber = -1;
-    this.filePath = join('data', 'gateway.queue.json');
+    this.filePath = join(__dirname, '..', '..', 'data', 'gateway.queue.json');
     this.offset = {
       apps: 0,
       packages: 0,

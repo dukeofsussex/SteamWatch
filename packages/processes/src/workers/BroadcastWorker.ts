@@ -15,7 +15,7 @@ import Worker from './Worker';
 import type MessageQueue from '../MessageQueue';
 import type { QueuedMessage } from '../MessageQueue';
 
-const FILE = join('data', 'broadcast.json');
+const FILE = join(__dirname, '..', '..', 'data', 'broadcast.json');
 
 export default class BroadcastWorker extends Worker {
   private messageQueue: MessageQueue;
