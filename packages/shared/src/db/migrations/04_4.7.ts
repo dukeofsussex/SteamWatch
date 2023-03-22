@@ -16,6 +16,7 @@ exports.up = (knex: Knex) => knex.schema
     table.string('name', 256)
       .notNullable();
   })
+  .raw('UPDATE app_price SET last_checked = UTC_TIMESTAMP() WHERE last_checked IS NULL')
   .alterTable('app_price', (table) => {
     table.integer('app_id')
       .unsigned()

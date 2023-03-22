@@ -13,7 +13,7 @@ exports.up = (knex: Knex) => knex.schema
     table.dateTime('last_post')
       .after('last_checked');
   })
-  .raw('UPDATE app_workshop SET last_post = last_checked')
+  .raw('UPDATE forum SET last_post = last_checked')
   .alterTable('ugc', (table) => {
     table.dateTime('last_update')
       .after('last_checked');

@@ -2,17 +2,6 @@
 import type { Knex } from 'knex';
 
 exports.up = (knex: Knex) => knex.schema
-  .alterTable('guild', (table) => {
-    table.string('custom_webhook_name', 32)
-      .after('currency_id');
-    table.string('custom_webhook_avatar', 128)
-      .after('custom_webhook_name');
-  })
-  .alterTable('watcher', (table) => {
-    table.boolean('inactive')
-      .notNullable()
-      .after('type');
-  })
   .createTable('patron', (table) => {
     table.integer('id')
       .primary();
@@ -30,6 +19,17 @@ exports.up = (knex: Knex) => knex.schema
       .references('id')
       .inTable('guild')
       .onDelete('SET NULL');
+  })
+  .alterTable('guild', (table) => {
+    table.string('custom_webhook_name', 32)
+      .after('currency_id');
+    table.string('custom_webhook_avatar', 128)
+      .after('custom_webhook_name');
+  })
+  .alterTable('watcher', (table) => {
+    table.boolean('inactive')
+      .notNullable()
+      .after('type');
   });
 
 exports.down = (knex: Knex) => knex.schema

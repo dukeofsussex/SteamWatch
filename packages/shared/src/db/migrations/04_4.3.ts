@@ -34,7 +34,7 @@ exports.up = (knex: Knex) => knex.schema
       .onDelete('SET NULL');
   })
   .alterTable('watcher', (table) => {
-    table.enum('type', ['curator', 'group', 'news', 'price', 'ugc', 'workshop_new', 'workshop_update'])
+    table.enum('type', ['curator', 'group', 'news', 'price', 'ugc', 'workshop', 'workshop_new', 'workshop_update'])
       .notNullable()
       .alter();
     table.integer('workshop_id')
@@ -46,7 +46,12 @@ exports.up = (knex: Knex) => knex.schema
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
   })
-  .raw('UPDATE watcher INNER JOIN app_workshop ON app_workshop.app_id = watcher.app_id SET watcher.app_id = NULL, workshop_id = app_workshop.id, type = "workshop_new" WHERE watcher.type = "" AND app_workshop.filetype = 0');
+  .raw('UPDATE watcher INNER JOIN app_workshop ON app_workshop.app_id = watcher.app_id SET watcher.app_id = NULL, workshop_id = app_workshop.id, type = "workshop_new" WHERE watcher.type = "workshop" AND app_workshop.filetype = 0')
+  .alterTable('watcher', (table) => {
+    table.enum('type', ['curator', 'group', 'news', 'price', 'ugc', 'workshop_new', 'workshop_update'])
+      .notNullable()
+      .alter();
+  });
 
 exports.down = (knex: Knex) => knex.schema
   .alterTable('app', (table) => {
@@ -60,7 +65,12 @@ exports.down = (knex: Knex) => knex.schema
     table.renameColumn('last_checked_news', 'last_checked');
   })
   .raw('DELETE FROM watcher WHERE type = "curator" OR type = "workshop_update"')
-  .raw('UPDATE watcher INNER JOIN app_workshop ON app_workshop.id = watcher.workshop_id SET watcher.app_id = app_workshop.app_id, watcher.workshop_id = NULL WHERE workshop_id IS NOT NULL')
+  .alterTable('watcher', (table) => {
+    table.enum('type', ['group', 'news', 'price', 'ugc', 'workshop', 'workshop_new', 'workshop_update'])
+      .notNullable()
+      .alter();
+  })
+  .raw('UPDATE watcher INNER JOIN app_workshop ON app_workshop.id = watcher.workshop_id SET watcher.app_id = app_workshop.app_id, watcher.workshop_id = NULL, type = "workshop" WHERE workshop_id IS NOT NULL')
   .alterTable('watcher', (table) => {
     table.dropForeign('workshop_id');
     table.dropColumn('workshop_id');
@@ -68,5 +78,4 @@ exports.down = (knex: Knex) => knex.schema
       .notNullable()
       .alter();
   })
-  .raw('UPDATE watcher SET type = "workshop" WHERE type = ""')
   .dropTable('app_workshop');

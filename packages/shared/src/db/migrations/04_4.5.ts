@@ -23,6 +23,7 @@ exports.up = (knex: Knex) => knex.schema
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
   })
+  .raw('DELETE FROM app WHERE type NOT IN ("application", "config", "dlc", "game", "hardware", "music", "video")')
   .raw('UPDATE app SET type = LOWER(type)')
   .alterTable('app', (table) => {
     table.enum('type', ['application', 'config', 'dlc', 'game', 'hardware', 'music', 'video'])
