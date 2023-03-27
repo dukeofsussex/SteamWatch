@@ -188,9 +188,11 @@ export default class MentionsCommand extends GuildOnlyCommand {
     const bulkInsert = async (entityId: string, type: string) => {
       const watchers = await db.select('watcher.id AS id')
         .from('watcher')
+        .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
         .leftJoin('watcher_mention', (builder) => builder.on('watcher_mention.watcher_id', 'watcher.id')
           .andOn('watcher_mention.entity_id', entityId))
-        .whereNull('watcher_mention.watcher_id');
+        .whereNull('watcher_mention.watcher_id')
+        .andWhere('guild_id', ctx.guildID!);
 
       if (!watchers.length) {
         return [];
