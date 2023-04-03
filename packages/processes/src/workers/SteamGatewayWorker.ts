@@ -1,10 +1,8 @@
 import { join } from 'node:path';
 import { subMonths } from 'date-fns';
 import {
-  AppChanges,
   db,
   logger,
-  PackageChanges,
   steamClient,
   SteamUtil,
 } from '@steamwatch/shared';
@@ -58,6 +56,7 @@ export default class SteamGatewayWorker extends Queue<QueuedGateway> {
       apps: [],
       packages: [],
     };
+    this.queueDelay = 1000;
   }
 
   override async start() {
@@ -87,7 +86,7 @@ export default class SteamGatewayWorker extends Queue<QueuedGateway> {
     const res = await steamClient.getProductInfo(apps, packages, true);
 
     await Promise.all([
-      // SteamUtil.persistApps(Object.values(res.apps)),
+      SteamUtil.persistApps(Object.values(res.apps)),
       SteamUtil.persistFreePackages(Object.entries(res.packages), true),
     ]);
 
@@ -114,6 +113,8 @@ export default class SteamGatewayWorker extends Queue<QueuedGateway> {
       clearTimeout(this.timeout);
       this.timeout = undefined;
     }
+
+    this.wait();
   }
 
   protected size() {
@@ -145,14 +146,14 @@ export default class SteamGatewayWorker extends Queue<QueuedGateway> {
 
     batch.apps = this.queue.apps.slice(
       this.offset.apps,
-      Math.max(
+      this.offset.apps + Math.max(
         BATCH_SIZE / 2,
         BATCH_SIZE - (this.queue.packages.length - this.offset.packages),
       ),
     );
     batch.packages = this.queue.packages.slice(
       this.offset.packages,
-      Math.max(
+      this.offset.packages + Math.max(
         BATCH_SIZE / 2,
         BATCH_SIZE - (this.queue.apps.length - this.offset.apps),
       ),
