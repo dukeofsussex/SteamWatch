@@ -26,6 +26,8 @@ export default class SubscriptionCommand extends SlashCommand {
 
   // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
+    await ctx.defer(this.deferEphemeral);
+
     const patron = await db.select('pledgeTier', 'guildId', 'guild.name')
       .from('patron')
       .where('discordId', ctx.user.id)
