@@ -109,7 +109,7 @@ export default class ForumWatcher extends Watcher {
         // eslint-disable-next-line no-await-in-loop
         const posts = await SteamAPI.getForumThreadPosts(groupId64, forum.id, thread.id);
 
-        if (posts && Object.keys(posts.comments_raw).length) {
+        if (posts && posts.comments_raw && Object.keys(posts.comments_raw).length) {
           const commentId = Object.keys(posts.comments_raw)[0]!;
           const post = posts.comments_raw[commentId]!;
           thread.author = post.author;
