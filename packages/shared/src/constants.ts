@@ -10,7 +10,7 @@ export const DEFAULT_CURRENCY = { code: 'USD', countryCode: 'US' };
 
 export const DEFAULT_COMPONENT_EXPIRATION = 180000; // 3m
 
-export const DEFAULT_STEAM_ICON = 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/753/135dc1ac1cd9763dfc8ad52f4e880d2ac058a36c.jpg';
+export const DEFAULT_STEAM_ICON = 'https://steamuserimages-a.akamaihd.net/ugc/868480752636433334/1D2881C5C9B3AD28A1D8852903A8F9E1FF45C2C8/';
 
 export const EMBED_COLOURS = {
   DEFAULT: 0x00ADEE,

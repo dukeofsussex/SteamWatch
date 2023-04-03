@@ -493,9 +493,9 @@ export default class EmbedBuilder {
   }
 
   static getImage(type: WatcherType, options: {
-    appId: number,
-    appIcon: string,
-    groupAvatar: string,
+    appId: App['id'],
+    appIcon: App['icon'],
+    groupAvatar: Group['avatar'],
     groupAvatarSize: 'full' | 'medium'
   }) {
     switch (type) {

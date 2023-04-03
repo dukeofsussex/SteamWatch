@@ -15,7 +15,7 @@ export interface App {
   id: number;
   oggId: number | null;
   name: string;
-  icon: string;
+  icon: string | null;
   type: AppType;
   lastCheckedNews: Date | null;
 }

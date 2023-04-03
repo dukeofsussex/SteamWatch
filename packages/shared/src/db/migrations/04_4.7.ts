@@ -17,6 +17,10 @@ exports.up = (knex: Knex) => knex.schema
       .notNullable();
   })
   .raw('UPDATE app_price SET last_checked = UTC_TIMESTAMP() WHERE last_checked IS NULL')
+  .alterTable('app', (table) => {
+    table.string('icon', 42)
+      .alter();
+  })
   .alterTable('app_price', (table) => {
     table.integer('app_id')
       .unsigned()
@@ -65,6 +69,11 @@ exports.up = (knex: Knex) => knex.schema
   .renameTable('app_price', 'price');
 
 exports.down = (knex: Knex) => knex.schema
+  .alterTable('app', (table) => {
+    table.string('icon', 42)
+      .notNullable()
+      .alter();
+  })
   .raw('RENAME TABLE `price` TO `app_price`')
   .raw('DELETE FROM app_price WHERE bundle_id IS NOT NULL OR sub_id IS NOT NULL')
   .alterTable('app_price', (table) => {

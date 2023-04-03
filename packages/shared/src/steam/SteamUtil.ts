@@ -9,6 +9,7 @@ import {
   PackageInfo,
   PublishedFile,
 } from './SteamWatchUser';
+import { DEFAULT_STEAM_ICON } from '../constants';
 import db, {
   App,
   AppType,
@@ -82,7 +83,6 @@ const CurrencyFormats: { [key in CurrencyCode]: CurrencyFormatOptions } = {
   ZAR: { prepend: 'R ' },
 };
 
-const TrackedAppTypes = new Set(Object.values(AppType));
 const PermittedAppTypes: Record<WatcherType, AppType[]> = {
   [WatcherType.Curator]: [],
   [WatcherType.Free]: [],
@@ -107,6 +107,7 @@ const PermittedAppTypes: Record<WatcherType, AppType[]> = {
   [WatcherType.WorkshopNew]: [AppType.Game],
   [WatcherType.WorkshopUpdate]: [AppType.Game],
 };
+const TrackedAppTypes = new Set(Object.values(AppType));
 
 export default class SteamUtil {
   static readonly BP = {
@@ -172,7 +173,9 @@ export default class SteamUtil {
     },
     Group: (identifier: string | number) => `https://steamcommunity.com/${(typeof identifier === 'number' ? 'gid' : 'groups')}/${identifier}`,
     GroupAvatar: (avatar: string, size: 'full' | 'medium') => `https://avatars.akamai.steamstatic.com/${avatar}_${size}.jpg`,
-    Icon: (appId: number, icon: string) => `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.jpg`,
+    Icon: (appId: number, icon: string | null) => (icon
+      ? `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/${appId}/${icon}.jpg`
+      : DEFAULT_STEAM_ICON),
     MarketListing: (appId: number, marketHashName: string) => encodeURI(`https://steamcommunity.com/market/listings/${appId}/${marketHashName}`),
     MarketListingIcon: (icon: string) => `https://community.cloudflare.steamstatic.com/economy/image/${icon}`,
     NewsImage: (imageUrl: string) => imageUrl.replace(/\{STEAM_CLAN(?:_LOC)?_IMAGE\}/, 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/clans'),
@@ -442,23 +445,6 @@ export default class SteamUtil {
     return (await this.persistApps([apps[appId]!]))[0] || null;
   }
 
-  static async persistBundle(bundleId: number) {
-    const response = await SteamAPI.getBundlePrices([bundleId], 'US');
-
-    if (!response?.length) {
-      return null;
-    }
-
-    const bundle = {
-      id: response[0]!.bundleid,
-      name: response[0]!.name,
-    } as Bundle;
-
-    await db.insert(bundle).into('bundle');
-
-    return bundle;
-  }
-
   static async persistApps(apps: AppInfo[]) {
     const dbApps = apps.filter(({ appinfo }) => SteamUtil.isTrackedAppType(
       appinfo.common?.type ?? 'Unknown',
@@ -479,6 +465,23 @@ export default class SteamUtil {
     }
 
     return dbApps;
+  }
+
+  static async persistBundle(bundleId: number) {
+    const response = await SteamAPI.getBundlePrices([bundleId], 'US');
+
+    if (!response?.length) {
+      return null;
+    }
+
+    const bundle = {
+      id: response[0]!.bundleid,
+      name: response[0]!.name,
+    } as Bundle;
+
+    await db.insert(bundle).into('bundle');
+
+    return bundle;
   }
 
   static async persistGroup(identifier: string | number) {
