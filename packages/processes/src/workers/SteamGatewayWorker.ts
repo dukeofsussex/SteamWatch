@@ -33,8 +33,6 @@ const IGNORED_BILLING_TYPES = new Set([
 ]);
 
 export default class SteamGatewayWorker extends Queue<QueuedGateway> {
-  private changenumber: number;
-
   protected filePath: string;
 
   protected offset: {
@@ -46,7 +44,6 @@ export default class SteamGatewayWorker extends Queue<QueuedGateway> {
 
   constructor() {
     super();
-    this.changenumber = -1;
     this.filePath = join(__dirname, '..', '..', 'data', 'gateway.queue.json');
     this.offset = {
       apps: 0,
@@ -175,28 +172,15 @@ export default class SteamGatewayWorker extends Queue<QueuedGateway> {
     return batch;
   }
 
-  private async onChangeListReceived(changenumber: number, apps: number[], packages: number[]) {
+  private async onChangeListReceived(changeNumber: number, apps: number[], packages: number[]) {
     this.enqueue(apps, this.queue.apps);
     this.enqueue(packages, this.queue.packages);
 
     logger.info({
       message: 'Processing changelist',
-      prevChangeNr: this.changenumber,
-      currChangeNr: changenumber,
+      changeNumber,
       apps,
       packages,
     });
-
-    if (this.changenumber !== -1 && (changenumber - this.changenumber) > 1) {
-      const changes = await steamClient.getProductChanges(this.changenumber);
-      this.enqueue(
-        (changes.appChanges as any).map((app: AppChanges) => app.appid),
-        this.queue.apps,
-      );
-      this.enqueue(
-        (changes.packageChanges as any).map((pkg: PackageChanges) => pkg.packageid),
-        this.queue.packages,
-      );
-    }
   }
 }
