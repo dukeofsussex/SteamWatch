@@ -1,8 +1,7 @@
-import { addHours, subMonths } from 'date-fns';
+import { addHours, subMinutes, subMonths } from 'date-fns';
 import {
   db,
   EmbedBuilder,
-  env,
   FreePackage,
   logger,
   PackageInfo,
@@ -142,13 +141,11 @@ export default class FreeWatcher extends Watcher {
   }
 
   private static async fetchNextPackages() {
-    return db.select<FreePackage[]>(
-      'free_package.*',
-      db.raw('TIMESTAMPDIFF(HOUR, last_checked, UTC_TIMESTAMP()) AS priority'),
-    ).from('free_package')
-      .whereRaw('last_checked <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? HOUR)', [env.settings.watcherRunFrequency])
+    return db.select<FreePackage[]>('*')
+      .from('free_package')
+      .where('lastChecked', '<=', subMinutes(new Date(), 15))
       .andWhere('active', 0)
-      .orderBy('priority', 'desc')
+      .orderBy('lastChecked', 'asc')
       .limit(BATCH_SIZE);
   }
 }
