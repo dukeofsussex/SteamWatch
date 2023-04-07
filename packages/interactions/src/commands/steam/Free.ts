@@ -40,11 +40,15 @@ export default class FreeCommand extends SlashCommand {
       const pkg = packages[i];
 
       // eslint-disable-next-line no-await-in-loop
-      await ctx.embed(EmbedBuilder.createFreePackage({
-        icon: pkg.appIcon,
-        id: pkg.appId,
-        name: pkg.appName,
-      }, pkg));
+      await ctx.sendFollowUp({
+        embeds: [
+          EmbedBuilder.createFreePackage({
+            icon: pkg.appIcon,
+            id: pkg.appId,
+            name: pkg.appName,
+          }, pkg),
+        ],
+      });
     }
   }
 }
