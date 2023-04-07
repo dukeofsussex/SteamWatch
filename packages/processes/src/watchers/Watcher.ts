@@ -94,6 +94,6 @@ export default abstract class Watcher extends Worker {
   }
 
   protected pause() {
-    this.timeout = setTimeout(() => this.work(), 900000); // 15m
+    this.timeout = setTimeout(() => this.work(), 300000); // 5m
   }
 }
