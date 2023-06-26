@@ -19,12 +19,14 @@ import {
 import {
   AppType,
   capitalize,
+  ChannelWebhook,
   db,
   DEFAULT_COMPONENT_EXPIRATION,
   DEFAULT_STEAM_ICON,
   DiscordAPI,
   EmbedBuilder,
   EMBED_COLOURS,
+  EMOJIS,
   env,
   EPublishedFileInfoMatchingFileType as EPFIMFileType,
   EPublishedFileQueryType,
@@ -63,6 +65,10 @@ const ThreadArg = {
   autocomplete: true,
   required: false,
 };
+
+interface WatcherArgument {
+  watcher_id: number;
+}
 
 interface BaseArguments {
   channel: string;
@@ -115,7 +121,8 @@ interface AddArguments {
 type ListArguments = BaseArguments;
 
 interface RemoveArguments {
-  watcher_id: number;
+  all: Record<never, never>;
+  single: WatcherArgument;
 }
 
 interface CommandArguments {
@@ -128,13 +135,13 @@ export default class WatchersCommand extends GuildOnlyCommand {
   constructor(creator: SlashCreator) {
     super(creator, {
       name: 'watchers',
-      description: 'Manage app watchers.',
+      description: 'Manage watchers.',
       dmPermission: false,
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
       options: [{
         type: CommandOptionType.SUB_COMMAND_GROUP,
         name: 'add',
-        description: 'Add a watcher for a Steam item.',
+        description: 'Add watchers.',
         options: [{
           type: CommandOptionType.SUB_COMMAND,
           name: 'curator',
@@ -239,7 +246,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       }, {
         type: CommandOptionType.SUB_COMMAND,
         name: 'list',
-        description: 'List app watchers.',
+        description: 'List watchers.',
         options: [
           {
             ...ChannelArg,
@@ -248,12 +255,21 @@ export default class WatchersCommand extends GuildOnlyCommand {
           },
         ],
       }, {
-        type: CommandOptionType.SUB_COMMAND,
+        type: CommandOptionType.SUB_COMMAND_GROUP,
         name: 'remove',
-        description: 'Remove a watcher.',
-        options: [
-          CommonCommandOptions.Watcher,
-        ],
+        description: 'Remove watchers.',
+        options: [{
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'all',
+          description: 'Remove all watchers.',
+        }, {
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'single',
+          description: 'Remove a watcher.',
+          options: [
+            CommonCommandOptions.Watcher,
+          ],
+        }],
       }],
       requiredPermissions: ['MANAGE_CHANNELS'],
       throttling: {
@@ -377,7 +393,11 @@ export default class WatchersCommand extends GuildOnlyCommand {
       return WatchersCommand.list(ctx, list);
     }
 
-    return WatchersCommand.remove(ctx, remove!);
+    if (remove!.all) {
+      return WatchersCommand.removeAll(ctx);
+    }
+
+    return WatchersCommand.removeSingle(ctx, remove!.single);
   }
 
   private static async addApp(
@@ -1100,7 +1120,75 @@ export default class WatchersCommand extends GuildOnlyCommand {
     }
   }
 
-  private static async remove(ctx: CommandContext, { watcher_id: watcherId }: RemoveArguments) {
+  private static async removeAll(ctx: CommandContext) {
+    const defaultEmbed = [{
+      color: EMBED_COLOURS.DEFAULT,
+      description: 'No watchers deleted.',
+    }];
+
+    await ctx.send({
+      embeds: [{
+        color: EMBED_COLOURS.ERROR,
+        description: `${EMOJIS.WARNING} Are you sure you want to **delete all** watchers?\n(This action cannot be undone!)`,
+      }],
+      components: [{
+        type: ComponentType.ACTION_ROW,
+        components: [{
+          custom_id: 'delete',
+          label: 'Delete all watchers',
+          style: ButtonStyle.DESTRUCTIVE,
+          type: ComponentType.BUTTON,
+        }, {
+          custom_id: 'cancel',
+          label: 'Cancel',
+          type: ComponentType.BUTTON,
+          style: ButtonStyle.SECONDARY,
+        }],
+      }],
+    });
+
+    // Delete all watchers
+    ctx.registerComponent(
+      'delete',
+      async () => {
+        const removed = await db.delete()
+          .from('watcher')
+          .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
+          .where('guild_id', ctx.guildID!);
+
+        const webhooks = await db.select('*')
+          .from('channel_webhook')
+          .where('id', ctx.guildID!);
+
+        for (let i = 0; i < webhooks.length; i += 1) {
+          // eslint-disable-next-line no-await-in-loop
+          await WatchersCommand.deleteWebhook(webhooks[i]!);
+        }
+
+        ctx.unregisterComponent('delete');
+
+        return ctx.success(`Removed ${removed} watchers.`);
+      },
+      DEFAULT_COMPONENT_EXPIRATION,
+      () => {
+        try {
+          ctx.editOriginal({ embeds: defaultEmbed, components: [] });
+        } catch {
+          // Interaction may have already been deleted by the user
+          // or expired before being able to send this message
+        }
+      },
+    );
+
+    // Cancel
+    ctx.registerComponent(
+      'cancel',
+      async (cctx) => cctx.editParent({ embeds: defaultEmbed, components: [] }),
+      DEFAULT_COMPONENT_EXPIRATION,
+    );
+  }
+
+  private static async removeSingle(ctx: CommandContext, { watcher_id: watcherId }: RemoveArguments['single']) {
     const watcher = await db.select(
       'watcher.id',
       'watcher.type',
@@ -1155,19 +1243,11 @@ export default class WatchersCommand extends GuildOnlyCommand {
       .then((res: any) => parseInt(res.count, 10));
 
     if (count === 0) {
-      await db.delete()
-        .from('channel_webhook')
-        .where('id', watcher.channelId);
-
-      try {
-        await DiscordAPI.delete(Routes.webhook(watcher.webhookId));
-      } catch (err) {
-        if ((err as DiscordAPIError).code === RESTJSONErrorCodes.UnknownWebhook) {
-          logger.info('Webhook already removed');
-        } else {
-          logger.error('Unable to remove webhook!');
-        }
-      }
+      await WatchersCommand.deleteWebhook({
+        id: watcher.channelId,
+        webhookId: watcher.webhookId,
+        webhookToken: watcher.webhookToken,
+      });
     }
 
     return ctx.success(`Removed **${watcher.type}** watcher (#${watcherId}) for **${watcher.name}** from <#${watcher.channelId}>!`, {
@@ -1178,6 +1258,24 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }),
       },
     });
+  }
+
+  private static async deleteWebhook(channelWebhook: Omit<ChannelWebhook, 'guildId'>) {
+    await db.delete()
+      .from('channel_webhook')
+      .where('id', channelWebhook.id);
+
+    try {
+      await DiscordAPI.delete(
+        Routes.webhook(channelWebhook.webhookId, channelWebhook.webhookToken),
+      );
+    } catch (err) {
+      if ((err as DiscordAPIError).code === RESTJSONErrorCodes.UnknownWebhook) {
+        logger.info('Webhook already removed');
+      } else {
+        logger.error('Unable to remove webhook!');
+      }
+    }
   }
 
   private static async hasReachedMaxWatchers(guildId: string) {
