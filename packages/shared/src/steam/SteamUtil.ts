@@ -265,7 +265,7 @@ export default class SteamUtil {
       return match[1]!;
     }
 
-    return id;
+    return id.replaceAll(' ', '_');
   }
 
   static async findStoreItem(id: string) {
