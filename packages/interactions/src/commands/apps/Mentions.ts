@@ -63,7 +63,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
       options: [{
         type: CommandOptionType.SUB_COMMAND_GROUP,
         name: 'add',
-        description: 'Role and/or user to add to a watcher.',
+        description: 'Add role and/or user mentions to watchers.',
         options: [{
           type: CommandOptionType.SUB_COMMAND,
           name: 'all',
@@ -92,7 +92,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
       }, {
         type: CommandOptionType.SUB_COMMAND_GROUP,
         name: 'remove',
-        description: 'Role and/or user to remove from a watcher.',
+        description: 'Remove role and/or user mentions from watchers.',
         options: [{
           type: CommandOptionType.SUB_COMMAND,
           name: 'all',
@@ -104,7 +104,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
         }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'single',
-          description: 'Role and/or user to remove from  a single watcher.',
+          description: 'Role and/or user to remove from a single watcher.',
           options: [
             CommonCommandOptions.Watcher,
             RoleArg,
