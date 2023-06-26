@@ -1,24 +1,24 @@
 import { oneLine, stripIndents } from 'common-tags';
-import {
-  ButtonStyle,
-  CommandContext,
-  ComponentContext,
-  ComponentSelectMenu,
-  ComponentType,
-  SlashCreator,
-} from 'slash-create';
+import { RESTGetAPIGuildResult, Routes } from 'discord-api-types/v10';
+import type { AutocompleteContext, CommandContext, SlashCreator } from 'slash-create';
 import {
   Currency,
   db,
-  DEFAULT_COMPONENT_EXPIRATION,
+  DiscordAPI,
   DiscordUtil,
   EMBED_COLOURS,
   env,
+  logger,
   PriceType,
   SteamUtil,
   WatcherType,
 } from '@steamwatch/shared';
+import CommonCommandOptions from '../../CommonCommandOptions';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
+
+interface CommandArguments {
+  currency?: number;
+}
 
 export default class CurrencyCommand extends GuildOnlyCommand {
   constructor(creator: SlashCreator) {
@@ -27,133 +27,89 @@ export default class CurrencyCommand extends GuildOnlyCommand {
       description: 'Manage the preferred app currency for the guild.',
       dmPermission: false,
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
+      options: [
+        {
+          ...CommonCommandOptions.Currency,
+          description: 'New currency',
+        },
+      ],
       requiredPermissions: ['MANAGE_CHANNELS'],
     });
 
     this.filePath = __filename;
   }
 
-  override async run(ctx: CommandContext) {
-    try {
-      const setup = await this.setupGuild(ctx);
+  // eslint-disable-next-line class-methods-use-this
+  override async autocomplete(ctx: AutocompleteContext) {
+    const value = ctx.options[ctx.focused];
 
-      // Just selected a currency, no need to do it a second time
-      if (setup) {
-        return;
-      }
-    } catch {
-      return;
-    }
-
-    let page = 0;
-
-    let dbCurrency = await db.select('currency.*')
-      .from('guild')
-      .innerJoin('currency', 'currency.id', 'guild.currency_id')
-      .where('guild.id', ctx.guildID)
-      .first() as Currency;
-
-    const placeholder = `[${dbCurrency.code}] ${dbCurrency.name}`;
-    const embeds = [{
-      color: EMBED_COLOURS.DEFAULT,
-      description: `Current currency: ${DiscordUtil.getFlagEmoji(dbCurrency.countryCode)} [${dbCurrency.code}] ${dbCurrency.name}`,
-    }];
-
-    await ctx.send({
-      embeds,
-      components: [{
-        type: ComponentType.ACTION_ROW,
-        components: [{
-          custom_id: 'currency_change',
-          label: 'Change currency',
-          style: ButtonStyle.PRIMARY,
-          type: ComponentType.BUTTON,
-        }, {
-          custom_id: 'currency_change_cancel',
-          label: 'Cancel',
-          type: ComponentType.BUTTON,
-          style: ButtonStyle.SECONDARY,
-        }],
-      }],
-    });
-
-    // Change currency
-    ctx.registerComponent(
-      'currency_change',
-      async (cctx) => cctx.editParent({
-        embeds,
-        components: await CurrencyCommand.buildModifiedCurrencyComponents(page, placeholder),
-      }),
-      DEFAULT_COMPONENT_EXPIRATION,
-      () => {
-        try {
-          ctx.editOriginal({ embeds, components: [] });
-        } catch {
-          // Interaction may have already been deleted by the user
-          // or expired before being able to send this message
-        }
-      },
-    );
-
-    // Cancel
-    ctx.registerComponent(
-      'currency_change_cancel',
-      async (cctx) => cctx.editParent({ embeds, components: [] }),
-      DEFAULT_COMPONENT_EXPIRATION,
-    );
-
-    // Change currency select options
-    ctx.registerComponent(
-      'currency_select_change',
-      async (cctx) => {
-        page = page === 0 ? 1 : 0;
-        return cctx.editParent({
-          embeds,
-          components: await CurrencyCommand.buildModifiedCurrencyComponents(page, placeholder),
-        });
-      },
-      DEFAULT_COMPONENT_EXPIRATION,
-    );
-
-    // Currency selected
-    ctx.registerComponent(
-      'currency_select',
-      async (cctx: ComponentContext) => {
-        const currencyId = parseInt(cctx.data.data.values![0]!, 10);
-
-        dbCurrency = await db.select('*')
-          .from('currency')
-          .where('id', currencyId)
-          .first() as Currency;
-
-        // Fetch all apps that aren't already being tracked in the new currency
-        const prices = await CurrencyCommand.fetchUntrackedPrices(dbCurrency.id, ctx.guildID!);
-
-        // Process missing app prices for new currency
-        if (prices.length) {
-          const invalid = await CurrencyCommand.processPrices(prices, dbCurrency);
-
-          if (invalid.length) {
-            return ctx.error(stripIndents`
-              Unable to change currency to **${dbCurrency.code}**.
-              ${invalid.join('\n')}
-            `);
-          }
-        }
-
-        await db('guild').update('currency_id', currencyId)
-          .where('id', ctx.guildID);
-
-        return ctx.success(`Currency set to ${DiscordUtil.getFlagEmoji(dbCurrency.countryCode)} [${dbCurrency.code}] ${dbCurrency.name}.`);
-      },
-      DEFAULT_COMPONENT_EXPIRATION,
-    );
+    return ctx.sendResults(await GuildOnlyCommand.createCurrencyAutocomplete(value));
   }
 
-  private static async buildModifiedCurrencyComponents(page: number, placeholder: string) {
-    const components = await GuildOnlyCommand.buildCurrencyComponents(page);
-    (components![0]!.components[0] as ComponentSelectMenu).placeholder = placeholder;
-    return components;
+  // eslint-disable-next-line class-methods-use-this
+  override async run(ctx: CommandContext) {
+    await ctx.defer();
+
+    const { currency } = ctx.options as CommandArguments;
+
+    if (!currency) {
+      const dbCurrency = await db.select('currency.*')
+        .from('guild')
+        .innerJoin('currency', 'currency.id', 'guild.currency_id')
+        .where('guild.id', ctx.guildID)
+        .first();
+
+      return dbCurrency
+        ? ctx.embed({
+          color: EMBED_COLOURS.DEFAULT,
+          description: `Currency: ${DiscordUtil.getFlagEmoji(dbCurrency.countryCode)} [${dbCurrency.code}] ${dbCurrency.name}`,
+        })
+        : ctx.error('Currency has not yet been set!');
+    }
+
+    const dbCurrency = await db.select('*')
+      .from('currency')
+      .where('id', currency)
+      .first() as Currency;
+
+    if (!dbCurrency) {
+      return ctx.error('Invalid currency identifier!');
+    }
+
+    if (!await GuildOnlyCommand.isGuildSetUp(ctx)) {
+      const guild = await DiscordAPI.get(Routes.guild(ctx.guildID!)) as RESTGetAPIGuildResult;
+
+      await db.insert({
+        id: ctx.guildID!,
+        name: guild.name,
+        currencyId: currency,
+      }).into('guild');
+
+      logger.info({
+        message: 'New guild set up',
+        guild,
+      });
+    } else if (currency !== dbCurrency.id) {
+      // Fetch all apps that aren't already being tracked in the new currency
+      const prices = await CurrencyCommand.fetchUntrackedPrices(dbCurrency.id, ctx.guildID!);
+
+      // Process missing app prices for new currency
+      if (prices.length) {
+        const invalid = await CurrencyCommand.processPrices(prices, dbCurrency);
+
+        if (invalid.length) {
+          return ctx.error(stripIndents`
+           Unable to change currency to **${dbCurrency.code}**.
+           ${invalid.join('\n')}
+         `);
+        }
+      }
+
+      await db('guild').update('currency_id', currency)
+        .where('id', ctx.guildID);
+    }
+
+    return ctx.success(`Currency set to ${DiscordUtil.getFlagEmoji(dbCurrency.countryCode)} [${dbCurrency.code}] ${dbCurrency.name}.`);
   }
 
   private static fetchUntrackedPrices(currencyId: number, guildId: string) {
@@ -207,7 +163,7 @@ export default class CurrencyCommand extends GuildOnlyCommand {
       .andWhere('guild.id', guildId);
   }
 
-  private static async processPrices(prices: any[], currency: any) {
+  private static async processPrices(prices: any[], currency: Currency) {
     const groupedPrices = prices.reduce((group, price) => {
       if (!group[price.type]) {
         // eslint-disable-next-line no-param-reassign

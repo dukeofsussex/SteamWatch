@@ -134,11 +134,12 @@ export default class MentionsCommand extends GuildOnlyCommand {
     return ctx.sendResults(await GuildOnlyCommand.createWatcherAutocomplete(value, ctx.guildID!));
   }
 
+  // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
-    try {
-      await this.setupGuild(ctx);
-    } catch {
-      return null;
+    await ctx.defer();
+
+    if (!await GuildOnlyCommand.isGuildSetUp(ctx)) {
+      return ctx.error('Please set your preferred currency using the `/currency` command!');
     }
 
     const {

@@ -10,13 +10,13 @@ import {
   db,
   EmbedBuilder,
   env,
-  MAX_OPTIONS,
   PriceType,
   SteamUtil,
   StoreItem,
   WatcherType,
 } from '@steamwatch/shared';
 import CommonCommandOptions from '../../CommonCommandOptions';
+import GuildOnlyCommand from '../../GuildOnlyCommand';
 
 interface CommandArguments {
   app: string;
@@ -38,20 +38,6 @@ export default class PriceCommand extends SlashCommand {
     this.filePath = __filename;
   }
 
-  private static async createCurrencyAutocomplete(query: string) {
-    const currencies = await db.select('*')
-      .from('currency')
-      .where('id', query)
-      .orWhere('name', 'LIKE', `%${query}%`)
-      .orWhere('code', 'LIKE', `${query}%`)
-      .limit(MAX_OPTIONS);
-
-    return currencies.map((currency) => ({
-      name: `[${currency.code}] ${currency.name}`,
-      value: currency.id,
-    }));
-  }
-
   // eslint-disable-next-line class-methods-use-this
   override async autocomplete(ctx: AutocompleteContext) {
     const value = ctx.options[ctx.focused];
@@ -60,7 +46,7 @@ export default class PriceCommand extends SlashCommand {
       return ctx.sendResults(await SteamUtil.createAppAutocomplete(value));
     }
 
-    return ctx.sendResults(await PriceCommand.createCurrencyAutocomplete(value));
+    return ctx.sendResults(await GuildOnlyCommand.createCurrencyAutocomplete(value));
   }
 
   // eslint-disable-next-line class-methods-use-this

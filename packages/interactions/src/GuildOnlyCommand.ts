@@ -1,22 +1,10 @@
 import { oneLine } from 'common-tags';
-import { Routes, RESTGetAPIGuildResult, RESTGetAPIGuildThreadsResult } from 'discord-api-types/v10';
-import {
-  ButtonStyle,
-  CommandContext,
-  ComponentActionRow,
-  ComponentContext,
-  ComponentType,
-  SlashCommand,
-} from 'slash-create';
+import { Routes, RESTGetAPIGuildThreadsResult } from 'discord-api-types/v10';
+import { CommandContext, SlashCommand } from 'slash-create';
 import {
   db,
-  DEFAULT_COMPONENT_EXPIRATION,
   DiscordAPI,
-  DiscordUtil,
-  EMBED_COLOURS,
-  EMOJIS,
   EPublishedFileInfoMatchingFileType as EPFIMFileType,
-  logger,
   MAX_OPTIONS,
   WatcherType,
 } from '@steamwatch/shared';
@@ -26,36 +14,18 @@ export default class GuildOnlyCommand extends SlashCommand {
     return typeof ctx.guildID !== 'undefined' && super.hasPermission(ctx);
   }
 
-  protected static async buildCurrencyComponents(page: number): Promise<ComponentActionRow[]> {
+  static async createCurrencyAutocomplete(query: string) {
     const currencies = await db.select('*')
       .from('currency')
-      .limit(MAX_OPTIONS)
-      .offset(page * MAX_OPTIONS)
-      .orderBy('name', 'asc');
+      .where('id', query)
+      .orWhere('name', 'LIKE', `%${query}%`)
+      .orWhere('code', 'LIKE', `${query}%`)
+      .limit(MAX_OPTIONS);
 
-    return [{
-      type: ComponentType.ACTION_ROW,
-      components: [{
-        custom_id: 'currency_select',
-        placeholder: 'Select your currency',
-        type: ComponentType.STRING_SELECT,
-        options: currencies.map(({
-          id, name, code, countryCode,
-        }) => ({
-          label: `[${code}] ${name}`,
-          value: id.toString(),
-          emoji: { name: DiscordUtil.getFlagEmoji(countryCode) },
-        })),
-      }],
-    }, {
-      type: ComponentType.ACTION_ROW,
-      components: [{
-        type: ComponentType.BUTTON,
-        custom_id: 'currency_select_change',
-        label: 'View more currencies',
-        style: ButtonStyle.PRIMARY,
-      }],
-    }];
+    return currencies.map((currency) => ({
+      name: `[${currency.code}] ${currency.name}`,
+      value: currency.id,
+    }));
   }
 
   protected static async createThreadAutocomplete(value: string, guildId: string) {
@@ -184,86 +154,14 @@ export default class GuildOnlyCommand extends SlashCommand {
   }
 
   /**
-   * @returns Boolean indicating whether the guild needed to be set up.
+   * @returns Boolean indicating whether the guild has been set up.
    */
-  protected async setupGuild(ctx: CommandContext) {
-    await ctx.defer(this.deferEphemeral);
-
-    const exists = await db.select('id')
+  protected static async isGuildSetUp(ctx: CommandContext) {
+    return db.select('id')
       .from('guild')
       .whereNotNull('currencyId')
       .andWhere('id', ctx.guildID)
       .first()
-      .then((res: any) => !!res);
-
-    if (exists) {
-      return false;
-    }
-
-    let page = 0;
-    const embeds = [{
-      color: EMBED_COLOURS.PENDING,
-      description: `${EMOJIS.ALERT} Please select your preferred currency for app prices`,
-    }];
-
-    await ctx.send({
-      embeds,
-      components: await GuildOnlyCommand.buildCurrencyComponents(page),
-    });
-
-    return new Promise<boolean>((resolve, reject) => {
-      // Change currency select options
-      ctx.registerComponent(
-        'currency_select_change',
-        async (cctx) => {
-          page = page === 0 ? 1 : 0;
-          return cctx.editParent({
-            embeds,
-            components: await GuildOnlyCommand.buildCurrencyComponents(page),
-          });
-        },
-        DEFAULT_COMPONENT_EXPIRATION,
-      );
-
-      // Finish guild setup
-      ctx.registerComponent(
-        'currency_select',
-        async (cctx: ComponentContext) => {
-          await cctx.editParent({
-            embeds: [{
-              color: EMBED_COLOURS.SUCCESS,
-              description: `${EMOJIS.SUCCESS} Guild ready!`,
-            }],
-            components: [],
-          });
-
-          const guild = await DiscordAPI.get(Routes.guild(ctx.guildID!), {
-            query: new URLSearchParams([['with_counts', 'true']]),
-          }) as RESTGetAPIGuildResult;
-
-          await db.insert({
-            id: ctx.guildID!,
-            name: guild.name,
-            currencyId: cctx.data.data.values![0],
-          }).into('guild')
-            .onConflict('id')
-            .merge(['currencyId']);
-
-          logger.info({
-            message: 'New guild set up',
-            guild,
-          });
-
-          ctx.unregisterComponent('currency_select');
-
-          resolve(true);
-        },
-        DEFAULT_COMPONENT_EXPIRATION,
-        () => {
-          ctx.timeout();
-          reject(new Error('Timed out'));
-        },
-      );
-    });
+      .then((res: any) => (res ? res.id !== 0 : false));
   }
 }

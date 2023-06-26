@@ -301,11 +301,12 @@ export default class WatchersCommand extends GuildOnlyCommand {
     return ctx.sendResults(await SteamUtil.createAppAutocomplete(value));
   }
 
+  // eslint-disable-next-line class-methods-use-this
   override async run(ctx: CommandContext) {
-    try {
-      await this.setupGuild(ctx);
-    } catch {
-      return null;
+    await ctx.defer();
+
+    if (!await GuildOnlyCommand.isGuildSetUp(ctx)) {
+      return ctx.error('Please set your preferred currency using the `/currency` command!');
     }
 
     if (!ctx.appPermissions?.has(PermissionFlagsBits.ManageWebhooks)) {
@@ -1365,8 +1366,8 @@ export default class WatchersCommand extends GuildOnlyCommand {
         ${oneLine`
           Unable to watch app prices for **${item.name} (${item.type})**
           in **${price.code}**!`}
-        This may be due to regional restrictions, or the app is either free or doesn't have a (regional) price assigned..
-        You can change your currency using \`/currency\`
+        This may be due to regional restrictions, or the app is either free or doesn't have a (regional) price assigned.
+        You can change your currency using the \`/currency\` command.
       `;
       }
 

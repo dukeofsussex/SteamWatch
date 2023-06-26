@@ -5,9 +5,9 @@ type EmbedOptions = Omit<MessageEmbedOptions, 'color' | 'description'>;
 
 declare module 'slash-create' {
   interface CommandContext {
-    embed(embed: MessageEmbedOptions): Promise<boolean | Message>;
-    success(message: string, embedOptions?: EmbedOptions): Promise<boolean | Message>;
-    error(message: string, embedOptions?: EmbedOptions): Promise<boolean | Message>;
+    embed(embed: MessageEmbedOptions): Promise<Message>;
+    success(message: string, embedOptions?: EmbedOptions): Promise<Message>;
+    error(message: string, embedOptions?: EmbedOptions): Promise<Message>;
     timeout(): Promise<void>;
   }
 }
