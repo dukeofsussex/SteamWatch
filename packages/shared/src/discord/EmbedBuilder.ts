@@ -130,7 +130,7 @@ export default class EmbedBuilder {
       },
       title: `${emoji} ${post.title}`,
       color: EMBED_COLOURS.DEFAULT,
-      description: post.contentPreview,
+      description: post.contentPreview.length > 1024 ? `${post.contentPreview.substring(0, 1024)}...` : post.contentPreview,
       url: post.url,
       timestamp: post.lastPostAt,
       thumbnail: {
