@@ -287,12 +287,11 @@ export default class WatchersCommand extends GuildOnlyCommand {
       return ctx.sendResults([]);
     }
 
+    const value = ctx.options[ctx.subcommands[0]!][ctx.subcommands[1]!][ctx.focused];
+
     if (ctx.focused === 'watcher_id') {
-      const value = ctx.options[ctx.subcommands[0]!][ctx.focused];
       return ctx.sendResults(await GuildOnlyCommand.createWatcherAutocomplete(value, ctx.guildID!));
     }
-
-    const value = ctx.options[ctx.subcommands[0]!][ctx.subcommands[1]!][ctx.focused];
 
     if (ctx.focused === 'thread') {
       return ctx.sendResults(await GuildOnlyCommand.createThreadAutocomplete(value, ctx.guildID!));
