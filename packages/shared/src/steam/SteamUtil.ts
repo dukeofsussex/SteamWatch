@@ -194,11 +194,22 @@ export default class SteamUtil {
       return [];
     }
 
-    const results = await SteamAPI.searchStore(query);
+    const dbResults = await db.select('id', 'name')
+      .from('app')
+      .where('id', query)
+      .orWhere('name', 'LIKE', `${query}%`)
+      .limit(25)
+      .then((res) => res.map((r) => ({ name: r.name, value: r.id.toString() })));
 
-    return results?.map((r) => ({
+    if (dbResults.length) {
+      return dbResults;
+    }
+
+    const storeResults = await SteamAPI.searchStore(query);
+
+    return storeResults?.map((r) => ({
       name: r.name,
-      value: r.id.toString(),
+      value: r.id,
     })) ?? [];
   }
 
