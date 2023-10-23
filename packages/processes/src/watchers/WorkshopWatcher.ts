@@ -77,12 +77,11 @@ export default class WorkshopWatcher extends Watcher {
         break;
       }
 
-      cursor = response.next_cursor;
-
-      if (cursor === '*' || response.total === 0) {
+      if (response.next_cursor === '*' || cursor === response.next_cursor || response.total === 0) {
         break;
       }
 
+      cursor = response.next_cursor;
       index = response.publishedfiledetails.findIndex((file) => file[workshop.type === WatcherType.WorkshopNew ? 'time_created' : 'time_updated'] <= lastSubmissionMs);
       files = files.concat(
         response.publishedfiledetails.slice(0, index !== -1 ? index : undefined),
