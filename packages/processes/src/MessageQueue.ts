@@ -91,6 +91,7 @@ export default class MessageQueue extends Queue<QueuedMessage[]> {
           id,
           token,
           body: message,
+          code: errCode,
           err,
         });
 
