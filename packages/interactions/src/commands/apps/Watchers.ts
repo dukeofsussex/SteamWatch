@@ -630,7 +630,11 @@ export default class WatchersCommand extends GuildOnlyCommand {
         return ctx.error(`Unable to persist forum owner data for ${query}`);
       }
 
-      await db('app').update('oggId', metadata.owner);
+      if (app) {
+        await db('app').update('oggId', metadata.owner)
+          .where('id', app.id);
+      }
+
       await db.insert(forum)
         .into('forum');
 
