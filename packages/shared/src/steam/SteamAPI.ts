@@ -387,7 +387,11 @@ export default class SteamAPI {
     let metadata = null;
 
     try {
-      res = await fetch(forumUrl);
+      res = await fetch(forumUrl, {
+        headers: {
+          cookie: `wants_mature_content_apps=${forumUrl.match(/\d+/)?.[0]}`,
+        },
+      });
       text = await res.text();
       metadata = text.match(/InitializeForum\(.*?,\s({.*?}),\s'.*?\)/s);
       metadata = metadata ? JSON.parse(metadata[1]!) : null;
