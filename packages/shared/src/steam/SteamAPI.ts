@@ -358,7 +358,7 @@ export default class SteamAPI {
   }
 
   static async getCuratorReviews(curatorId: number) {
-    const res = await this.request<CuratorReviewResponse>(`https://store.steampowered.com/curator/${curatorId}/ajaxgetfilteredrecommendations/?count=15&sort=newreleases`);
+    const res = await this.request<CuratorReviewResponse>(`https://store.steampowered.com/curator/${curatorId}/ajaxgetfilteredrecommendations/?count=15&sort=recent`);
     const reviews = res?.results_html.matchAll(/data-ds-itemkey=.*?(\d+).*?((?:Not\s)?Recommended|Informational).*?curator_review_date">(.*?)<\/.*?recommendation_desc">(.*?)<\//gs);
 
     return reviews
