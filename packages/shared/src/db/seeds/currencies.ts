@@ -7,11 +7,6 @@ const CURRENCIES = [
     country_code: 'ae',
   },
   {
-    code: 'ARS',
-    name: 'Argentine Peso',
-    country_code: 'ar',
-  },
-  {
     code: 'AUD',
     name: 'Australian Dollars',
     country_code: 'au',
@@ -162,11 +157,6 @@ const CURRENCIES = [
     country_code: 'th',
   },
   {
-    code: 'TRY',
-    name: 'Turkish Lira',
-    country_code: 'tr',
-  },
-  {
     code: 'TWD',
     name: 'New Taiwan Dollar',
     country_code: 'tw',
@@ -202,8 +192,18 @@ const CURRENCIES = [
     country_code: 'am',
   },
   {
+    code: 'LATAM-USD',
+    name: 'LATAM - U.S. Dollar',
+    country_code: 'ar',
+  },
+  {
+    code: 'MENA-USD',
+    name: 'MENA - U.S. Dollar',
+    country_code: 'tr',
+  },
+  {
     code: 'SASIA-USD',
-    name: 'South Asia U.S. Dollar',
+    name: 'South Asia - U.S. Dollar',
     country_code: 'bd',
   },
 ];

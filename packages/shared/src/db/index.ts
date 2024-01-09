@@ -4,12 +4,12 @@ import env from '../env';
 import logger from '../logger';
 import type { EPublishedFileInfoMatchingFileType as EPFIMFileType } from '../steam/SteamWatchUser';
 
-export type CurrencyCode = 'AED' | 'ARS' | 'AUD' | 'BRL' | 'CAD' | 'CHF'
+export type CurrencyCode = 'AED' | 'AUD' | 'BRL' | 'CAD' | 'CHF'
 | 'CLP' | 'CNY' | 'COP' | 'CRC' | 'EUR' | 'GBP' | 'HKD' | 'ILS'
 | 'IDR' | 'INR' | 'JPY' | 'KRW' | 'KWD' | 'KZT' | 'MXN' | 'MYR'
 | 'NOK' | 'NZD' | 'PEN' | 'PHP' | 'PLN' | 'QAR' | 'RUB' | 'SAR'
-| 'SGD' | 'THB' | 'TRY' | 'TWD' | 'UAH' | 'USD' | 'UYU' | 'VND'
-| 'ZAR' | 'CIS-USD' | 'SASIA-USD';
+| 'SGD' | 'THB' | 'TWD' | 'UAH' | 'USD' | 'UYU' | 'VND' | 'ZAR'
+| 'CIS-USD' | 'LATAM-USD' | 'MENA-USD' | 'SASIA-USD';
 
 export interface App {
   id: number;
