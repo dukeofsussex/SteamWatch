@@ -6,6 +6,8 @@ import env from './env';
 // eslint-disable-next-line
 import { homepage, version } from '../../../package.json'; // ESLint keeps changing the relative path
 
+export const CLIENT_PROXY = 'https://link.steam.watch';
+
 export const DEFAULT_CURRENCY = { code: 'USD', countryCode: 'US' };
 
 export const DEFAULT_COMPONENT_EXPIRATION = 180000; // 3m

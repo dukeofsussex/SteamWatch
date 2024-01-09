@@ -9,7 +9,7 @@ import {
   PackageInfo,
   PublishedFile,
 } from './SteamWatchUser';
-import { DEFAULT_STEAM_ICON } from '../constants';
+import { CLIENT_PROXY, DEFAULT_STEAM_ICON } from '../constants';
 import db, {
   App,
   AppType,
@@ -120,7 +120,7 @@ export default class SteamUtil {
     MarketListing: (appId: number, marketHashName: string) => SteamUtil.BP.Raw(`url/CommunityMarketSearch/${appId}/${marketHashName}`),
     OpenUrl: (url: string) => SteamUtil.BP.Raw(`openurl/${url}`),
     Profile: (id: string) => SteamUtil.BP.Raw(`url/SteamIDPage/${id}`),
-    Raw: (path: string) => `steam://${path}`,
+    Raw: (path: string) => `${CLIENT_PROXY}/${path}`,
     StoreApp: (id: number) => SteamUtil.BP.Raw(`store/${id}`),
     StoreBundle: (id: number) => SteamUtil.BP.Raw(`openurl/${SteamUtil.URLS.Store(id, PriceType.Bundle)}`),
     StoreSub: (id: number) => SteamUtil.BP.Raw(`url/StoreSubPage/${id}`),
