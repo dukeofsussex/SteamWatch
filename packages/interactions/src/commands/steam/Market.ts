@@ -11,11 +11,11 @@ import {
   db,
   EMBED_COLOURS,
   env,
-  MAX_OPTIONS,
   SteamAPI,
   SteamUtil,
 } from '@steamwatch/shared';
 import CommonCommandOptions from '../../CommonCommandOptions';
+import GuildOnlyCommand from '../../GuildOnlyCommand';
 
 interface CommandArguments {
   item: string;
@@ -55,7 +55,7 @@ export default class MarketCommand extends SlashCommand {
       return ctx.sendResults(await MarketCommand.createItemAutocomplete(value));
     }
 
-    return ctx.sendResults(await MarketCommand.createCurrencyAutocomplete(value));
+    return ctx.sendResults(await GuildOnlyCommand.createCurrencyAutocomplete(value));
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -169,19 +169,5 @@ export default class MarketCommand extends SlashCommand {
       name: `[${i.app_name || 'N/A'}] ${i.asset_description.market_name}`,
       value: `${i.asset_description.appid}/${i.asset_description.market_hash_name}`,
     })) ?? [];
-  }
-
-  private static async createCurrencyAutocomplete(query: string) {
-    const currencies = await db.select('*')
-      .from('currency')
-      .where('id', query)
-      .orWhere('name', 'LIKE', `%${query}%`)
-      .orWhere('code', 'LIKE', `${query}%`)
-      .limit(MAX_OPTIONS);
-
-    return currencies.map((currency) => ({
-      name: `[${currency.code}] ${currency.name}`,
-      value: currency.id,
-    }));
   }
 }
