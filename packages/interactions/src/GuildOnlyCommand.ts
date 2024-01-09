@@ -20,6 +20,7 @@ export default class GuildOnlyCommand extends SlashCommand {
       .where('id', query)
       .orWhere('name', 'LIKE', `%${query}%`)
       .orWhere('code', 'LIKE', `${query}%`)
+      .orderBy('name', 'asc')
       .limit(MAX_OPTIONS);
 
     return currencies.map((currency) => ({
