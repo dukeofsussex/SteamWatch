@@ -1,5 +1,8 @@
 import { CommandOptionType } from 'slash-create';
-import { EPublishedFileInfoMatchingFileType as EPFIMFileType } from '@steamwatch/shared';
+import {
+  EPublishedFileInfoMatchingFileType as EPFIMFileType,
+  WatcherType,
+} from '@steamwatch/shared';
 
 export default {
   App: {
@@ -66,5 +69,18 @@ export default {
         name: ft,
         value: EPFIMFileType[ft as keyof typeof EPFIMFileType],
       })),
+  },
+  WorkshopType: {
+    type: CommandOptionType.STRING,
+    name: 'type',
+    description: 'The type of workshop changes to watch',
+    required: true,
+    choices: [{
+      name: 'New submissions',
+      value: WatcherType.WorkshopNew,
+    }, {
+      name: 'Updates to existing submissions',
+      value: WatcherType.WorkshopUpdate,
+    }],
   },
 };

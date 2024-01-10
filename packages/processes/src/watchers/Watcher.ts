@@ -44,6 +44,7 @@ export default abstract class Watcher extends Worker {
       db.raw('MAX(pledge_tier) AS maxPledgeTier'),
     ).from('watcher')
       .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
+      .leftJoin('workshop', 'workshop.id', 'watcher.workshop_id')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
       .innerJoin('guild', 'guild.id', 'channel_webhook.guild_id')
       .leftJoin('patron', 'patron.guild_id', 'guild.id')

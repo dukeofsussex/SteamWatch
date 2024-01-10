@@ -3,6 +3,7 @@ import {
   env,
   logger,
   Manager,
+  WorkshopType,
 } from '@steamwatch/shared';
 import MessageQueue from './MessageQueue';
 import CuratorWatcher from './watchers/CuratorWatcher';
@@ -32,7 +33,8 @@ export default class ProcessManager implements Manager {
       new NewsWatcher(messageQueue),
       new PriceWatcher(messageQueue),
       new UGCWatcher(messageQueue),
-      new WorkshopWatcher(messageQueue),
+      new WorkshopWatcher(messageQueue, WorkshopType.App),
+      new WorkshopWatcher(messageQueue, WorkshopType.User),
       new GuildWorker(),
       new SteamGatewayWorker(),
       new TopGGWorker(),

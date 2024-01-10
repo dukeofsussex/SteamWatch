@@ -30,16 +30,6 @@ export enum AppType {
   Video = 'video',
 }
 
-export interface AppWorkshop {
-  id: number;
-  appId: number;
-  filetype: EPFIMFileType;
-  lastCheckedNew: Date | null;
-  lastNew: Date | null;
-  lastCheckedUpdate: Date | null;
-  lastUpdate: Date | null;
-}
-
 export interface Bundle {
   id: number;
   name: string;
@@ -193,10 +183,26 @@ export enum WatcherType {
   WorkshopUpdate = 'workshop_update',
 }
 
+export interface Workshop {
+  id: number;
+  appId: number;
+  steamId: string | null;
+  filetype: EPFIMFileType;
+  lastCheckedNew: Date | null;
+  lastNew: Date | null;
+  lastCheckedUpdate: Date | null;
+  lastUpdate: Date | null;
+  type: WorkshopType;
+}
+
+export enum WorkshopType {
+  App = 'app',
+  User = 'user',
+}
+
 declare module 'knex/types/tables' {
   interface Tables {
     app: App;
-    app_workshop: AppWorkshop;
     bundle: Bundle;
     channel_webhook: ChannelWebhook;
     currency: Currency;
@@ -210,6 +216,7 @@ declare module 'knex/types/tables' {
     ugc: UGC;
     watcher: Watcher;
     watcher_mention: WatcherMention;
+    workshop: Workshop;
   }
 }
 

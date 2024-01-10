@@ -5,6 +5,7 @@ import {
   SlashCommand,
   SlashCreator,
 } from 'slash-create';
+import SteamID from 'steamid';
 import {
   AppType,
   db,
@@ -19,13 +20,14 @@ import {
 import CommonCommandOptions from '../../CommonCommandOptions';
 
 interface BaseArguments {
-  filetype: EPFIMFileType;
   app: string;
+  filetype: EPFIMFileType;
+  type: WatcherType.WorkshopNew | WatcherType.WorkshopUpdate;
 }
 
 interface CommandArguments {
-  new: BaseArguments;
-  update: BaseArguments;
+  app: BaseArguments;
+  user: BaseArguments & { profile: string };
 }
 
 export default class WorkshopCommand extends SlashCommand {
@@ -36,18 +38,27 @@ export default class WorkshopCommand extends SlashCommand {
       ...(env.dev ? { guildIDs: [env.devGuildId] } : {}),
       options: [{
         type: CommandOptionType.SUB_COMMAND,
-        name: 'new',
-        description: 'Fetch the latest new submission from a Steam app\'s workshop.',
+        name: 'app',
+        description: 'Fetch the latest submission from a Steam app\'s workshop.',
         options: [
+          {
+            ...CommonCommandOptions.WorkshopType,
+            description: 'Submission type',
+          },
           CommonCommandOptions.WorkshopFileType,
           CommonCommandOptions.App,
         ],
       }, {
         type: CommandOptionType.SUB_COMMAND,
-        name: 'update',
-        description: 'Fetch the latest updated submission from a Steam app\'s workshop.',
+        name: 'user',
+        description: 'Fetch the latest submission from a Steam user\'s workshop.',
         options: [
+          {
+            ...CommonCommandOptions.WorkshopType,
+            description: 'Submission type',
+          },
           CommonCommandOptions.WorkshopFileType,
+          CommonCommandOptions.Profile,
           CommonCommandOptions.App,
         ],
       }],
@@ -72,12 +83,22 @@ export default class WorkshopCommand extends SlashCommand {
     }
 
     const options = ctx.options as CommandArguments;
-    const { filetype, app: query } = options.new || options.update;
+    const { filetype, app: query, type } = options.app || options.user;
 
     const { id } = await SteamUtil.findStoreItem(query);
 
     if (!id) {
       return ctx.error(`Unable to find an application id for: ${query}`);
+    }
+
+    let steamID: SteamID;
+
+    if (options.user) {
+      steamID = await SteamUtil.findSteamId(options.user.profile);
+
+      if (steamID.type === SteamID.Type.INVALID) {
+        return ctx.error(`Invalid Steam identifier: ${options.user.profile}`);
+      }
     }
 
     const app = (await db.select('*')
@@ -93,20 +114,27 @@ export default class WorkshopCommand extends SlashCommand {
       return ctx.error(`Unable to fetch workshop items for apps of type **${app.type}**!`);
     }
 
-    const files = await steamClient.queryFiles(
+    const files = options.app ? await steamClient.queryFiles(
       id,
-      options.new
+      type === WatcherType.WorkshopNew
         ? EPublishedFileQueryType.RankedByPublicationDate
         : EPublishedFileQueryType.RankedByLastUpdatedDate,
       filetype,
+      1,
+    ) : await steamClient.getUserFiles(
+      id,
+      steamID!.getSteamID64(),
+      filetype,
+      1,
+      1,
     );
 
-    if (!files.publishedfiledetails.length) {
+    if (!files.publishedfiledetails) {
       return ctx.embed(EmbedBuilder.createApp(app, {
         description: 'No UGC found!',
         timestamp: new Date(),
         title: app.name,
-        url: SteamUtil.URLS.Workshop(app.id),
+        url: SteamUtil.URLS.WorkshopApp(app.id),
       }));
     }
 

@@ -1,6 +1,5 @@
 /// <reference path="./steam-user.d.ts" />
 import SteamUser from 'steam-user';
-import EMsg from 'steam-user/enums/EMsg';
 import Schema from 'steam-user/protobufs/generated/_load';
 import type { AppType } from '../db';
 
@@ -152,6 +151,12 @@ export interface PublishedFile {
   }[];
 }
 
+export interface GetUserFilesResponse {
+  total: number;
+  startindex: number;
+  publishedfiledetails?: PublishedFile[];
+}
+
 export interface QueryFilesResponse {
   total: number;
   publishedfiledetails: PublishedFile[];
@@ -208,19 +213,39 @@ export default class SteamWatchUser extends SteamUser {
     });
   }
 
+  getUserFiles(
+    appId: number,
+    steamId: string,
+    filetype: EPublishedFileInfoMatchingFileType,
+    page: number,
+    perPage: number,
+  ): Promise<GetUserFilesResponse> {
+    return this.request('CPublishedFile_GetUserFiles', {
+      appid: appId,
+      filetype,
+      numperpage: perPage,
+      page,
+      privacy: SteamUser.EUCMFilePrivacyState.Public,
+      return_short_description: false,
+      steamid: steamId,
+    });
+  }
+
   queryFiles(
     appId: number,
     queryType: EPublishedFileQueryType,
     filetype: EPublishedFileInfoMatchingFileType,
+    perPage: number,
     cursor = '*',
   ): Promise<QueryFilesResponse> {
     return this.request('CPublishedFile_QueryFiles', {
       appid: appId,
       cursor,
-      numperpage: 25,
+      filetype,
+      numperpage: perPage,
       query_type: queryType,
       return_details: true,
-      filetype,
+      return_short_description: false,
     });
   }
 
@@ -229,7 +254,7 @@ export default class SteamWatchUser extends SteamUser {
     data: object,
   ) {
     const header = {
-      msg: EMsg.ServiceMethodCallFromClient,
+      msg: SteamUser.EMsg.ServiceMethodCallFromClient,
       proto: {
         target_job_name: `${protoSchema.substring(1).replace('_', '.')}#1`,
       },

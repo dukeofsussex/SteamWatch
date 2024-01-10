@@ -41,7 +41,9 @@ import {
   StoreItem,
   UGC,
   WatcherType,
+  WorkshopType,
 } from '@steamwatch/shared';
+import SteamID from 'steamid';
 import CommonCommandOptions from '../../CommonCommandOptions';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 
@@ -101,9 +103,13 @@ interface AddUGCArguments extends BaseArguments {
   ugc: string;
 }
 
-interface AddWorkshopArguments extends AddAppArguments {
+interface AddAppWorkshopArguments extends AddAppArguments {
   filetype: EPFIMFileType;
   type: WatcherType.WorkshopNew | WatcherType.WorkshopUpdate;
+}
+
+interface AddUserWorkshopArguments extends AddAppWorkshopArguments {
+  profile: string;
 }
 
 interface AddArguments {
@@ -115,7 +121,8 @@ interface AddArguments {
   price: AddAppArguments;
   steam: BaseArguments;
   ugc: AddUGCArguments;
-  workshop: AddWorkshopArguments;
+  workshop_app: AddAppWorkshopArguments;
+  workshop_user: AddUserWorkshopArguments;
 }
 
 type ListArguments = BaseArguments;
@@ -221,23 +228,23 @@ export default class WatchersCommand extends GuildOnlyCommand {
           ],
         }, {
           type: CommandOptionType.SUB_COMMAND,
-          name: 'workshop',
+          name: 'workshop_app',
           description: 'Watch a Steam app\'s workshop.',
           options: [
-            {
-              type: CommandOptionType.STRING,
-              name: 'type',
-              description: 'The type of workshop changes to watch',
-              required: true,
-              choices: [{
-                name: 'New submissions',
-                value: WatcherType.WorkshopNew,
-              }, {
-                name: 'Updates to existing submissions',
-                value: WatcherType.WorkshopUpdate,
-              }],
-            },
+            CommonCommandOptions.WorkshopType,
             CommonCommandOptions.WorkshopFileType,
+            CommonCommandOptions.App,
+            ChannelArg,
+            ThreadArg,
+          ],
+        }, {
+          type: CommandOptionType.SUB_COMMAND,
+          name: 'workshop_user',
+          description: 'Watch a Steam users\'s workshop.',
+          options: [
+            CommonCommandOptions.WorkshopType,
+            CommonCommandOptions.WorkshopFileType,
+            CommonCommandOptions.Profile,
             CommonCommandOptions.App,
             ChannelArg,
             ThreadArg,
@@ -381,10 +388,17 @@ export default class WatchersCommand extends GuildOnlyCommand {
         return WatchersCommand.addUGC(ctx, add.ugc);
       }
 
-      if (add.workshop) {
+      if (add.workshop_app) {
         return WatchersCommand.addApp(ctx, {
-          ...add.workshop,
-          watcherType: add.workshop.type,
+          ...add.workshop_app,
+          watcherType: add.workshop_app.type,
+        });
+      }
+
+      if (add.workshop_user) {
+        return WatchersCommand.addApp(ctx, {
+          ...add.workshop_user,
+          watcherType: add.workshop_user.type,
         });
       }
     }
@@ -408,12 +422,23 @@ export default class WatchersCommand extends GuildOnlyCommand {
       watcherType,
       thread: threadId,
       filetype,
-    }: AddAppTypedArguments & Partial<AddWorkshopArguments>,
+      profile,
+    }: AddAppTypedArguments & Partial<AddAppWorkshopArguments> & Partial<AddUserWorkshopArguments>,
   ) {
     const { id, type } = await SteamUtil.findStoreItem(query);
 
     if (!id) {
       return ctx.error(`Unable to find a store page for: ${query}`);
+    }
+
+    let steamID: SteamID;
+
+    if (profile) {
+      steamID = await SteamUtil.findSteamId(profile);
+
+      if (steamID.type === SteamID.Type.INVALID) {
+        return ctx.error(`Invalid Steam identifier: ${profile}`);
+      }
     }
 
     let item: StoreItem | null;
@@ -503,12 +528,20 @@ export default class WatchersCommand extends GuildOnlyCommand {
         let workshopId = null;
 
         if (watcherType === WatcherType.WorkshopNew || watcherType === WatcherType.WorkshopUpdate) {
-          const { total } = await steamClient.queryFiles(
+          const workshopType = profile ? WorkshopType.User : WorkshopType.App;
+          const { total } = workshopType === WorkshopType.App ? await steamClient.queryFiles(
             item!.id,
             watcherType === WatcherType.WorkshopNew
               ? EPublishedFileQueryType.RankedByPublicationDate
               : EPublishedFileQueryType.RankedByLastUpdatedDate,
             filetype!,
+            1,
+          ) : await steamClient.getUserFiles(
+            item!.id,
+            steamID!.getSteamID64(),
+            filetype!,
+            1,
+            1,
           );
 
           if (!total) {
@@ -521,10 +554,12 @@ export default class WatchersCommand extends GuildOnlyCommand {
           }
 
           workshopId = await db.select('id')
-            .from('app_workshop')
+            .from('workshop')
             .where({
               appId: item!.id,
               filetype: filetype!,
+              steamId: steamID ? steamID.getSteamID64() : null,
+              type: workshopType,
             })
             .first()
             .then((res) => res?.id);
@@ -532,10 +567,14 @@ export default class WatchersCommand extends GuildOnlyCommand {
           if (!workshopId) {
             [workshopId] = await db.insert({
               appId: item!.id,
+              steamId: steamID ? steamID.getSteamID64() : null,
               filetype,
               lastCheckedNew: null,
+              lastNew: null,
               lastCheckedUpdate: null,
-            }).into('app_workshop');
+              lastUpdate: null,
+              type: workshopType,
+            }).into('workshop');
           }
         }
 
@@ -556,7 +595,9 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }
 
         const [dbId] = await db.insert({
-          [key]: item!.id,
+          ...(watcherType !== WatcherType.WorkshopNew && watcherType !== WatcherType.WorkshopUpdate
+            ? { [key]: item!.id }
+            : {}),
           channelId,
           threadId,
           type: watcherType,
@@ -1034,14 +1075,15 @@ export default class WatchersCommand extends GuildOnlyCommand {
           WHEN watcher.group_id IS NOT NULL THEN \`group\`.name
           WHEN watcher.sub_id IS NOT NULL THEN sub.name
           WHEN watcher.ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')
+          WHEN watcher.type IN ('workshop_new', 'workshop_update') THEN IF(workshop.type = "app", app.name, CONCAT(app.name, \' (\', workshop.steam_id, \')\'))
           ELSE app.name
         END AS name
       `),
-      'app_workshop.filetype',
+      'workshop.filetype',
       'watcher.*',
     ).from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-      .leftJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
+      .leftJoin('workshop', 'workshop.id', 'watcher.workshop_id')
       .leftJoin('bundle', 'bundle.id', 'watcher.bundle_id')
       .leftJoin('forum', 'forum.id', 'watcher.forum_id')
       .leftJoin('`group`', (builder) => builder.on('`group`.id', 'watcher.group_id')
@@ -1049,7 +1091,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       .leftJoin('sub', 'sub.id', 'watcher.sub_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
-        .orOn('app.id', 'app_workshop.app_id')
+        .orOn('app.id', 'workshop.app_id')
         .orOn('app.id', 'forum.app_id')
         .orOn('app.id', 'ugc.app_id'))
       .where('guild_id', ctx.guildID);
@@ -1206,12 +1248,13 @@ export default class WatchersCommand extends GuildOnlyCommand {
           WHEN watcher.group_id IS NOT NULL THEN \`group\`.name
           WHEN watcher.sub_id IS NOT NULL THEN sub.name
           WHEN watcher.ugc_id IS NOT NULL THEN CONCAT(ugc.name, ' (', app.name, ')')
+          WHEN watcher.type IN ('workshop_new', 'workshop_update') THEN IF(workshop.type = "app", app.name, CONCAT(app.name, \' (\', workshop.steam_id, \')\'))
           ELSE app.name
         END AS name
       `),
     ).from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-      .leftJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
+      .leftJoin('workshop', 'workshop.id', 'watcher.workshop_id')
       .leftJoin('bundle', 'bundle.id', 'watcher.bundle_id')
       .leftJoin('forum', 'forum.id', 'watcher.forum_id')
       .leftJoin('`group`', (builder) => builder.on('`group`.id', 'watcher.group_id')
@@ -1219,7 +1262,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       .leftJoin('sub', 'sub.id', 'watcher.sub_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
-        .orOn('app.id', 'app_workshop.app_id')
+        .orOn('app.id', 'workshop.app_id')
         .orOn('app.id', 'forum.app_id')
         .orOn('app.id', 'ugc.app_id'))
       .where({

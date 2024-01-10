@@ -182,7 +182,8 @@ export default class SteamUtil {
     Profile: (steamId: string) => `https://steamcommunity.com/profiles/${steamId}`,
     Store: (id: number, type: PriceType) => `https://store.steampowered.com/${type}/${id}`,
     UGC: (ugcId: string) => `https://steamcommunity.com/sharedfiles/filedetails/?id=${ugcId}`,
-    Workshop: (appId: number) => `https://store.steampowered.com/app/${appId}/workshop`,
+    WorkshopApp: (appId: number) => `https://store.steampowered.com/app/${appId}/workshop`,
+    WorkshopUser: (appId: number, steamId: string) => `https://steamcommunity.com/profiles/${steamId}/myworkshopfiles/?appid=${appId}`,
   };
 
   static canHaveWatcher(appType: AppType, watcherType: WatcherType) {

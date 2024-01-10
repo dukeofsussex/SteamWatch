@@ -326,8 +326,17 @@ export default class MentionsCommand extends GuildOnlyCommand {
         break;
       case WatcherType.WorkshopNew:
       case WatcherType.WorkshopUpdate:
-        url = SteamUtil.URLS.Workshop(parseInt(mentions[0].appId, 10));
-        bp = SteamUtil.BP.Workshop(parseInt(mentions[0].appId, 10));
+        if (mentions[0].workshopSteamId) {
+          title = `${title} (${mentions[0].workshopSteamId})`;
+          url = SteamUtil.URLS.WorkshopUser(
+            parseInt(mentions[0].appId, 10),
+            mentions[0].workshopSteamId,
+          );
+          bp = SteamUtil.BP.OpenUrl(url);
+        } else {
+          url = SteamUtil.URLS.WorkshopApp(parseInt(mentions[0].appId, 10));
+          bp = SteamUtil.BP.Workshop(parseInt(mentions[0].appId, 10));
+        }
         break;
       default:
         if (mentions[0].bundleId) {
@@ -453,11 +462,12 @@ export default class MentionsCommand extends GuildOnlyCommand {
       { subName: 'sub.name' },
       { ugcId: 'ugc.id' },
       { ugcName: 'ugc.name' },
-      { workshopFiletype: 'app_workshop.filetype' },
+      { workshopSteamId: 'workshop.steamId' },
+      { workshopFiletype: 'workshop.filetype' },
     )
       .from('watcher')
       .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
-      .leftJoin('app_workshop', 'app_workshop.id', 'watcher.workshop_id')
+      .leftJoin('workshop', 'workshop.id', 'watcher.workshop_id')
       .leftJoin('bundle', 'bundle.id', 'watcher.bundle_id')
       .leftJoin('forum', 'forum.id', 'watcher.forum_id')
       .leftJoin('`group`', (builder) => builder.on('`group`.id', 'watcher.group_id')
@@ -465,7 +475,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
       .leftJoin('sub', 'sub.id', 'watcher.sub_id')
       .leftJoin('ugc', 'ugc.id', 'watcher.ugc_id')
       .leftJoin('app', (builder) => builder.on('app.id', 'watcher.app_id')
-        .orOn('app.id', 'app_workshop.app_id')
+        .orOn('app.id', 'workshop.app_id')
         .orOn('app.id', 'forum.app_id')
         .orOn('app.id', 'ugc.app_id'))
       .leftJoin('watcher_mention', 'watcher_mention.watcher_id', 'watcher.id')
