@@ -6,6 +6,7 @@ import {
   DiscordAPI,
   EPublishedFileInfoMatchingFileType as EPFIMFileType,
   MAX_OPTIONS,
+  stringifyFlag,
   WatcherType,
 } from '@steamwatch/shared';
 
@@ -91,7 +92,7 @@ export default class GuildOnlyCommand extends SlashCommand {
               .orWhere('`group`.name', 'LIKE', `${value}%`)
               .orWhere('forum.name', 'LIKE', `${value}%`)
             : builder)),
-        db.select(db.raw('"Free Promotions" AS name'), 'null AS filetype', 'watcher.*')
+        db.select(db.raw('"" AS name'), 'null AS filetype', 'watcher.*')
           .from('watcher')
           .innerJoin('channel_webhook', 'channel_webhook.id', 'watcher.channel_id')
           .where('guild_id', guildId)
@@ -143,7 +144,7 @@ export default class GuildOnlyCommand extends SlashCommand {
     return Promise.all(dbWatcher.map(async (w) => ({
       name: oneLine`
         [ID: ${w.id}]
-        ${w.name}
+        ${w.type === WatcherType.Free ? stringifyFlag(w.freeFlag) : w.name}
         (${oneLine`
           ${w.type}
           ${(w.workshopId ? `(${EPFIMFileType[w.filetype]})` : '')}

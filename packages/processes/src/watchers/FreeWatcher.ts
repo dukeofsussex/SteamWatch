@@ -1,8 +1,11 @@
 import { addHours, subMinutes, subMonths } from 'date-fns';
 import {
+  AppType,
   db,
   EmbedBuilder,
   FreePackage,
+  FreePackageType,
+  FreeWatcherFlag,
   logger,
   PackageInfo,
   partition,
@@ -49,6 +52,16 @@ export default class FreeWatcher extends Watcher {
         pkg,
       });
 
+      let flag = FreeWatcherFlag.None;
+
+      if (pkg.type === FreePackageType.Weekend) {
+        flag = FreeWatcherFlag.Weekend;
+      } else if (pkg.appType === AppType.DLC) {
+        flag = FreeWatcherFlag.KeepDLC;
+      } else {
+        flag = FreeWatcherFlag.KeepApp;
+      }
+
       // eslint-disable-next-line no-await-in-loop
       await this.enqueue(
         [
@@ -58,9 +71,7 @@ export default class FreeWatcher extends Watcher {
             name: pkg.appName,
           }, pkg),
         ],
-        {
-          'watcher.type': WatcherType.Free,
-        },
+        (builder) => builder.where('watcher.type', WatcherType.Free).andWhereRaw('free_flag & ? = ?', [flag, flag]),
       );
     }
 
@@ -130,6 +141,7 @@ export default class FreeWatcher extends Watcher {
       { appId: 'app.id' },
       { appIcon: 'app.icon' },
       { appName: 'app.name' },
+      { appType: 'app.type' },
       'free_package.*',
     ).from('free_package')
       .innerJoin('app', 'app.id', 'free_package.app_id')

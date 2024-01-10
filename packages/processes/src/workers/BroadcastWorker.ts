@@ -30,7 +30,6 @@ export default class BroadcastWorker extends Worker {
     let active: boolean;
 
     try {
-      // eslint-disable-next-line no-bitwise
       await access(FILE, R_OK | W_OK);
       ({ active, message } = JSON.parse((await readFile(FILE)).toString()));
     } catch {

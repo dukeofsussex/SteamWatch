@@ -31,6 +31,7 @@ import {
   EPublishedFileInfoMatchingFileType as EPFIMFileType,
   EPublishedFileQueryType,
   ForumType,
+  FreeWatcherFlag,
   logger,
   PatreonUtils,
   PriceType,
@@ -39,6 +40,7 @@ import {
   SteamUtil,
   STEAM_NEWS_APPID,
   StoreItem,
+  stringifyFlag,
   UGC,
   WatcherType,
   WorkshopType,
@@ -89,6 +91,12 @@ interface AddAppTypedArguments extends BaseArguments {
   | WatcherType.WorkshopUpdate;
 }
 
+interface AddFreeArguments extends BaseArguments {
+  app: boolean;
+  dlc: boolean;
+  weekend: boolean;
+}
+
 interface AddForumArguments extends BaseArguments {
   forum: string;
 }
@@ -115,7 +123,7 @@ interface AddUserWorkshopArguments extends AddAppWorkshopArguments {
 interface AddArguments {
   curator: Omit<AddGroupArguments, 'group'>;
   forum: AddForumArguments;
-  free: BaseArguments;
+  free: AddFreeArguments;
   group: Omit<AddGroupArguments, 'curator'>;
   news: AddAppArguments;
   price: AddAppArguments;
@@ -177,6 +185,24 @@ export default class WatchersCommand extends GuildOnlyCommand {
           name: 'free',
           description: 'Watch Steam for free promotions.',
           options: [
+            {
+              type: CommandOptionType.BOOLEAN,
+              name: 'dlc',
+              description: 'Free-To-Keep DLC',
+              required: true,
+            },
+            {
+              type: CommandOptionType.BOOLEAN,
+              name: 'app',
+              description: 'Free-To-Keep App',
+              required: true,
+            },
+            {
+              type: CommandOptionType.BOOLEAN,
+              name: 'weekend',
+              description: 'Free-To-Play Weekend',
+              required: true,
+            },
             ChannelArg,
             ThreadArg,
           ],
@@ -316,7 +342,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
     }
 
     if (!ctx.appPermissions?.has(PermissionFlagsBits.ManageWebhooks)) {
-      return ctx.error('This bot requires the `MANAGE_WEBHOOKS` permission! Please check the assigned role(s).');
+      return ctx.error('This bot requires the `MANAGE_WEBHOOKS` permission! Please check the assigned role(s) and channel permissions.');
     }
 
     const { add, list, remove } = ctx.options as CommandArguments;
@@ -791,14 +817,27 @@ export default class WatchersCommand extends GuildOnlyCommand {
   private static async addFree(
     ctx: CommandContext,
     {
+      dlc,
+      app,
+      weekend,
       channel: channelId,
       thread: threadId,
-    }: BaseArguments,
+    }: AddFreeArguments,
   ) {
+    const freeFlag = [
+      app ? FreeWatcherFlag.KeepApp : FreeWatcherFlag.None,
+      dlc ? FreeWatcherFlag.KeepDLC : FreeWatcherFlag.None,
+      weekend ? FreeWatcherFlag.Weekend : FreeWatcherFlag.None,
+    ].reduce((p, c) => p | c);
+
+    if (freeFlag === FreeWatcherFlag.None) {
+      return ctx.error('At least one option must be **True**!');
+    }
+
     await ctx.editOriginal({
       embeds: [{
         color: EMBED_COLOURS.PENDING,
-        description: `Would you like to add the watcher for **free promotions** to <#${(threadId || channelId)}>?`,
+        description: `Would you like to add the watcher for **${stringifyFlag(freeFlag)}** to <#${(threadId || channelId)}>?`,
         title: 'Confirmation',
         thumbnail: {
           url: DEFAULT_STEAM_ICON,
@@ -822,7 +861,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     ctx.registerComponent(
       'cancel',
-      () => ctx.error(`Cancelled watcher for **free promotions** on <#${(threadId || channelId)}>.`),
+      () => ctx.error(`Cancelled watcher for **${stringifyFlag(freeFlag)}** on <#${(threadId || channelId)}>.`),
       DEFAULT_COMPONENT_EXPIRATION,
     );
 
@@ -844,13 +883,14 @@ export default class WatchersCommand extends GuildOnlyCommand {
         const [id] = await db.insert({
           channelId,
           threadId,
+          freeFlag,
           type: WatcherType.Free,
           inactive: false,
         }).into('watcher');
 
         ctx.unregisterComponent('confirm');
 
-        return ctx.success(`Added **${WatcherType.Free}** watcher (#${id}) for **free promotions** to <#${(threadId || channelId)}>.`, {
+        return ctx.success(`Added **${WatcherType.Free}** watcher (#${id}) for **${stringifyFlag(freeFlag)}** to <#${(threadId || channelId)}>.`, {
           thumbnail: {
             url: DEFAULT_STEAM_ICON,
           },
@@ -1069,7 +1109,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
     let dbQuery = db.select(
       db.raw(oneLine`
         CASE
-          WHEN watcher.type = 'free' THEN "Free Promotions"
+          WHEN watcher.type = 'free' THEN ""
           WHEN watcher.bundle_id IS NOT NULL THEN bundle.name
           WHEN watcher.forum_id IS NOT NULL THEN CONCAT(forum.name, ' (', IF(forum.app_id IS NOT NULL, app.name, \`group\`.name), ')')
           WHEN watcher.group_id IS NOT NULL THEN \`group\`.name
@@ -1116,7 +1156,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       ...(rows.map((w: any) => [
         w.id,
         w.appId || w.bundleId || w.forumId || w.groupId || w.subId || w.ugcId || w.workshopId || '-',
-        w.name,
+        w.type === WatcherType.Free ? stringifyFlag(w.freeFlag) : w.name,
         channelNames.get(w.threadId || w.channelId),
         oneLine`
           ${w.type.replace('_', ' ')}
@@ -1234,6 +1274,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
     const watcher = await db.select(
       'watcher.id',
       'watcher.type',
+      'watcher.free_flag',
       { appId: 'app.id' },
       { appIcon: 'icon' },
       { groupAvatar: '`group`.avatar' },
@@ -1242,7 +1283,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
       'webhook_token',
       db.raw(oneLine`
         CASE
-          WHEN watcher.type = 'free' THEN "Free Promotions"
+          WHEN watcher.type = 'free' THEN ""
           WHEN watcher.bundle_id IS NOT NULL THEN bundle.name
           WHEN watcher.forum_id IS NOT NULL THEN CONCAT(forum.name, ' (', IF(forum.app_id IS NOT NULL, app.name, \`group\`.name), ')')
           WHEN watcher.group_id IS NOT NULL THEN \`group\`.name
@@ -1273,6 +1314,10 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
     if (!watcher) {
       return ctx.error(`Unable to find a watcher with the identifier **${watcherId}**!`);
+    }
+
+    if (watcher.type === WatcherType.Free) {
+      watcher.name = stringifyFlag(watcher.freeFlag);
     }
 
     await db.delete()

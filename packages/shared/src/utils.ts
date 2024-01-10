@@ -1,3 +1,4 @@
+import { FreeWatcherFlag } from './db';
 import logger from './logger';
 
 export interface Manager {
@@ -59,4 +60,20 @@ export function run(Manager: new() => Manager) {
 
   manager.start();
   onShutdown(manager.stop.bind(manager));
+}
+
+export function stringifyFlag(flag: FreeWatcherFlag) {
+  const flags = [];
+
+  if ((flag & FreeWatcherFlag.KeepApp) === FreeWatcherFlag.KeepApp) {
+    flags.push('App');
+  }
+  if ((flag & FreeWatcherFlag.KeepDLC) === FreeWatcherFlag.KeepDLC) {
+    flags.push('DLC');
+  }
+  if ((flag & FreeWatcherFlag.Weekend) === FreeWatcherFlag.Weekend) {
+    flags.push('Weekend');
+  }
+
+  return `Free Promotions (${flags.join(' | ')})`;
 }

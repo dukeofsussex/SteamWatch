@@ -21,7 +21,6 @@ export default abstract class Queue<Q> extends Worker {
 
   override async start() {
     try {
-      // eslint-disable-next-line no-bitwise
       await access(this.filePath, R_OK | W_OK);
       const { offset, queue } = JSON.parse((await readFile(this.filePath)).toString());
       this.offset = offset;

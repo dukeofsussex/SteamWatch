@@ -65,6 +65,13 @@ export enum FreePackageType {
   Weekend = 'weekend',
 }
 
+export enum FreeWatcherFlag {
+  None = 0,
+  Weekend = 1 << 0,
+  KeepApp = 1 << 1,
+  KeepDLC = 1 << 2,
+}
+
 export interface Forum {
   id: string;
   appId: number | null;
@@ -155,6 +162,7 @@ export interface Watcher {
   workshopId: number | null;
   channelId: string;
   threadId: string | null;
+  freeFlag: FreeWatcherFlag;
   type: WatcherType;
   inactive: boolean;
 }

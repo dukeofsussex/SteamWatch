@@ -6,6 +6,7 @@ import {
   WatcherMention,
   Guild,
 } from '@steamwatch/shared';
+import type { Knex } from 'knex';
 import type MessageQueue from '../MessageQueue';
 import Worker from '../workers/Worker';
 
@@ -20,8 +21,6 @@ type WebhookWatcher = Pick<WatcherMention, 'entityId' | 'type'>
 & Pick<Guild, 'customWebhookAvatar' | 'customWebhookName'>
 & { maxPledgeTier: number | null };
 
-type KnexWhereObject = object;
-
 export default abstract class Watcher extends Worker {
   private readonly queue: MessageQueue;
 
@@ -30,7 +29,10 @@ export default abstract class Watcher extends Worker {
     this.queue = queue;
   }
 
-  protected async enqueue(embeds: MessageEmbedOptions[], where: KnexWhereObject) {
+  protected async enqueue(
+    embeds: MessageEmbedOptions[],
+    where: object | ((b: Knex.QueryBuilder) => Knex.QueryBuilder),
+  ) {
     const watchers: WebhookWatcher[] = await db.select(
       'watcher.id',
       'thread_id',

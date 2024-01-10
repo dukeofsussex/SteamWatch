@@ -14,6 +14,7 @@ import {
   EPublishedFileInfoMatchingFileType as EPFIMFileType,
   PriceType,
   SteamUtil,
+  stringifyFlag,
   WatcherType,
 } from '@steamwatch/shared';
 import CommonCommandOptions from '../../CommonCommandOptions';
@@ -309,7 +310,7 @@ export default class MentionsCommand extends GuildOnlyCommand {
         bp = SteamUtil.BP.OpenUrl(url);
         break;
       case WatcherType.Free:
-        title = 'Free Promotions';
+        title = stringifyFlag(mentions[0].freeFlag);
         break;
       case WatcherType.Group:
         url = SteamUtil.URLS.Group(mentions[0].groupId);

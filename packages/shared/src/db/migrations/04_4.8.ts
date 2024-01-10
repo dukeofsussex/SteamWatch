@@ -1,7 +1,15 @@
-// eslint-disable-next-line import/no-import-module-exports
+/* eslint-disable import/no-import-module-exports */
 import type { Knex } from 'knex';
+import { FreeWatcherFlag } from '..';
+/* eslint-enable import/no-import-module-exports */
 
 exports.up = (knex: Knex) => knex.schema
+  .alterTable('watcher', (table) => {
+    table.smallint('free_flag')
+      .unsigned()
+      .after('thread_id');
+  })
+  .raw(`UPDATE watcher SET free_flag = ${FreeWatcherFlag.KeepDLC | FreeWatcherFlag.KeepApp | FreeWatcherFlag.Weekend} WHERE type = "free"`)
   .alterTable('app_workshop', (table) => {
     table.enum('type', ['app', 'user'])
       .notNullable()
@@ -24,4 +32,7 @@ exports.down = (knex: Knex) => knex.schema
   .alterTable('app_workshop', (table) => {
     table.dropColumn('steam_id');
     table.dropColumn('type');
+  })
+  .alterTable('watcher', (table) => {
+    table.dropColumn('free_flag');
   });
