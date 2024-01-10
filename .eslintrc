@@ -18,6 +18,7 @@
     "@typescript-eslint"
   ],
   "rules": {
+    "no-bitwise": "off",
     "import/extensions": [
       "error",
       "ignorePackages",
