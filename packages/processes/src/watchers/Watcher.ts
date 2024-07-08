@@ -1,3 +1,4 @@
+import type { Knex } from 'knex';
 import type { MessageEmbedOptions } from 'slash-create';
 import {
   db,
@@ -6,7 +7,6 @@ import {
   WatcherMention,
   Guild,
 } from '@steamwatch/shared';
-import type { Knex } from 'knex';
 import type MessageQueue from '../MessageQueue';
 import Worker from '../workers/Worker';
 

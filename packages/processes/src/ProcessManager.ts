@@ -3,6 +3,7 @@ import {
   env,
   logger,
   Manager,
+  steamClient,
   WorkshopType,
 } from '@steamwatch/shared';
 import MessageQueue from './MessageQueue';
@@ -43,6 +44,8 @@ export default class ProcessManager implements Manager {
 
   async start() {
     logger.info('Initializing...');
+
+    steamClient.logOn({ anonymous: true });
 
     if (!env.dev) {
       await db.migrate.latest();

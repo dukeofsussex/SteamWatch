@@ -138,7 +138,7 @@ export default function create(onImage: (tag: TagNode) => void) {
   return createPreset({
     a: (node: TagNode) => ({
       ...node,
-      markdown: ['[', `](${node.attrs['href']})`],
+      markdown: ['[', `](${node.attrs.href})`],
       content: trimContent(node.content),
     }),
     b: (node: TagNode) => ({

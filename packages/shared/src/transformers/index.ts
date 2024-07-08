@@ -34,7 +34,7 @@ export default function transformArticle(content: string): TransformedArticle {
       return;
     }
 
-    thumbnail = tag.attrs['src'] || tag.content.filter((t): t is string => typeof t === 'string')[0] || null;
+    thumbnail = tag.attrs.src || tag.content.filter((t): t is string => typeof t === 'string')[0] || null;
 
     // Certain publishers don't use a protocol
     thumbnail = thumbnail?.startsWith('//') ? `https:${thumbnail}` : thumbnail;

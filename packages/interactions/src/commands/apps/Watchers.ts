@@ -16,6 +16,7 @@ import {
   ComponentType,
   SlashCreator,
 } from 'slash-create';
+import SteamID from 'steamid';
 import {
   AppType,
   capitalize,
@@ -45,7 +46,6 @@ import {
   WatcherType,
   WorkshopType,
 } from '@steamwatch/shared';
-import SteamID from 'steamid';
 import CommonCommandOptions from '../../CommonCommandOptions';
 import GuildOnlyCommand from '../../GuildOnlyCommand';
 
@@ -58,8 +58,7 @@ const ChannelArg = {
   name: 'channel',
   description: 'The channel notifications should be sent to',
   required: true,
-  // TODO Replace magic number with enum once typings have been fixed upstream
-  channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT, 15],
+  channel_types: [ChannelType.GUILD_NEWS, ChannelType.GUILD_TEXT, ChannelType.GUILD_FORUM],
 };
 
 const ThreadArg = {
@@ -266,7 +265,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
         }, {
           type: CommandOptionType.SUB_COMMAND,
           name: 'workshop_user',
-          description: 'Watch a Steam users\'s workshop.',
+          description: 'Watch a Steam user\'s workshop.',
           options: [
             CommonCommandOptions.WorkshopType,
             CommonCommandOptions.WorkshopFileType,
@@ -360,8 +359,7 @@ export default class WatchersCommand extends GuildOnlyCommand {
 
       const addSub = add[ctx.subcommands[1]! as keyof AddArguments];
 
-      // TODO Replace magic number with enum once typings have been fixed upstream
-      if (ctx.channels.get(addSub.channel)!.type === 15
+      if (ctx.channels.get(addSub.channel)!.type === ChannelType.GUILD_FORUM
           && !addSub.thread) {
         return ctx.error('A thread is required when using forum channels!');
       }

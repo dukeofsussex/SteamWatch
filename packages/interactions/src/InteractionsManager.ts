@@ -1,7 +1,12 @@
 import { join } from 'node:path';
 import fastify from 'fastify';
 import { FastifyServer, SlashCreator } from 'slash-create';
-import { env, logger, Manager } from '@steamwatch/shared';
+import {
+  env,
+  logger,
+  Manager,
+  steamClient,
+} from '@steamwatch/shared';
 import './CommandContextExtensions';
 
 export default class InteractionsManager implements Manager {
@@ -11,7 +16,6 @@ export default class InteractionsManager implements Manager {
     this.creator = new SlashCreator({
       applicationID: env.discord.appId,
       componentTimeouts: true,
-      latencyThreshold: 250,
       publicKey: env.discord.publicKey,
       token: env.discord.token,
       serverHost: env.server.host,
@@ -20,14 +24,16 @@ export default class InteractionsManager implements Manager {
   }
 
   async start() {
+    steamClient.logOn({ anonymous: true });
+
     this.registerEvents();
 
     const server = fastify();
     server.get('/status', async () => ({ status: 'OK' }));
 
-    this.creator.registerCommandsIn(join(__dirname, 'commands'), ['.ts'])
-      .syncCommands()
-      .withServer(new FastifyServer(server))
+    await this.creator.registerCommandsIn(join(__dirname, 'commands'), ['.ts']);
+    await this.creator.syncCommands();
+    await this.creator.withServer(new FastifyServer(server))
       .startServer();
   }
 

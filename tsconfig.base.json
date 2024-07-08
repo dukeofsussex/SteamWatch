@@ -1,6 +1,7 @@
 {
-  "extends": "@tsconfig/node-lts-strictest/tsconfig.json",
+  "extends": "@tsconfig/node-lts/tsconfig.json",
   "compilerOptions": {
+    "downlevelIteration": true,
     "sourceMap": true,
     "removeComments": true,
     "noImplicitAny": true,

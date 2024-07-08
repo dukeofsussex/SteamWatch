@@ -8,7 +8,7 @@ interface TopGGResponse {
 
 const TOPGG_ENV = {
   ...env,
-  topggToken: process.env['TOPGG_TOKEN'] || '',
+  topggToken: process.env.TOPGG_TOKEN || '',
 };
 
 export default class TopGGWorker extends Worker {

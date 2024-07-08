@@ -10,22 +10,22 @@
     "@bbob/core": "^2.8.2",
     "@bbob/plugin-helper": "^2.8.2",
     "@bbob/preset": "^2.8.2",
-    "@discordjs/rest": "^1.5.0",
+    "@discordjs/rest": "^2.3.0",
     "common-tags": "^1.8.2",
-    "dotenv": "^16.0.3",
-    "discord-api-types": "^0.37.28",
-    "html-entities": "^2.3.3",
-    "knex": "^2.4.0",
+    "dotenv": "^16.4.5",
+    "discord-api-types": "^0.37.92",
+    "html-entities": "^2.5.2",
+    "knex": "^3.1.0",
     "mysql": "^2.18.1",
-    "node-fetch": "^2.6.7",
-    "slash-create": "^5.11.0",
-    "steam-user": "^4.26.1",
+    "node-fetch": "^2.7.0",
+    "slash-create": "^6.1.4",
+    "steam-user": "^5.0.10",
     "steamid": "^2.0.0",
-    "winston": "^3.8.2"
+    "winston": "^3.13.0"
   },
   "devDependencies": {
-    "@types/common-tags": "^1.8.1",
-    "@types/node-fetch": "^2.6.2",
-    "@types/steam-user": "^4.26.0"
+    "@types/common-tags": "^1.8.4",
+    "@types/node-fetch": "^2.6.11",
+    "@types/steam-user": "^5.0.0"
   }
 }
