@@ -26,7 +26,7 @@ export default class TopGGWorker extends Worker {
     const count = await db.count('* AS count')
       .from('guild')
       .first()
-      .then((res: any) => res.count);
+      .then((res: any) => parseInt(res.count, 10));
 
     try {
       const res = await fetch('https://top.gg/api/bots/stats', {
