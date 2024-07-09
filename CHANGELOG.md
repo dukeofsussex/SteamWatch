@@ -1,5 +1,34 @@
 # Changelog
 
+## [4.8.0] User Workshop
+
+### Added
+
+- Add `/watchers remove all` command to allow removing all watchers at once
+- Add SteamIDs message command
+- Add user workshop watching
+- Support separating free watchers by interest
+
+### Changed
+
+- Implement new Steam currencies `LATAM-USD` and `MENA-USD`
+- Proxy Steam Client links as Discord no longer supports them
+- Limit forum message length
+- Improve currency set up UX
+- Improve group name recognition for slash commands
+- Reduce amount of Steam requests by prioritising the database for app queries
+- Update project dependencies
+
+### Fixed
+
+- Fix workshop watcher infinite loop
+- Fix wrong group id being stored for apps
+- Fix mature content warning blocking forum watchers
+- Fix curator reviews order
+- Fix warning emoji
+- Fix `/watchers` autocomplete
+- Fix some Steam market links
+
 ## [4.7.0] Bundle & Package Prices
 
 ### Added

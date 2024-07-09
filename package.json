@@ -1,6 +1,6 @@
 {
   "name": "steam-watch",
-  "version": "4.7.0",
+  "version": "4.8.0",
   "description": "A Discord bot for keeping track of Steam apps",
   "scripts": {
     "build": "npm run build --workspaces --if-present",
