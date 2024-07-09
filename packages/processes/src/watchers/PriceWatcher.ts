@@ -223,7 +223,7 @@ export default class PriceWatcher extends Watcher {
 
   private async preEnqueue(item: QueryResult, message: string) {
     await this.enqueue([EmbedBuilder.createStoreItem(item, message)], {
-      appId: item.id,
+      'watcher.app_id': item.id,
       currencyId: item.currencyId,
       'watcher.type': WatcherType.Price,
     });

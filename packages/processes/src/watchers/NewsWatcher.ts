@@ -54,7 +54,7 @@ export default class NewsWatcher extends Watcher {
       });
 
       await this.enqueue([await EmbedBuilder.createNews(app, news)], {
-        appId: app.id,
+        'watcher.app_id': app.id,
         'watcher.type': WatcherType.News,
       });
     }
