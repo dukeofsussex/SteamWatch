@@ -1,9 +1,9 @@
-FROM node:lts-alpine as build
+FROM node:lts-alpine AS build
 
 ARG package_dir
 ARG package_name
 
-LABEL name "SteamWatch $package_name Builder"
+LABEL name="SteamWatch $package_name Builder"
 
 WORKDIR /opt/build
 
@@ -25,11 +25,11 @@ FROM node:lts-alpine
 
 ARG package_dir
 ARG package_name
-ENV TARGET "packages/${package_dir}/dist/index.js"
-ENV SERVER_PORT 8080
+ENV TARGET="packages/${package_dir}/dist/index.js"
+ENV SERVER_PORT=8080
 
-LABEL name "SteamWatch $package_name"
-LABEL version "Latest"
+LABEL name="SteamWatch $package_name"
+LABEL version="Latest"
 
 WORKDIR /srv/steamwatch
 
