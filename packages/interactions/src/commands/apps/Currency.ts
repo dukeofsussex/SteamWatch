@@ -76,20 +76,26 @@ export default class CurrencyCommand extends GuildOnlyCommand {
       return ctx.error('Invalid currency identifier!');
     }
 
-    if (!await GuildOnlyCommand.isGuildSetUp(ctx)) {
+    const dbGuild = await db.select('id', 'currency_id')
+      .from('guild')
+      .where('id', ctx.guildID!)
+      .first();
+
+    if (!dbGuild) {
       const guild = await DiscordAPI.get(Routes.guild(ctx.guildID!)) as RESTGetAPIGuildResult;
 
       await db.insert({
         id: ctx.guildID!,
         name: guild.name,
         currencyId: currency,
+        lastUpdate: new Date(),
       }).into('guild');
 
       logger.info({
         message: 'New guild set up',
         guild,
       });
-    } else if (currency !== dbCurrency.id) {
+    } else if (currency !== dbGuild.currencyId) {
       // Fetch all apps that aren't already being tracked in the new currency
       const prices = await CurrencyCommand.fetchUntrackedPrices(dbCurrency.id, ctx.guildID!);
 
