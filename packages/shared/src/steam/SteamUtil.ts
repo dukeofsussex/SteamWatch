@@ -117,7 +117,7 @@ export default class SteamUtil {
     GameHub: (id: string) => SteamUtil.BP.Raw(`url/GameHub/${id}`),
     Group: (id: number) => SteamUtil.BP.Raw(`url/GroupSteamIDPage/${id}`),
     GroupEventsPage: (id: number) => SteamUtil.BP.Raw(`url/GroupEventsPage/${id}`),
-    MarketListing: (appId: number, marketHashName: string) => SteamUtil.BP.Raw(`url/CommunityMarketSearch/${appId}/${encodeURIComponent(marketHashName)}`),
+    MarketListing: (appId: number, marketHashName: string) => SteamUtil.BP.Raw(`openurl/${SteamUtil.URLS.MarketListing(appId, marketHashName)}`),
     OpenUrl: (url: string) => SteamUtil.BP.Raw(`openurl/${url}`),
     Profile: (id: string) => SteamUtil.BP.Raw(`url/SteamIDPage/${id}`),
     Raw: (path: string) => `${CLIENT_PROXY}/${path}`,
