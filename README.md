@@ -8,7 +8,6 @@
     <br />
     <br />
     <a href="https://support.steam.watch"><img src="https://discord.com/api/guilds/196820438398140417/embed.png" alt="Discord server" /></a>
-    <a href="https://david-dm.org/dukeofsussex/SteamWatch"><img src="https://img.shields.io/david/dukeofsussex/SteamWatch" alt="Dependencies"/></a>
     <a href="https://github.com/dukeofsussex/SteamWatch/blob/master/LICENSE"><img src="https://img.shields.io/github/license/dukeofsussex/SteamWatch" alt="License"/></a>
     <a href="/"><img src="https://img.shields.io/github/package-json/v/dukeofsussex/SteamWatch" alt="Version"/></a>
   </p>
