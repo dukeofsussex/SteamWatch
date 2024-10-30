@@ -54,7 +54,7 @@ export const MAX_OPTIONS = 25;
 
 export const REPO_URL = homepage.split('#')[0]!;
 
-export const PATREON_ICON = 'https://cdn.discordapp.com/icons/501792035657744425/394208f8a574a62f40a60e577fc96f2e.png';
+export const PATREON_ICON = 'https://cdn.discordapp.com/avatars/216303189073461248/d4d1229bd1a43d0a273cea3d4b1ddeec.webp';
 
 export const STEAM_NEWS_APPID = 593110;
 
