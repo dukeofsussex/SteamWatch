@@ -1,5 +1,5 @@
 # Tutorial: Self-Hosting SteamWatch with Docker Compose
-by @skolmeister
+by [Skolmeister](https://github.com/Skolmeister)
 ## Table of contents
 - [Tutorial: Self-Hosting SteamWatch with Docker Compose](#tutorial-self-hosting-steamwatch-with-docker-compose)
   - [Table of contents](#table-of-contents)
