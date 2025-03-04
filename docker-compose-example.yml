@@ -1,0 +1,109 @@
+---
+services:
+  # MariaDB is needed for SteamWatch to save all your data
+  steamwatch_mariadb:
+    image: mariadb:10.5
+    restart: always
+    environment:
+      # You'll set the credentials in your mariadb/init.sql file
+      MARIADB_ROOT_PASSWORD: SECRET_PW
+      MARIADB_USER: steamwatch
+      MARIADB_PASSWORD: SECRET_PW
+      MARIADB_DATABASE: steamwatch
+    volumes: 
+    # Volume to store the data
+    - ./mariadb/mariadb_data:/var/lib/mysql
+    # Volume to store the configuration
+    - ./mariadb/mariadb_init:/docker-entrypoint-initdb.d
+    ports:
+      - 3306:3306
+  # Adminer is a very lightweight php database interface (visit localhost:28082 or your desired port)
+  steamwatch_adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - 28082:8080
+  # The Processes side handles the configured tasks (like everything you tell the App to do via slash commands)
+  steamwatch_processes:
+    image: steamwatch_processes
+    container_name: steamwatch_processes
+    # I'm not sure if the volume here is really needed, all data is stored in the db anyways
+    volumes: 
+      - /docker/steamwatch/processes:/packages
+    restart: unless-stopped 
+    # Set your environment variables here (not in .env File)
+    environment:
+      # development or production
+      - NODE_ENV=development
+      # the MariaDB database credentials
+      - DB_DATABASE=steamwatch
+      - DB_HOST=steamwatch_mariadb
+      - DB_PORT=3306
+      - DB_USER=steamwatch
+      - DB_PASSWORD=SECRET_PW
+      # Set your Guild ID where you want to support bot users 
+      - DEV_GUILD_ID=YOUR_GUILD_ID
+      - DISCORD_INVITE=https://discord.com/oauth2/authorize?client_id=1345707232733691924
+      # Set the app / bot credentials from your dev.discord.com page
+      - DISCORD_APP_ID=YOUR_APP_ID
+      # I store my keys and tokens in .zshrc / .bashrc file 
+      - DISCORD_APP_PUBLIC_KEY=${AI_ROLF_PUBLIC_KEY}
+      - DISCORD_BOT_TOKEN=${AI_ROLF_BOT_TOKEN}
+      - LOG_LEVEL=debug
+      # define the address host:port INSIDE the container
+      # It is probably only needed for interactions, not processes
+      # Use 0.0.0.0 and a port of your choice, the port will be needed to be forwarded to outside docker
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=28080
+      # Set your desired values (more watchers and higher frequency mean higher workload on your machine) 
+      - SETTINGS_MAX_MENTIONS_PER_WATCHER=999
+      - SETTINGS_MAX_WATCHERS_PER_GUILD=999
+      - SETTINGS_WATCHER_RUN_FREQUENCY=10
+  # Interactions handles the interactive part within discord (slash commands)
+  steamwatch_interactions:
+    image: steamwatch_interactions
+    container_name: steamwatch_interactions
+    volumes: 
+      - /docker/steamwatch/interactions:/interactions
+    ports: 
+      # you need to forward the port you opened inside the container so it's available on your localhost
+      - 28081:28081
+    restart: unless-stopped
+    environment:
+    # You can keep the same environment settings as in processes
+      - NODE_ENV=development
+      - DB_DATABASE=steamwatch
+      - DB_HOST=steamwatch_mariadb
+      - DB_PORT=3306
+      - DB_USER=steamwatch
+      - DB_PASSWORD=SECRET_PW
+      - DEV_GUILD_ID=YOUR_GUILD_ID
+      - DISCORD_INVITE=https://discord.com/oauth2/authorize?client_id=1345707232733691924
+      - DISCORD_APP_ID=YOUR_APP_ID
+      - DISCORD_APP_PUBLIC_KEY=${AI_ROLF_PUBLIC_KEY}
+      - DISCORD_BOT_TOKEN=${AI_ROLF_BOT_TOKEN}
+      - LOG_LEVEL=debug
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=28081
+      - SETTINGS_MAX_MENTIONS_PER_WATCHER=999
+      - SETTINGS_MAX_WATCHERS_PER_GUILD=999
+      - SETTINGS_WATCHER_RUN_FREQUENCY=10
+  # We use ngrok (https://ngrok.com/) as an endpoint for discord
+  # You'll need to set up an account (free) with them
+  steamwatch_ngrok:
+    image: ngrok/ngrok:latest
+    container_name: steamwatch_ngrok
+    restart: unless-stopped
+    command:
+      # Tell ngrok to open a tunnel to your docker hosts port 28081
+      - "http"
+      - "http://host.docker.internal:28081"
+    environment:
+      # The authtoken obtained at ngrok.com
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    ports:
+      # ngrok has a web-interface where you can check your tunnel status and get the endpoint URL
+      - 4040:4040
+    extra_hosts:
+      # Define the host.docker.internal host, otherwise the mapping will fail
+      - "host.docker.internal=host-gateway"
