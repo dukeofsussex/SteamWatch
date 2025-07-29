@@ -148,6 +148,10 @@ export default class FreeWatcher extends Watcher {
       .where('startTime', '<=', addHours(new Date(), HOURS_IN_ADVANCE))
       .andWhere('endTime', '>', new Date())
       .andWhere('active', 0)
+      .whereNotIn('app_id', (builder) => builder.select('app_id')
+        .from('free_package')
+        .where('active', 1))
+      .groupBy('app.id')
       .orderBy('startTime', 'asc')
       .limit(BATCH_SIZE);
   }
